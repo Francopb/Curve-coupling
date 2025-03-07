@@ -156,6 +156,42 @@ def solveCurveCoupling_bruteForce(
     
     return np.array(Output), np.array(Results)
 
+def solveCurveCoupling_bruteForce_localSolve(
+    prb: curveCouplingProblem,
+    iter_points: int = 100
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Compute the semiaddition of parametric curves by brute force.
+
+    Args:
+        curves (List[ndcurve]): Input curves.
+        match_index (Optional[int]): Index to match curves. If None, a scalar function is assumed.
+        tolerance (float): Tolerance in solving the equality condition.
+        iter_points (int): Number of iteration points.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Output curve and results in parametric space.
+    """
+
+    array_params = np.linspace(0.0, 1.0, iter_points)
+    combinations = itertools.product(range(iter_points), repeat=prb.numCurves)
+    Output = []
+    Results = []
+
+    def f_opt(x):
+        y = np.concatenate([prb.computeConstraint(x), [0.0]])
+        J = np.vstack([prb.computeConstraintJac(x), [np.zeros_like(x)]])
+        return y,J
+    for comb in combinations:
+        param0 = np.array([array_params[i] for i in reversed(comb)])
+        res = optimize.root(f_opt, param0, method='hybr', tol=1e-6, jac=True, options={
+                            'eps': 0.1, 'diag': [1e-3] * prb.numCurves})
+        if res.success and np.all(res.x>=0.0) and np.all(res.x<=1.0):
+            Results.append(res.x)
+            Output.append(prb.computeOutput(res.x))
+    
+    return np.array(Output), np.array(Results)
+
 
 def solveCurveCoupling_bruteForce_matrix(
     prb: curveCouplingProblem,
