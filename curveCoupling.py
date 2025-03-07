@@ -453,7 +453,7 @@ if __name__ == "__main__":
 
     curves_all = ndcurve_matrix(curves)
     out, res = solveCurveCoupling(prob)
-    # out_brute, res_brute = solveCurveCoupling_bruteForce(prob, iter_points=50)
+    out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=20)
 
     tol = 1e-1
     fig = plt.figure()
@@ -469,10 +469,10 @@ if __name__ == "__main__":
     for i,d in enumerate(data):
         axs[i].plot(d[:,0],d[:,1])
     axs[-1].plot(res[:,0],res[:,1],res[:,2])
-    # axs[-1].scatter(res_brute[:,0],res_brute[:,1],res_brute[:,2], color='k')
+    axs[-1].scatter(res_brute[:,0],res_brute[:,1],res_brute[:,2], color='k')
     
     axs[-2].plot(out[:,0],out[:,1])
-    # axs[-2].scatter(out_brute[:,0],out_brute[:,1], color='k')
+    axs[-2].scatter(out_brute[:,0],out_brute[:,1], color='k')
 
     plt.pause(0.1)
     input("Press Enter")
