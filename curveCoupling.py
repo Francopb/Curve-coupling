@@ -132,8 +132,7 @@ def solveCurveCoupling_bruteForce(
     Compute the semiaddition of parametric curves by brute force.
 
     Args:
-        curves (List[ndcurve]): Input curves.
-        match_index (Optional[int]): Index to match curves. If None, a scalar function is assumed.
+        prb (curveCouplingProblem): The curve coupling problem instance.
         tolerance (float): Tolerance in solving the equality condition.
         iter_points (int): Number of iteration points.
 
@@ -142,13 +141,13 @@ def solveCurveCoupling_bruteForce(
     """
 
     array_params = np.linspace(0.0, 1.0, iter_points)
-    array_curves = [c(array_params) for c in curves]
+    array_curves = [c(array_params) for c in prb.curves]
     combinations = itertools.product(range(iter_points), repeat=prb.numCurves)
     Output = []
     Results = []
     for comb in combinations:
         curve_vals = np.array([a[i] for a,i in zip(array_curves,reversed(comb))])
-        match_vals = curve_vals[:,match_index]
+        match_vals = curve_vals[:,prb.curves_all.match_index]
         if np.linalg.norm(prb.computeConstraint_from_values(match_vals)) < tolerance:
             param = np.array([array_params[i] for i in reversed(comb)])
             out_val = prb.computeOutput_from_values(curve_vals)
@@ -162,12 +161,10 @@ def solveCurveCoupling_bruteForce_localSolve(
     iter_points: int = 100
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Compute the semiaddition of parametric curves by brute force.
+    Compute the semiaddition of parametric curves by brute force with local solving.
 
     Args:
-        curves (List[ndcurve]): Input curves.
-        match_index (Optional[int]): Index to match curves. If None, a scalar function is assumed.
-        tolerance (float): Tolerance in solving the equality condition.
+        prb (curveCouplingProblem): The curve coupling problem instance.
         iter_points (int): Number of iteration points.
 
     Returns:
@@ -199,13 +196,10 @@ def solveCurveCoupling_bruteForce_matrix(
     iter_points: int = 100
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Compute the difference between the curves in the parametric space.
-    The result is computed in the parametric space as the points (x1, x2, ...).
-    The calculation is made by brute force.
+    Compute the constraint error magnitude for each parameter.
 
     Args:
-        curves (List[np.ndarray]): Input curves.
-        match_index (Optional[int]): Index to match curves. If None, a scalar function is assumed.
+        prb (curveCouplingProblem): The curve coupling problem instance.
         iter_points (int): Number of iteration points.
 
     Returns:
@@ -213,11 +207,11 @@ def solveCurveCoupling_bruteForce_matrix(
     """
 
     array_params = np.linspace(0.0, 1.0, iter_points)
-    array_curves = [c(array_params) for c in curves]
+    array_curves = [c(array_params) for c in prb.curves]
     array_results = np.zeros([array_params.size] * prb.numCurves)
 
     for index in np.ndindex(array_results.shape):
-        match_vals = np.array([a[i,match_index] for a,i in zip(array_curves,reversed(index))])
+        match_vals = np.array([a[i,prb.curves_all.match_index] for a,i in zip(array_curves,reversed(index))])
         array_results[index] = np.linalg.norm(prb.computeConstraint_from_values(match_vals))
 
     return array_results, array_params
@@ -229,7 +223,19 @@ def solveCurveCoupling_Equality(
     param_start: Optional[np.ndarray] = None,
     **kwargs
 ) -> Tuple[np.ndarray, np.ndarray]:
-    
+    """
+    Solve the curve coupling problem with equality constraints.
+
+    Args:
+        prb (curveCouplingProblem_Equality): The curve coupling problem instance.
+        solve_init (_INITIAL_OPT_EQ): Initial solver option.
+        tolerance (float): Tolerance for solving the equality condition.
+        param_start (Optional[np.ndarray]): Initial parameters.
+        **kwargs: Additional arguments for solveCurveCoupling.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Output curve and results in parametric space.
+    """
     def solveInitVal(param_in: np.ndarray, val: float) -> np.ndarray:
         f_opt = [lambda x, f=f: f(x) - val for f in prb.curves_match_index]
         opt_res = [optimize.root_scalar(
@@ -244,7 +250,7 @@ def solveCurveCoupling_Equality(
             f_opt, param_in, constraints=constraints, tol=1e-6)
 
         return opt_res.x
-    
+
     def solveInitFixed(param_in: np.ndarray, fixed_index: int = 0) -> np.ndarray:
         param_fixed = param_in[fixed_index]
         index_others = np.delete(np.arange(prb.numCurves), fixed_index)
@@ -259,7 +265,6 @@ def solveCurveCoupling_Equality(
                             'eps': 0.1, 'diag': [1e-3] * (prb.numCurves-1)})
         return np.insert(res.x, fixed_index, param_fixed)
 
-    
     if param_start is None:
         param_start = np.zeros(prb.numCurves, dtype=float)
 
@@ -276,9 +281,8 @@ def solveCurveCoupling_Equality(
     else:
         raise Exception("Unknown initial solver")
 
-    return solveCurveCoupling(prb,param_start=param_start,tolerance=tolerance,solve_init="off", **kwargs)
-        
-    
+    return solveCurveCoupling(prb, param_start=param_start, tolerance=tolerance, solve_init="off", **kwargs)
+
 
 def solveCurveCoupling(
     prb: curveCouplingProblem,
@@ -297,7 +301,7 @@ def solveCurveCoupling(
     output_points: Optional[int] = None,
     callbacFunc: Optional[Callable[[np.ndarray, np.ndarray], None]] = None
 ) -> Tuple[np.ndarray, np.ndarray]:
-    '''
+    """
     Compute the semiaddition of parametric curves.
     The result is computed in the parametric space as the points (x1, x2, ...) such that c0(x0)[0] = c1(x1)[0] = ...
     Then, the resulting curve is computed as the points c_res = mean(c0(x0), c1(x1), ...).
@@ -305,31 +309,25 @@ def solveCurveCoupling(
     and trying to find the next solution in the same direction.
 
     Args:
-        curves (List[ndcurve]): Input curves.
-        ConstraintMatrices(np.ndarray): Constraint matrix CM for the contraing sum_jk(CM_ijk * c_k_j) + CV_i = 0
-        OutputMatrices(Optional[np.ndarray]): Output matrix OM for the output O_i = sum_jk(OM_ijk * c_k_j) + OV_i, default average
-        ConstraintConstantVector(np.ndarray): Constraint vector CV for the contraing sum_jk(CM_ijk * c_k_j) + CV_i = 0
-        OutputConstantVector(np.ndarray): Output matvectorrix OV for the output O_i = sum_jk(OM_ijk * c_k_j) + OV_i
-        param_start (Optional[np.ndarray]): Initial param
-        param_final (Optional[np.ndarray]): Final param
-        param_stop (Optional[np.ndarray]): Stop if get close to on of these params
-        stop_circulation (bool): Whether to stop if get close to initial point
-        initial_dir (Optional[np.ndarray]):  Initial direction
-        solve_init (_INITIAL_OPT): Which solver to use initially
-        step_0 (float): Initial step size
-        step_min (float): Minimum step size
-        step_max (float): Maximum step size
-        guess_factor (float): Scale factor for guess in the desired direction
-        tolerance (float): Tolerance for solving the equality condition
-        it_max (int): Maximum iterations
-        output_points (Optional[int]): Number of output points
-        callbacFunc (Optional[Callable[[np.ndarray, np.ndarray], None]]): Callback function
+        prb (curveCouplingProblem): The curve coupling problem instance.
+        param_start (Optional[np.ndarray]): Initial parameters.
+        param_final (Optional[np.ndarray]): Final parameters.
+        param_stop (Optional[np.ndarray]): Stop if get close to one of these parameters.
+        stop_circulation (bool): Whether to stop if get close to initial point.
+        initial_dir (Optional[np.ndarray]): Initial direction.
+        solve_init (_INITIAL_OPT): Which solver to use initially.
+        step_0 (float): Initial step size.
+        step_min (float): Minimum step size.
+        step_max (float): Maximum step size.
+        guess_factor (float): Scale factor for guess in the desired direction.
+        tolerance (float): Tolerance for solving the equality condition.
+        it_max (int): Maximum iterations.
+        output_points (Optional[int]): Number of output points.
+        callbacFunc (Optional[Callable[[np.ndarray, np.ndarray], None]]): Callback function.
 
     Returns:
-        Tuple[np.ndarray, np.ndarray]: Output curve and results in parametric space
-    '''
-
-
+        Tuple[np.ndarray, np.ndarray]: Output curve and results in parametric space.
+    """
     if param_start is None:
         param_start = np.zeros(prb.numCurves, dtype=float)
     if param_final is None:
@@ -399,12 +397,12 @@ def solveCurveCoupling(
             x_interp, c, axis=0, bc_type="natural")
         return np.array([f_interp(x) for x in np.linspace(0.0, 1.0, num=nsteps)])
 
-    def computeTangent(params: np.ndarray, prev_dir: np.ndarray):
+    def computeTangent(params: np.ndarray, prev_dir: np.ndarray) -> np.ndarray:
         tangent = prb.computeTangent(params)
-        if np.dot(prev_dir, tangent)<0:
+        if np.dot(prev_dir, tangent) < 0:
             tangent *= -1.0
         return tangent
-    
+
     if solve_init == "min_dist":
         param_prev = solveInitMinDist(param_start)
     elif solve_init == "fix_largest":
@@ -414,12 +412,12 @@ def solveCurveCoupling(
         param_prev = param_start
     else:
         raise Exception("Unknown initial solver")
-    
+
     if stop_circulation:
         if param_stop is None:
             param_stop = param_prev.reshape((1, -1))
         else:
-            param_stop = np.vstack([param_stop,param_prev])
+            param_stop = np.vstack([param_stop, param_prev])
 
     Res = np.array([param_prev])
     Output = np.array([prb.computeOutput(param_prev)])
@@ -442,7 +440,7 @@ def solveCurveCoupling(
             param = solveMult(param_guess, param_prev, step)
 
             if param_stop is not None:
-                aux_vals = [(np.linalg.norm(param-p_stop), p_stop)
+                aux_vals = [(np.linalg.norm(param - p_stop), p_stop)
                             for p_stop in param_stop]
                 dist_stop, close_param_stop = min(aux_vals, key=lambda x: x[0])
                 if dist_stop > dist_stop_max:
@@ -473,7 +471,7 @@ def solveCurveCoupling(
     if output_points is None:
         return Output, Res
     if output_points <= 0:
-        c_sizes = [c.shape[0] for c in curves]
+        c_sizes = [c.shape[0] for c in prb.curves]
         output_points = sum(c_sizes)
 
     Output = reparametrizeCurve(Output, output_points)
@@ -489,19 +487,18 @@ if __name__ == "__main__":
     p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
     p1 = np.array([[0.0, 0.0], [0.2, 0.5], [0.6, 0.2], [1.0, 1.0]])
     p2 = np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.1],
-                [0.7, 0.4], [0.8, 0.35], [1.0, 1.0]])
-    points = [p0, p1,p2]
+                   [0.7, 0.4], [0.8, 0.35], [1.0, 1.0]])
+    points = [p0, p1, p2]
     data = [generate_curve_peaks(pts, 200) for pts in points]
     match_index = 1
-
 
     curves = ndcurve.createList(data)
     prob_eq = curveCouplingProblem_Equality(curves, match_index)
 
     params = np.array([0.0, 0.0, 0.0])
     fixed_index = 1
-    print(prob_eq.computeConstraint(params,fixed_index))
-    print(prob_eq.computeConstraintJac(params,fixed_index))
+    print(prob_eq.computeConstraint(params, fixed_index))
+    print(prob_eq.computeConstraintJac(params, fixed_index))
     print(prob_eq.computeOutput(params))
 
     prob = prob_eq.to_General(fixed_index)
@@ -516,21 +513,21 @@ if __name__ == "__main__":
     tol = 1e-1
     fig = plt.figure()
     plot_h = 2
-    gs = gridspec.GridSpec(2, plot_h*len(data))
+    gs = gridspec.GridSpec(2, plot_h * len(data))
     axs = []
 
     for i in range(0, len(data)):
-        axs.append(fig.add_subplot(gs[0, plot_h*i:plot_h*(i+1)]))
+        axs.append(fig.add_subplot(gs[0, plot_h * i:plot_h * (i + 1)]))
     axs.append(fig.add_subplot(gs[1, len(data):]))
     axs.append(fig.add_subplot(gs[1, :len(data)], projection='3d'))
 
-    for i,d in enumerate(data):
-        axs[i].plot(d[:,0],d[:,1])
-    axs[-1].plot(res[:,0],res[:,1],res[:,2])
-    axs[-1].scatter(res_brute[:,0],res_brute[:,1],res_brute[:,2], color='k')
-    
-    axs[-2].plot(out[:,0],out[:,1])
-    axs[-2].scatter(out_brute[:,0],out_brute[:,1], color='k')
+    for i, d in enumerate(data):
+        axs[i].plot(d[:, 0], d[:, 1])
+    axs[-1].plot(res[:, 0], res[:, 1], res[:, 2])
+    axs[-1].scatter(res_brute[:, 0], res_brute[:, 1], res_brute[:, 2], color='k')
+
+    axs[-2].plot(out[:, 0], out[:, 1])
+    axs[-2].scatter(out_brute[:, 0], out_brute[:, 1], color='k')
 
     plt.pause(0.1)
     input("Press Enter")

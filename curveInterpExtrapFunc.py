@@ -1,13 +1,10 @@
 import numpy as np
 from scipy import interpolate
-from typing import *
+from typing import List, Tuple, Callable, Optional, Union
 
 class ndcurve:
     def __init__(self, data: np.ndarray) -> None:
-        # if data.ndim == 1:
-        #     data = np.reshape(data,(-1,1))
-        assert 1<= data.ndim <= 2, "Data dimensions should 1 or 2"
-        # self.data = data
+        assert 1 <= data.ndim <= 2, "Data dimensions should be 1 or 2"
         self.function = _InterpExtrapFunc_initialize(data)
 
     def __call__(self, x: float, nu: int = 0) -> np.ndarray:
@@ -15,9 +12,7 @@ class ndcurve:
 
     def getNDim(self) -> int:
         coeffs_shape = self.function.c.shape
-        if len(coeffs_shape)<3:
-            return 1
-        return coeffs_shape[2]
+        return 1 if len(coeffs_shape) < 3 else coeffs_shape[2]
 
     def derivative(self, nu: int = 1) -> 'ndcurve':
         newFunction = self.function.derivative(nu=nu)
@@ -51,8 +46,7 @@ class ndcurve:
 class ndcurve_matrix:
     def __init__(self, curves: List[ndcurve]) -> None:
         aux_ndim = curves[0].getNDim()
-        assert all([c.getNDim() == aux_ndim for c in curves[1:]]
-                   ), "All curves must have the same dimension"
+        assert all([c.getNDim() == aux_ndim for c in curves[1:]]), "All curves must have the same dimension"
         self.functions = [c.function for c in curves]
 
     def __call__(self, x: np.ndarray, nu: int = 0) -> np.ndarray:
@@ -62,43 +56,40 @@ class ndcurve_matrix:
 
     def getNDim(self) -> int:
         coeffs_shape = self.functions[0].c.shape
-        if len(coeffs_shape)<3:
-            return 1
-        return coeffs_shape[2]
+        return 1 if len(coeffs_shape) < 3 else coeffs_shape[2]
 
     def getNCurves(self) -> int:
         return len(self.functions)
 
-    def derivative(self, nu: int = 1) -> 'ndcurve':
+    def derivative(self, nu: int = 1) -> 'ndcurve_matrix':
         new_functions = [f.derivative(nu=nu) for f in self.functions]
         return ndcurve_matrix([ndcurve._from_function(f) for f in new_functions])
 
-    def antiderivative(self, nu: int = 1) -> 'ndcurve':
+    def antiderivative(self, nu: int = 1) -> 'ndcurve_matrix':
         new_functions = [f.antiderivative(nu=nu) for f in self.functions]
         return ndcurve_matrix([ndcurve._from_function(f) for f in new_functions])
 
     def extractIndex(self, index: int) -> 'ndcurve_matrix':
         if index is None: return self
         assert 0 <= index < self.getNDim(), "Only possible to extract index between zero and Ndim"
-        new_functions = [_InterpExtrapFunc_extractIndex(
-            f, index) for f in self.functions]
+        new_functions = [_InterpExtrapFunc_extractIndex(f, index) for f in self.functions]
         return ndcurve_matrix([ndcurve._from_function(f) for f in new_functions])
 
     @classmethod
-    def _from_data(cls, Ldata: List[np.ndarray]):
+    def _from_data(cls, Ldata: List[np.ndarray]) -> 'ndcurve_matrix':
         return cls(ndcurve.createList(Ldata))
     
-def compute_t(curve: ndcurve, x: float, val: float, axis: int, tol: float = 1e-6):
+def compute_t(curve: ndcurve, x: float, val: float, axis: int, tol: float = 1e-6) -> float:
     curve_match_index = curve.extractIndex(axis)
     Dval = val - curve_match_index(x)
     alpha = 10.0
-    while np.abs(Dval)>tol:
-        x += Dval/alpha
+    while np.abs(Dval) > tol:
+        x += Dval / alpha
         Dval = val - curve_match_index(x)
-    slope = curve_match_index(x,nu=1)
-    step = Dval/slope
-    if np.abs(step)<tol:
-        x +=step 
+    slope = curve_match_index(x, nu=1)
+    step = Dval / slope
+    if np.abs(step) < tol:
+        x += step
     return x
 
 def _InterpExtrapFunc_initialize(data: np.ndarray) -> Callable[[float], np.ndarray]:
@@ -106,48 +97,44 @@ def _InterpExtrapFunc_initialize(data: np.ndarray) -> Callable[[float], np.ndarr
     Create an interpolation/extrapolation function for a given curve.
 
     Args:
-        curves (Union[np.ndarray, List[np.ndarray]]): Input curve(s) array with shape (N, C)
+        data (np.ndarray): Input curve array with shape (N, C)
 
     Returns:
         Callable[[float], np.ndarray]: Function that interpolates/extrapolates the curve
     """
-
     x_interp = np.linspace(0.0, 1.0, num=data.shape[0])
-    spline = interpolate.CubicSpline(
-        x_interp, data, axis=0, bc_type="natural")
+    spline = interpolate.CubicSpline(x_interp, data, axis=0, bc_type="natural")
 
-    # add a new breakpoint just to the left with known slope
+    # Add a new breakpoint just to the left with known slope
     leftx = spline.x[0]
     lefty = spline(leftx)
     leftslope = spline(leftx, nu=1)
-    leftxnext = leftx - 10.0*np.finfo(np.float64).eps
-    leftynext = np.array(lefty + leftslope*(leftxnext - leftx))
-    leftcoeffs = np.stack([[np.zeros(leftslope.shape)], [
-                          np.zeros(leftslope.shape)], [leftslope], [leftynext]])
+    leftxnext = leftx - 10.0 * np.finfo(np.float64).eps
+    leftynext = np.array(lefty + leftslope * (leftxnext - leftx))
+    leftcoeffs = np.stack([[np.zeros(leftslope.shape)], [np.zeros(leftslope.shape)], [leftslope], [leftynext]])
     spline.extend(leftcoeffs, np.r_[leftxnext])
 
-    # repeat with additional knots to the right
+    # Repeat with additional knots to the right
     rightx = spline.x[-1]
     righty = spline(rightx)
     rightslope = spline(rightx, nu=1)
     rightxnext = np.nextafter(rightx, rightx + 1)
     rightynext = righty + rightslope * (rightxnext - rightx)
-    rightcoeffs = np.stack([[np.zeros(rightslope.shape)], [
-                           np.zeros(rightslope.shape)], [rightslope], [rightynext]])
+    rightcoeffs = np.stack([[np.zeros(rightslope.shape)], [np.zeros(rightslope.shape)], [rightslope], [rightynext]])
     spline.extend(rightcoeffs, np.r_[rightxnext])
 
     return spline
 
-
-def _InterpExtrapFunc_extractIndex(f_curve: Union[Callable[[float], np.ndarray], List[Callable[[float], np.ndarray]]], index: Optional[int] = None):
+def _InterpExtrapFunc_extractIndex(f_curve: Union[Callable[[float], np.ndarray], List[Callable[[float], np.ndarray]]], index: Optional[int] = None) -> Union[Callable[[float], np.ndarray], List[Callable[[float], np.ndarray]]]:
     """
     Extract a given index from an interpolation/extrapolation function.
 
     Args:
         f_curve (Union[Callable[[float], np.ndarray], List[Callable[[float], np.ndarray]]]): Input interpolation/extrapolation functions.
+        index (Optional[int]): Index to extract.
 
     Returns:
-        Callable[[float], np.ndarray]: Extracted function.
+        Union[Callable[[float], np.ndarray], List[Callable[[float], np.ndarray]]]: Extracted function.
     """
     if index is None:
         return f_curve
@@ -160,23 +147,17 @@ def _InterpExtrapFunc_extractIndex(f_curve: Union[Callable[[float], np.ndarray],
     f_extracted.c = coeffs_i
     return f_extracted
 
-def reparametrizeCurve(
-        # Input arrays with shape (N, C)
-        c: np.ndarray,
-        # Coefficients to scale distance in each axis
-        coeffs: Optional[np.ndarray] = None,
-        num_samp: int = 0,       # Reparametrization points
-) -> Tuple[np.ndarray, np.ndarray]:
+def reparametrizeCurve(c: np.ndarray, coeffs: Optional[np.ndarray] = None, num_samp: int = 0) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Reparametrize curve for homogeneous distance between points
+    Reparametrize curve for homogeneous distance between points.
 
     Args:
-        c (np.ndarray): Input arrays with shape (N, C)
+        c (np.ndarray): Input array with shape (N, C)
         coeffs (Optional[np.ndarray]): Coefficients to scale distance in each axis
         num_samp (int): Reparametrization points
 
     Returns:
-        Tuple[np.ndarray,np.ndarray]: Resulting curve points and distances between them
+        Tuple[np.ndarray, np.ndarray]: Resulting curve points and distances between them
     """
     Npoints = c.shape[0]
 
@@ -189,7 +170,7 @@ def reparametrizeCurve(
     diff = np.diff(c, axis=0) * coeffs
     dist = np.sqrt(np.sum(np.square(diff), axis=1))
     L = np.sum(dist)
-    t_norm = np.concatenate([[0], np.cumsum(dist / L), ])
+    t_norm = np.concatenate([[0], np.cumsum(dist / L)])
 
     # Interpolate using normalized param
     f_interp = interpolate.CubicSpline(t_norm, c, axis=0, bc_type="natural")
@@ -201,10 +182,7 @@ def reparametrizeCurve(
     dist_norm = np.sqrt(np.sum(np.square(diff_norm), axis=1))
     return c_norm, dist_norm
 
-
-def normalizeCurves(
-    curves: List[np.ndarray]
-) -> List[np.ndarray]:
+def normalizeCurves(curves: List[np.ndarray]) -> List[np.ndarray]:
     """
     Normalize the set of curves to the [0,1] range.
 
@@ -220,26 +198,24 @@ def normalizeCurves(
 
     return [(c - curves_min) / curves_range for c in curves]
 
-
-def Integral2D(curves: Union[np.ndarray, List[np.ndarray]], is_axisymmetric_y: bool = False, is_axisymmetric_x: bool = False):
+def Integral2D(curves: Union[np.ndarray, List[np.ndarray]], is_axisymmetric_y: bool = False, is_axisymmetric_x: bool = False) -> Union[np.ndarray, List[np.ndarray]]:
     """
-    For each element, compute the 2D integral
+    For each element, compute the 2D integral.
 
     Args:
-        curves (Union[Union[np.ndarray, Callable[[float], float]], List[Union[np.ndarray, Callable[[float], float]]]]): Input curves array or functions
-        is_axisymmetric (bool): Whether the curve is axisymmetric.
+        curves (Union[np.ndarray, List[np.ndarray]]): Input curves array or functions
+        is_axisymmetric_y (bool): Whether the curve is axisymmetric around the y-axis.
+        is_axisymmetric_x (bool): Whether the curve is axisymmetric around the x-axis.
 
     Returns:
-        Callable[[float], np.ndarray]: Function that interpolates the energy
+        Union[np.ndarray, List[np.ndarray]]: Integrated energy values.
     """
-
     if isinstance(curves, list):
-        return [Integral2D(c) for c in curves]
+        return [Integral2D(c, is_axisymmetric_y, is_axisymmetric_x) for c in curves]
 
     assert curves.ndim == 2, "Only two-dimensional matrices are allowed"
     assert curves.shape[1] == 2, "Only 2D curves allowed"
-    assert not (
-        is_axisymmetric_x and is_axisymmetric_y), "Only one revolution possible"
+    assert not (is_axisymmetric_x and is_axisymmetric_y), "Only one revolution possible"
     Npoints = curves.shape[0]
     x = curves[:, 0]
     y = curves[:, 1]
@@ -247,24 +223,22 @@ def Integral2D(curves: Union[np.ndarray, List[np.ndarray]], is_axisymmetric_y: b
     f_x = interpolate.CubicSpline(t, x, bc_type="natural")
     dx = f_x(t, nu=1)
     if is_axisymmetric_y:
-        dE = 2*np.pi*y*x*dx
+        dE = 2 * np.pi * y * x * dx
     elif is_axisymmetric_x:
-        dE = np.pi*y**2*dx
+        dE = np.pi * y**2 * dx
     else:
-        dE = y*dx
+        dE = y * dx
     dE_f = interpolate.CubicSpline(t, dE, bc_type="natural")
     E_f = dE_f.antiderivative()
     E = E_f(t)
     return E
 
-
 if __name__ == "__main__":
     from curveGenerators import generate_curve_peaks
     p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
     p1 = np.array([[0.0, 0.0], [0.2, 0.5], [0.6, 0.2], [1.0, 1.0]])
-    p2 = np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.1],
-                [0.7, 0.4], [0.8, 0.35], [1.0, 1.0]])
-    points = [p0, p1,p2]
+    p2 = np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.1], [0.7, 0.4], [0.8, 0.35], [1.0, 1.0]])
+    points = [p0, p1, p2]
     data = [generate_curve_peaks(pts, 200) for pts in points]
 
     f_curves = ndcurve.createList(data)
@@ -276,7 +250,7 @@ if __name__ == "__main__":
 
     print("Dims", f_curves_matrix.getNDim(), f_curves_matrix2.getNDim())
     print("Curves", f_curves_matrix.getNCurves(), f_curves_matrix2.getNCurves())
-    x = np.linspace(0.0,1.0,len(data)+2)[1:-1]
+    x = np.linspace(0.0, 1.0, len(data) + 2)[1:-1]
     for i in range(len(data)):
         print("At", x[i], ":", f_curves[i](x[i]))
     print("At", x, ":", f_curves_matrix(x))
