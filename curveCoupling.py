@@ -510,7 +510,6 @@ if __name__ == "__main__":
     out, res = solveCurveCoupling_Equality(prob_eq)
     out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=20)
 
-    tol = 1e-1
     fig = plt.figure()
     plot_h = 2
     gs = gridspec.GridSpec(2, plot_h * len(data))
