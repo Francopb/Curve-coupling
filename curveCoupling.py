@@ -6,6 +6,7 @@ from auxFunc import my_null_space
 from typing import *
 
 _INITIAL_OPT = Literal["fix_largest", "min_dist", "off"]
+_INITIAL_OPT_EQ = Literal["mean_val","fix_largest", "min_dist", "off"]
 # Type alias for curve input
 
 class curveCouplingProblem:
@@ -221,6 +222,63 @@ def solveCurveCoupling_bruteForce_matrix(
 
     return array_results, array_params
 
+def solveCurveCoupling_Equality(
+    prb: curveCouplingProblem_Equality, *,
+    solve_init: _INITIAL_OPT_EQ = "min_dist",
+    tolerance: float = 1e-9,
+    param_start: Optional[np.ndarray] = None,
+    **kwargs
+) -> Tuple[np.ndarray, np.ndarray]:
+    
+    def solveInitVal(param_in: np.ndarray, val: float) -> np.ndarray:
+        f_opt = [lambda x, f=f: f(x) - val for f in prb.curves_match_index]
+        opt_res = [optimize.root_scalar(
+            f, x0=p, x1=p + 1e-3, method='secant') for f, p in zip(f_opt, param_in)]
+        return np.array([a.root for a in opt_res])
+
+    def solveInitMinDist(param_in: np.ndarray) -> np.ndarray:
+        def f_opt(x): return np.sum((x - param_in) ** 2)
+        constraints = [{'type': 'eq', 'fun': lambda x:
+                        prb.computeConstraint(x)}]
+        opt_res = optimize.minimize(
+            f_opt, param_in, constraints=constraints, tol=1e-6)
+
+        return opt_res.x
+    
+    def solveInitFixed(param_in: np.ndarray, fixed_index: int = 0) -> np.ndarray:
+        param_fixed = param_in[fixed_index]
+        index_others = np.delete(np.arange(prb.numCurves), fixed_index)
+
+        def f_opt(x_trunc: np.ndarray):
+            x = np.insert(x_trunc, fixed_index, param_fixed)
+            y = prb.computeConstraint(x)
+            J = prb.computeConstraintJac(x)
+            J_trunc = np.delete(J, fixed_index, 1)
+            return y, J_trunc
+        res = optimize.root(f_opt, param_in[index_others], method='hybr', tol=tolerance, jac=True, options={
+                            'eps': 0.1, 'diag': [1e-3] * (prb.numCurves-1)})
+        return np.insert(res.x, fixed_index, param_fixed)
+
+    
+    if param_start is None:
+        param_start = np.zeros(prb.numCurves, dtype=float)
+
+    if solve_init == "min_dist":
+        param_0 = solveInitMinDist(param_start)
+    elif solve_init == "fix_largest":
+        fixed_curve = np.argmax(prb.curves_all_match_index(param_start))
+        param_0 = solveInitFixed(param_start, fixed_curve)
+    elif solve_init == "mean_val":
+        val = np.mean(prb.curves_all_match_index(param_start))
+        param_0 = solveInitVal(param_start, val)
+    elif solve_init == "off":
+        param_0 = param_start
+    else:
+        raise Exception("Unknown initial solver")
+
+    return solveCurveCoupling(prb,param_start=param_start,tolerance=tolerance,solve_init="off", **kwargs)
+        
+    
 
 def solveCurveCoupling(
     prb: curveCouplingProblem,
@@ -452,7 +510,7 @@ if __name__ == "__main__":
     print(prob.computeOutput(params))
 
     curves_all = ndcurve_matrix(curves)
-    out, res = solveCurveCoupling(prob)
+    out, res = solveCurveCoupling_Equality(prob_eq)
     out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=20)
 
     tol = 1e-1
