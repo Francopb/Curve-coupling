@@ -419,8 +419,8 @@ def solveCurveCoupling(
         else:
             param_stop = np.vstack([param_stop, param_prev])
 
-    Res = np.array([param_prev])
-    Output = np.array([prb.computeOutput(param_prev)])
+    Res = [param_prev]
+    Output = [prb.computeOutput(param_prev)]
 
     if initial_dir is None:
         direction_0 = computeTangent(param_prev, np.ones(prb.numCurves))
@@ -450,8 +450,8 @@ def solveCurveCoupling(
                         param = close_param_stop
                         flag_stop = True
 
-            Res = np.concatenate((Res, np.array([param])))
-            Output = np.concatenate((Output, [prb.computeOutput(param)]))
+            Res.append(param)
+            Output.append(prb.computeOutput(param))
             direction = computeTangent(param, direction_0)
 
             step = updateStep(direction, direction_0, step)
@@ -461,7 +461,7 @@ def solveCurveCoupling(
             direction_0 = direction
 
             if callbacFunc is not None:
-                callbacFunc(Output, Res)
+                callbacFunc(np.array(Output), np.array(Res))
             if flag_stop:
                 break
         except Exception as e:
@@ -469,13 +469,13 @@ def solveCurveCoupling(
             break
 
     if output_points is None:
-        return Output, Res
+        return np.array(Output), np.array(Res)
     if output_points <= 0:
         c_sizes = [c.shape[0] for c in prb.curves]
         output_points = sum(c_sizes)
 
-    Output = reparametrizeCurve(Output, output_points)
-    Res = reparametrizeCurve(Res, output_points)
+    Output = reparametrizeCurve(np.array(Output), output_points)
+    Res = reparametrizeCurve(np.array(Res), output_points)
 
     return Output, Res
 
