@@ -2,6 +2,8 @@ import numpy as np
 from scipy import optimize
 from typing import *
 from curveInterpExtrapFunc import ndcurve
+from curveCoupling import curveCouplingProblem_Equality
+from auxFunc import removeRepeats
 import itertools
 
 class criticalPoint:
@@ -254,24 +256,21 @@ def __detectSingularities_critPoints_mult(
 
 
 def detectSingularities(
-    curves: List[ndcurve],
-    match_index: Optional[int] = None,
+    prb: curveCouplingProblem_Equality,
     tol: float = 1e-6
 ) -> Tuple[np.ndarray, np.ndarray, List[int], List[np.ndarray]]:
     """
     Find intersections between critical points of two or more curves.
 
     Args:
-        curves (List[ndcurve]): The input curves.
-        match_index (Optional[int]): Index to find critical points. If None, a scalar function is assumed.
+        prb (curveCouplingProblem_Equality): The curve coupling problem instance.
         tol (float): Tolerance.
 
     Returns:
         Tuple[np.ndarray, np.ndarray, List[int], List[np.ndarray]]: List of singularities values, their parameters, orders, and directions.
     """
-    curves_match_index = [c.extractIndex(match_index) for c in curves]
 
-    criticalPoints = findCriticalPoints(curves, analyze_index=match_index)
+    criticalPoints = findCriticalPoints(prb.curves, analyze_index=prb.match_index)
     singularity_res, singularity_idx = __detectSingularities_critPoints_mult(
         criticalPoints, tol=tol)
 
@@ -285,11 +284,11 @@ def detectSingularities(
             if isinstance(ind, tuple):
                 search_range = [criticalPoints[i][ind[0]].param,
                                 criticalPoints[i][ind[1]].param]
-                def f_opt(x): return curves_match_index[i](x) - singularity_res
+                def f_opt(x): return prb.curves_match_index[i](x) - singularity_res
                 opt_res = optimize.root_scalar(
                     f_opt, bracket=search_range, method='brentq')
                 param = opt_res.root
-                slope = curves_match_index[i](param, nu=1)
+                slope = prb.curves_match_index[i](param, nu=1)
 
                 params.append(param)
                 outputs.append(curves[i](param))
@@ -345,6 +344,55 @@ def detectSingularities(
 
     return np.array(output_vec), np.array(param_vec), order_vec, dirs_vec
 
+def solveWithSingularities(prb: curveCouplingProblem_Equality,
+    tol: float = 1e-6,
+    d_step: float = 5e-2,
+) -> Tuple[np.ndarray, np.ndarray, List[int], List[np.ndarray]]:
+    """
+    Finds the curve coupling considering singularities.
+
+    Args:
+        prb (curveCouplingProblem_Equality): The curve coupling problem instance.
+        tol (float): Tolerance.
+        d_step (float): Step from singularity.
+
+    Returns:
+        Tuple[List[np.ndarray], List[np.ndarray]]: Output curves and results in parametric space.
+    """
+    from curveCoupling import solveCurveCoupling_Equality
+    from auxFunc import remove_repeat_sets, max_min_dist_set_to_set
+
+    sing_outs, sing_seeds, sing_orders, sing_dirs = detectSingularities(prob, tol=tol)
+    def computeTangets(orders, dirs):
+        leading_order = np.min(orders)
+        tangents = np.array([np.where(orders==leading_order,d, 0.0) for d in dirs])
+        tangents /= np.linalg.norm(tangents,axis=1)[:,np.newaxis]
+        return tangents
+
+    sing_tangents = [computeTangets(o, d) for o,d in zip (sing_orders, sing_dirs)]
+
+    out, res = solveCurveCoupling_Equality(prb, param_stop=sing_seeds) 
+    out_lst = [out]
+    res_lst = [res]
+
+    param_stop = np.concatenate([sing_seeds,[np.zeros(prb.numCurves),np.ones(prb.numCurves)]],axis=0)
+    for sing_out, seed, order, dirs, tangents in zip(sing_outs, sing_seeds, sing_orders, sing_dirs, sing_tangents):
+        for d, t in zip(dirs, tangents):
+            def f_opt(a):
+                return np.linalg.norm((a*d) ** order)-d_step
+            factor = optimize.fsolve(f_opt,1.0)
+            d_res = (factor * d) ** order
+            sing_res = d_res + seed
+            out, res = solveCurveCoupling_Equality(prb, param_start=sing_res, param_stop=param_stop, initial_dir=t,it_max=5000) 
+            out = np.concatenate([[sing_out], out],axis=0)
+            res = np.concatenate([[seed], res],axis=0)
+            out_lst.append(out)
+            res_lst.append(res)
+    
+    removed_idx = remove_repeat_sets(res_lst,tol=0.1)
+    for idx in removed_idx:
+        out_lst.pop(idx)
+    return out_lst, res_lst
 
 def __detectIslands_critPoints_pair(
     critPoints1: List[criticalPoint],
@@ -519,24 +567,21 @@ def __detectIslands_critPoints_mult(
 
 
 def detectIslands(
-    curves: List[ndcurve],
-    match_index: Optional[int] = None,
+    prb: curveCouplingProblem_Equality,
     tol: float = -1e-6
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Find intersections between critical points of two or more curves.
 
     Args:
-        curves (List[ndcurve]): The input curve(s).
-        match_index (Optional[int]): Index to find critical points. If None, a scalar function is assumed.
+        prb (curveCouplingProblem_Equality): The curve coupling problem instance.
         tol (float): Tolerance.
 
     Returns:
         Tuple[np.ndarray, np.ndarray, np.ndarray]: List of intersection points, their parameters, and initial directions.
     """
-    curves_match_index = [c.extractIndex(match_index) for c in curves]
 
-    criticalPoints = findCriticalPoints(curves, analyze_index=match_index)
+    criticalPoints = findCriticalPoints(prb.curves, analyze_index=prb.match_index)
     intersections, indices = __detectIslands_critPoints_mult(
         criticalPoints, tol=tol)
 
@@ -555,14 +600,14 @@ def detectIslands(
         tgt_val = np.mean(intersection)
         search_ranges = [getRangeCritPoints(tgt_val, cPs, range(
             ind[0], ind[1])) for cPs, ind in zip(criticalPoints, index)]
-        f_opt = [lambda x, f=f: f(x) - tgt_val for f in curves_match_index]
+        f_opt = [lambda x, f=f: f(x) - tgt_val for f in prb.curves_match_index]
         opt_res = [optimize.root_scalar(
             f, bracket=sr, method='brentq') for f, sr in zip(f_opt, search_ranges)]
         params = tuple([a.root for a in opt_res])
         param_res.append(params)
         output_res.append(np.mean([f(b)
                                    for f, b in zip(curves, params)], axis=0))
-        slopes = [f(p, nu=1) for f, p in zip(curves_match_index, params)]
+        slopes = [f(p, nu=1) for f, p in zip(prb.curves_match_index, params)]
         new_dir = np.array([np.prod([sl for j, sl in enumerate(slopes) if j != i])
                             for i in range(len(slopes))])
         new_dir /= np.linalg.norm(new_dir)
@@ -570,11 +615,40 @@ def detectIslands(
 
     return np.array(output_res), np.array(param_res), np.array(initial_dir)
 
+def solveWithIslands(prb: curveCouplingProblem_Equality,
+    tol: float = 1e-6,
+) -> Tuple[np.ndarray, np.ndarray, List[int], List[np.ndarray]]:
+    """
+    Finds the curve coupling considering islands.
+
+    Args:
+        prb (curveCouplingProblem_Equality): The curve coupling problem instance.
+        tol (float): Tolerance.
+        d_step (float): Step from singularity.
+
+    Returns:
+        Tuple[List[np.ndarray], List[np.ndarray]]: Output curves and results in parametric space.
+    """
+    from curveCoupling import solveCurveCoupling_Equality
+
+    _, islands_seeds, islands_dirs = detectIslands(prob)
+
+    out, res = solveCurveCoupling_Equality(prob)
+    res_lst = [res]
+    out_lst = [out]
+
+    for s, d in zip(islands_seeds, islands_dirs):
+        out, res = solveCurveCoupling_Equality(prob, param_start=s, stop_circulation=True, initial_dir=d)
+        res_lst.append(res)
+        out_lst.append(out)
+
+    return out_lst, res_lst
+
 if __name__ == "__main__":
     from matplotlib import pyplot as plt
     from matplotlib import gridspec
     from curveGenerators import generate_curve_peaks
-    from curveCoupling import curveCouplingProblem_Equality, solveCurveCoupling_Equality, solveCurveCoupling_bruteForce_localSolve
+    from curveCoupling import solveCurveCoupling_Equality, solveCurveCoupling_bruteForce_localSolve
 
     p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
     p1 = np.array([[0.0, 0.0], [0.2, 0.5], [0.6, 0.2], [1.0, 1.0]])
@@ -587,18 +661,11 @@ if __name__ == "__main__":
     curves = ndcurve.createList(data)
     prob = curveCouplingProblem_Equality(curves,1)
 
-    islands_out, islands_seeds, islands_dirs = detectIslands(curves,prob.match_index)
+    islands_out, islands_seeds, islands_dirs = detectIslands(prob)
 
-    out, res = solveCurveCoupling_Equality(prob)
-    res_lst = [res]
-    out_lst = [out]
+    out_lst, res_lst = solveWithIslands(prob)
 
-    for s, d in zip(islands_seeds, islands_dirs):
-        out, res = solveCurveCoupling_Equality(prob, param_start=s, stop_circulation=True, initial_dir=d)
-        res_lst.append(res)
-        out_lst.append(out)
-
-    out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=5)
+    out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=20)
 
     fig = plt.figure()
     plot_h = 2
@@ -614,11 +681,70 @@ if __name__ == "__main__":
         axs[i].plot(d[:, 0], d[:, 1])
     for res in res_lst:
         axs[-1].plot(res[:, 0], res[:, 1], res[:, 2])
-    axs[-1].scatter(res_brute[:, 0], res_brute[:, 1], res_brute[:, 2], color='k')
+    axs[-1].scatter(res_brute[:, 0], res_brute[:, 1], res_brute[:, 2], color='r', marker ='.',alpha=0.1)
 
     for out in out_lst:
         axs[-2].plot(out[:, 0], out[:, 1])
-    axs[-2].scatter(out_brute[:, 0], out_brute[:, 1], color='k')
+    axs[-2].scatter(out_brute[:, 0], out_brute[:, 1], color='r', marker ='.',alpha=0.1)
+
+    plt.pause(0.1)
+    input("Press Enter")
+
+
+
+
+
+
+
+
+
+    p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
+    p1 = np.array([[0.0, 0.0], [0.2, 0.6], [0.6, 0.3], [1.0, 1.0]])
+    p2 = np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.3],
+                   [0.7, 0.5], [0.8, 0.4], [1.0, 1.0]])
+    
+    points = [p0, p1, p2]
+    data = [generate_curve_peaks(pts, 200) for pts in points]
+    match_index = 1
+
+    curves = ndcurve.createList(data)
+    prob = curveCouplingProblem_Equality(curves,1)
+
+    sing_out, sing_seeds, sing_orders, sing_dirs = detectSingularities(prob, tol=1e-3)
+
+    out_lst, res_lst = solveWithSingularities(prob, tol=1e-3)
+
+    out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=20)
+
+    fig = plt.figure()
+    plot_h = 2
+    gs = gridspec.GridSpec(2, plot_h * len(data))
+    axs = []
+
+    for i in range(0, len(data)):
+        axs.append(fig.add_subplot(gs[0, plot_h * i:plot_h * (i + 1)]))
+    axs.append(fig.add_subplot(gs[1, len(data):]))
+    axs.append(fig.add_subplot(gs[1, :len(data)], projection='3d'))
+
+    for i, d in enumerate(data):
+        axs[i].plot(d[:, 0], d[:, 1])
+
+    for res in res_lst:
+        axs[-1].plot(res[:, 0], res[:, 1], res[:, 2])
+    axs[-1].scatter(res_brute[:, 0], res_brute[:, 1], res_brute[:, 2], color='r', marker ='.',alpha=0.1)
+
+    for out in out_lst:
+        axs[-2].plot(out[:, 0], out[:, 1])
+    axs[-2].scatter(out_brute[:, 0], out_brute[:, 1], color='r', marker ='.',alpha=0.1)
+
+    t = np.linspace(0.0,5e-1,10)
+    for seed,order,dirs in zip(sing_seeds, sing_orders, sing_dirs):
+        for d in dirs:
+            sing_res = (d[np.newaxis,:] * t[:,np.newaxis])**order[np.newaxis,:]+seed[np.newaxis,:]
+            axs[-1].plot(sing_res[:,0],sing_res[:,1],sing_res[:,2], color='k')
+
+        
+
 
     plt.pause(0.1)
     input("Press Enter")

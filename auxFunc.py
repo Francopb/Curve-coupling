@@ -1,8 +1,10 @@
 import numpy as np
 from scipy import spatial
-from typing import Tuple
+from typing import Tuple, List
 
-def minDist_KDTree(point: np.ndarray, existing_points: np.ndarray) -> float:
+
+
+def min_dist_point_to_set(point: np.ndarray, existing_points: np.ndarray) -> float:
     """
     Find the minimum distance from a point to a set of existing points using KDTree.
 
@@ -16,6 +18,42 @@ def minDist_KDTree(point: np.ndarray, existing_points: np.ndarray) -> float:
     tree = spatial.KDTree(existing_points)
     min_dist, _ = tree.query(point, k=1)
     return min_dist
+
+def max_min_dist_set_to_set(A: np.ndarray, B: np.ndarray) -> float:
+    """
+    Find the maximum distance between two sets of existing points using KDTree.
+
+    Args:
+        A (np.ndarray): Set A.
+        B (np.ndarray): Set B.
+
+    Returns:
+        float: The max_min distance.
+    """
+    min_dist_A = min_dist_point_to_set(A,B)
+    min_dist_B = min_dist_point_to_set(B,A)
+
+    return max(np.max(min_dist_A),np.max(min_dist_B))
+
+def remove_repeat_sets(S_lst: List[np.ndarray], tol: float = 1e-6):
+    """
+    Remove repeated sets of points base on max_min_dist
+
+    Args:
+        S_lst (List[np.ndarray]): List of sets.
+        tol (float): distance tolerance.
+
+    Returns:
+        Tuple[int]: removed indices.
+    """
+    removed_idx = []
+    for i in reversed(range(1,len(S_lst))):
+        for j in range(i):
+            if max_min_dist_set_to_set(S_lst[i],S_lst[j])<tol:
+                S_lst.pop(i)
+                removed_idx.append(i)
+                break
+    return tuple(removed_idx)
 
 def my_null_space(A: np.ndarray, atol: float = 1e-9) -> np.ndarray:
     """
