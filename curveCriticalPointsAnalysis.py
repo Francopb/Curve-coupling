@@ -360,7 +360,7 @@ def solveWithSingularities(prb: curveCouplingProblem_Equality,
         Tuple[List[np.ndarray], List[np.ndarray]]: Output curves and results in parametric space.
     """
     from curveCoupling import solveCurveCoupling_Equality
-    from auxFunc import remove_repeat_sets, max_min_dist_set_to_set
+    from auxFunc import remove_repeat_sets
 
     sing_outs, sing_seeds, sing_orders, sing_dirs = detectSingularities(prob, tol=tol)
     def computeTangets(orders, dirs):
@@ -616,7 +616,7 @@ def detectIslands(
     return np.array(output_res), np.array(param_res), np.array(initial_dir)
 
 def solveWithIslands(prb: curveCouplingProblem_Equality,
-    tol: float = 1e-6,
+    tol: float = -1e-6,
 ) -> Tuple[np.ndarray, np.ndarray, List[int], List[np.ndarray]]:
     """
     Finds the curve coupling considering islands.
@@ -624,14 +624,13 @@ def solveWithIslands(prb: curveCouplingProblem_Equality,
     Args:
         prb (curveCouplingProblem_Equality): The curve coupling problem instance.
         tol (float): Tolerance.
-        d_step (float): Step from singularity.
 
     Returns:
         Tuple[List[np.ndarray], List[np.ndarray]]: Output curves and results in parametric space.
     """
     from curveCoupling import solveCurveCoupling_Equality
 
-    _, islands_seeds, islands_dirs = detectIslands(prob)
+    _, islands_seeds, islands_dirs = detectIslands(prob, tol=tol)
 
     out, res = solveCurveCoupling_Equality(prob)
     res_lst = [res]
@@ -743,15 +742,6 @@ if __name__ == "__main__":
             sing_res = (d[np.newaxis,:] * t[:,np.newaxis])**order[np.newaxis,:]+seed[np.newaxis,:]
             axs[-1].plot(sing_res[:,0],sing_res[:,1],sing_res[:,2], color='k')
 
-        
-
 
     plt.pause(0.1)
     input("Press Enter")
-
-
-
-
-
-
-
