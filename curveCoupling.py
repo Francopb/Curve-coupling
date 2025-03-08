@@ -30,14 +30,14 @@ class curveCouplingProblem:
         self.Ndims = self.Ndims.pop()
 
         if self.OutputMatrices is None:
-            self.OutputMatrices = np.zeros((self.Ndims, self.Ndims, self.numCurves))
+            self.OutputMatrices = np.zeros((self.Ndims, self.numCurves, self.Ndims))
             for i in range(self.Ndims):
-                self.OutputMatrices[i,i,:] = np.ones(self.numCurves) / self.numCurves
+                self.OutputMatrices[i,:,i] = np.ones(self.numCurves) / self.numCurves
 
-        assert self.ConstraintMatrices.shape[1] == self.Ndims, "Constraint dim 1 must be the number of dimensions"
-        assert self.OutputMatrices.shape[1] == self.Ndims, "Output dim 1 must be the number of dimensions"
-        assert self.ConstraintMatrices.shape[2] == self.numCurves, "Constraint dim 2 must hbe the number of curves"
-        assert self.OutputMatrices.shape[2] == self.numCurves, "v dim 2 must hbe the number of curves"
+        assert self.ConstraintMatrices.shape[2] == self.Ndims, "Constraint dim 2 must be the number of dimensions"
+        assert self.OutputMatrices.shape[2] == self.Ndims, "Output dim 2 must be the number of dimensions"
+        assert self.ConstraintMatrices.shape[1] == self.numCurves, "Constraint dim 1 must hbe the number of curves"
+        assert self.OutputMatrices.shape[1] == self.numCurves, "Constraint dim 1 must hbe the number of curves"
 
         if self.ConstraintConstantVector is None:
             self.ConstraintConstantVector = np.zeros(self.ConstraintMatrices.shape[0])
@@ -47,7 +47,7 @@ class curveCouplingProblem:
     def computeConstraint_from_values(self, vals: np.ndarray) -> np.ndarray:
         if vals.ndim<2:
             vals = vals.reshape((-1,1))
-        return np.einsum('ijk,kj->i', self.ConstraintMatrices, vals)+self.ConstraintConstantVector
+        return np.einsum('ijk,jk->i', self.ConstraintMatrices, vals)+self.ConstraintConstantVector
     
     def computeConstraint(self, params: np.ndarray) -> np.ndarray:
         return self.computeConstraint_from_values(self.curves_all(params))
@@ -56,7 +56,7 @@ class curveCouplingProblem:
         vals = self.curves_all(params, nu=nu)
         if vals.ndim<2:
             vals = vals.reshape((-1,1))
-        return np.einsum('ijk,kj->ik', self.ConstraintMatrices, vals)
+        return np.einsum('ijk,jk->ij', self.ConstraintMatrices, vals)
     
     def computeTangent(self, params: np.ndarray):
         J = self.computeConstraintJac(params)
@@ -66,7 +66,7 @@ class curveCouplingProblem:
     def computeOutput_from_values(self, vals: np.ndarray) -> np.ndarray:
         if vals.ndim<2:
             vals = vals.reshape((-1,1))
-        return np.einsum('ijk,kj->i', self.OutputMatrices, vals)+self.OutputConstantVector
+        return np.einsum('ijk,jk->i', self.OutputMatrices, vals)+self.OutputConstantVector
     
     def computeOutput(self, params: np.ndarray) -> np.ndarray:
         return self.computeOutput_from_values(self.curves_all(params))
@@ -115,9 +115,9 @@ class curveCouplingProblem_Equality:
     def to_General(self, fixed_index=0):
         other_indices = np.delete(np.arange(self.numCurves), fixed_index)
         match_index = 0 if self.match_index is None else self.match_index
-        ConstraintMatrices = np.zeros((self.numCurves-1, self.Ndims, self.numCurves))
-        ConstraintMatrices[np.arange(len(other_indices)), match_index, other_indices] = 1.0
-        ConstraintMatrices[:, match_index, fixed_index] = -1.0
+        ConstraintMatrices = np.zeros((self.numCurves-1, self.numCurves, self.Ndims))
+        ConstraintMatrices[np.arange(len(other_indices)), other_indices, match_index] = 1.0
+        ConstraintMatrices[:, fixed_index, match_index] = -1.0
         return curveCouplingProblem(self.curves, ConstraintMatrices)
 
 
@@ -523,10 +523,10 @@ if __name__ == "__main__":
     for i, d in enumerate(data):
         axs[i].plot(d[:, 0], d[:, 1])
     axs[-1].plot(res[:, 0], res[:, 1], res[:, 2])
-    axs[-1].scatter(res_brute[:, 0], res_brute[:, 1], res_brute[:, 2], color='k')
+    axs[-1].scatter(res_brute[:, 0], res_brute[:, 1], res_brute[:, 2], color='r', marker ='.',alpha=0.1)
 
     axs[-2].plot(out[:, 0], out[:, 1])
-    axs[-2].scatter(out_brute[:, 0], out_brute[:, 1], color='k')
+    axs[-2].scatter(out_brute[:, 0], out_brute[:, 1], color='r', marker ='.',alpha=0.1)
 
     plt.pause(0.1)
     input("Press Enter")
