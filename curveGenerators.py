@@ -22,7 +22,7 @@ def generate_curve_CubicSpline(
     spline = interpolate.CubicSpline(t, points, axis=0, bc_type="natural")
 
     # Generate evenly spaced x values and interpolate y values
-    t_new = np.linspace(points[0, 0], points[-1, 0], num_points)
+    t_new = np.linspace(0.0, 1.0, num_points)
     return spline(t_new)
 
 def generate_curve_Pchip(
