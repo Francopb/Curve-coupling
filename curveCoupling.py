@@ -24,39 +24,51 @@ class curveCouplingProblem:
         assert self.numCurves >= 2, "At least two curves are needed"
         self.curves_all = ndcurve_matrix(curves)
 
-        evals = [f(0) for f in curves]
-        self.Ndims = set([e.size if isinstance(e,np.ndarray) else 1 for e in evals])
+        self.Ndims = set([c.getNDim() for c in self.curves])
         assert len(self.Ndims) == 1, "All curves must have the same dimensionality"
         self.Ndims = self.Ndims.pop()
 
         if self.OutputMatrices is None:
-            self.OutputMatrices = np.zeros((self.Ndims, self.numCurves, self.Ndims))
-            for i in range(self.Ndims):
-                self.OutputMatrices[i,:,i] = np.ones(self.numCurves) / self.numCurves
+            if self.Ndims==0:
+                self.OutputMatrices = np.full((1, self.numCurves), np.ones(self.numCurves) / self.numCurves)
+            else:
+                self.OutputMatrices = np.zeros((self.Ndims, self.numCurves, self.Ndims))
+                for i in range(self.Ndims):
+                    self.OutputMatrices[i,:,i] = np.ones(self.numCurves) / self.numCurves
 
-        assert self.ConstraintMatrices.shape[2] == self.Ndims, "Constraint dim 2 must be the number of dimensions"
-        assert self.OutputMatrices.shape[2] == self.Ndims, "Output dim 2 must be the number of dimensions"
-        assert self.ConstraintMatrices.shape[1] == self.numCurves, "Constraint dim 1 must hbe the number of curves"
-        assert self.OutputMatrices.shape[1] == self.numCurves, "Constraint dim 1 must hbe the number of curves"
+        if self.Ndims==0:
+            assert self.ConstraintMatrices.ndim == 2, "For zero dimensional curves (return a float), ConstraintMatrices must be a 2 dimensional array"
+            assert self.OutputMatrices.ndim == 2, "For zero dimensional curves (return a float), OutputMatrices must be a 2 dimensional array"
+        else:
+            assert self.ConstraintMatrices.shape[2] == self.Ndims, "ConstraintMatrices dim 2 must be the number of dimensions"
+            assert self.OutputMatrices.shape[2] == self.Ndims, "OutputMatrices dim 2 must be the number of dimensions"
+        assert self.ConstraintMatrices.shape[1] == self.numCurves, "ConstraintMatrices dim 1 must the the number of curves"
+        assert self.OutputMatrices.shape[1] == self.numCurves, "OutputMatrices dim 1 must the the number of curves"
+        assert self.ConstraintMatrices.shape[0] == self.numCurves-1, "ConstraintMatrices dim 0 must the the number of curves minus 1"
 
         if self.ConstraintConstantVector is None:
             self.ConstraintConstantVector = np.zeros(self.ConstraintMatrices.shape[0])
         if self.OutputConstantVector is None:
             self.OutputConstantVector = np.zeros(self.OutputMatrices.shape[0])
 
+        assert self.ConstraintConstantVector.size == self.ConstraintMatrices.shape[0], "ConstraintConstantVector must be as len ConstraintMatrices dim 0"
+        assert self.OutputConstantVector.shape[0] == self.OutputMatrices.shape[0], "OutputConstantVector must be as len OutputMatrices dim 0"
+
     def computeConstraint_from_values(self, vals: np.ndarray) -> np.ndarray:
-        if vals.ndim<2:
-            vals = vals.reshape((-1,1))
-        return np.einsum('ijk,jk->i', self.ConstraintMatrices, vals)+self.ConstraintConstantVector
+        if self.Ndims == 0:
+            return np.einsum('ij,j->i', self.ConstraintMatrices, vals)+self.ConstraintConstantVector
+        else:
+            return np.einsum('ijk,jk->i', self.ConstraintMatrices, vals)+self.ConstraintConstantVector
     
     def computeConstraint(self, params: np.ndarray) -> np.ndarray:
         return self.computeConstraint_from_values(self.curves_all(params))
     
     def computeConstraintJac(self, params: np.ndarray, nu: int = 1) -> np.ndarray:
         vals = self.curves_all(params, nu=nu)
-        if vals.ndim<2:
-            vals = vals.reshape((-1,1))
-        return np.einsum('ijk,jk->ij', self.ConstraintMatrices, vals)
+        if self.Ndims == 0:
+            return np.einsum('ij,j->ij', self.ConstraintMatrices, vals)
+        else:
+            return np.einsum('ijk,jk->ij', self.ConstraintMatrices, vals)
     
     def computeTangent(self, params: np.ndarray):
         J = self.computeConstraintJac(params)
@@ -64,9 +76,10 @@ class curveCouplingProblem:
         return nullspace[:,0]
     
     def computeOutput_from_values(self, vals: np.ndarray) -> np.ndarray:
-        if vals.ndim<2:
-            vals = vals.reshape((-1,1))
-        return np.einsum('ijk,jk->i', self.OutputMatrices, vals)+self.OutputConstantVector
+        if self.Ndims == 0:
+            return np.einsum('ij,j->i', self.OutputMatrices, vals)+self.OutputConstantVector
+        else:
+            return np.einsum('ijk,jk->i', self.OutputMatrices, vals)+self.OutputConstantVector
     
     def computeOutput(self, params: np.ndarray) -> np.ndarray:
         return self.computeOutput_from_values(self.curves_all(params))
@@ -78,10 +91,13 @@ class curveCouplingProblem_Equality:
         self.match_index = match_index
         self.numCurves = len(curves)
         assert self.numCurves >= 2, "At least two curves are needed"
-        evals = [f(0) for f in curves]
-        self.Ndims = set([e.size if isinstance(e,np.ndarray) else 1 for e in evals])
+        self.Ndims = set([c.getNDim() for c in self.curves])
         assert len(self.Ndims) == 1, "All curves must have the same dimensionality"
         self.Ndims = self.Ndims.pop()
+        if self.match_index is None:
+            assert self.Ndims == 0, "For no match index, the curves must be zero dimensional (return a float)"
+        if self.Ndims == 0:
+            assert self.match_index is None, "For zero dimensional curves (return a float), no possible to use match_index"
         self.curves_all = ndcurve_matrix(curves)
         self.curves_all_match_index = self.curves_all.extractIndex(match_index)
 
@@ -120,15 +136,24 @@ class curveCouplingProblem_Equality:
         return self.computeOutput_from_values(self.curves_all(params))
     
     def to_General(self, fixed_index: Optional[int] = None):
-        ConstraintMatrices = np.zeros((self.numCurves-1, self.numCurves, self.Ndims))
-        match_index = 0 if self.match_index is None else self.match_index
-        if fixed_index is None:
-            ConstraintMatrices[np.arange(self.numCurves-1), np.arange(self.numCurves-1), match_index] = 1.0
-            ConstraintMatrices[np.arange(self.numCurves-1), np.arange(1,self.numCurves), match_index] = -1.0
+        if self.match_index is None:
+            ConstraintMatrices = np.zeros((self.numCurves-1, self.numCurves))
+            if fixed_index is None:
+                ConstraintMatrices[np.arange(self.numCurves-1), np.arange(self.numCurves-1)] = 1.0
+                ConstraintMatrices[np.arange(self.numCurves-1), np.arange(1,self.numCurves)] = -1.0
+            else:
+                other_indices = np.delete(np.arange(self.numCurves), fixed_index)
+                ConstraintMatrices[np.arange(self.numCurves-1), other_indices] = 1.0
+                ConstraintMatrices[:, fixed_index] = -1.0
         else:
-            other_indices = np.delete(np.arange(self.numCurves), fixed_index)
-            ConstraintMatrices[np.arange(self.numCurves-1), other_indices, match_index] = 1.0
-            ConstraintMatrices[:, fixed_index, match_index] = -1.0
+            ConstraintMatrices = np.zeros((self.numCurves-1, self.numCurves, self.Ndims))
+            if fixed_index is None:
+                ConstraintMatrices[np.arange(self.numCurves-1), np.arange(self.numCurves-1), self.match_index] = 1.0
+                ConstraintMatrices[np.arange(self.numCurves-1), np.arange(1,self.numCurves), self.match_index] = -1.0
+            else:
+                other_indices = np.delete(np.arange(self.numCurves), fixed_index)
+                ConstraintMatrices[np.arange(self.numCurves-1), other_indices, self.match_index] = 1.0
+                ConstraintMatrices[:, fixed_index, self.match_index] = -1.0
         return curveCouplingProblem(self.curves, ConstraintMatrices)
 
 
@@ -292,7 +317,7 @@ def solveCurveCoupling_Equality(
     else:
         raise Exception("Unknown initial solver")
 
-    return solveCurveCoupling(prb, param_start=param_start, tolerance=tolerance, solve_init="off", **kwargs)
+    return solveCurveCoupling(prb, param_start=param_0, tolerance=tolerance, solve_init="off", **kwargs)
 
 
 def solveCurveCoupling(
@@ -501,21 +526,21 @@ if __name__ == "__main__":
                    [0.7, 0.4], [0.8, 0.35], [1.0, 1.0]])
     points = [p0, p1, p2]
     data = [generate_curve_peaks(pts, 200) for pts in points]
-    match_index = 1
 
+    match_index = 1
     curves = ndcurve.createList(data)
     prob_eq = curveCouplingProblem_Equality(curves, match_index)
 
     params = np.array([0.1, 0.2, 0.3])
     fixed_index = None
-    print(prob_eq.computeConstraint(params, fixed_index))
-    print(prob_eq.computeConstraintJac(params, fixed_index))
-    print(prob_eq.computeOutput(params))
+    print("Constr", prob_eq.computeConstraint(params, fixed_index))
+    print("Constr_Jac", prob_eq.computeConstraintJac(params, fixed_index))
+    print("Out", prob_eq.computeOutput(params))
 
     prob = prob_eq.to_General(fixed_index)
-    print(prob.computeConstraint(params))
-    print(prob.computeConstraintJac(params))
-    print(prob.computeOutput(params))
+    print("Constr", prob.computeConstraint(params))
+    print("Constr_Jac", prob.computeConstraintJac(params))
+    print("Out", prob.computeOutput(params))
 
     out, res = solveCurveCoupling_Equality(prob_eq)
     out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=20)

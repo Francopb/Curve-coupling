@@ -12,7 +12,7 @@ class ndcurve:
 
     def getNDim(self) -> int:
         coeffs_shape = self.function.c.shape
-        return 1 if len(coeffs_shape) < 3 else coeffs_shape[2]
+        return 0 if len(coeffs_shape) < 3 else coeffs_shape[2]
 
     def derivative(self, nu: int = 1) -> 'ndcurve':
         newFunction = self.function.derivative(nu=nu)
