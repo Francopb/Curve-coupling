@@ -195,7 +195,7 @@ def solveSingularity(prb: curveCouplingProblem,
     Returns:
         Tuple[np.ndarray, np.ndarray]: Exponent and constants of the expansion around the singularity.
     """
-    Jn, Mexp = _reorder_equations(prb, param)
+    Jn, Mexp = _reorder_equations(prb, param, tol=tol)
     exp = _find_exponents(Mexp)
     cte = _find_constant(Mexp, Jn, exp)
 
@@ -232,12 +232,12 @@ def findSingularities(prb: curveCouplingProblem,
     for comb in combinations:
         param0 = np.array([array_params[i] for i in reversed(comb)])
         res = optimize.root(f_opt, param0, method='hybr', tol=1e-6, jac=False)
-        if res.success and np.all(res.x >= 0.0) and np.all(res.x <= 1.0):
+        if res.success and np.all(res.x >= 0.0) and np.all(res.x <= 1.0) and np.linalg.norm(prb.computeConstraint(res.x))<tol:
             singularities.append(res.x)
 
     singularities = removeRepeats(np.array(singularities))
     out_singularities = np.array([prb.computeOutput(s) for s in singularities])
-    sing_solutions = [solveSingularity(prb, seed, tol=tol) for seed in sing_seeds]
+    sing_solutions = [solveSingularity(prb, s, tol=tol) for s in singularities]
     sing_orders, sing_dirs = zip(*sing_solutions)
     return out_singularities, singularities, sing_orders, sing_dirs
 
@@ -267,7 +267,7 @@ def findSingularities_alongRes(prb: curveCouplingProblem,
     roots = singVals_curve.roots()
     singularities = removeRepeats(res_curve(roots))
     out_singularities = np.array([prb.computeOutput(s) for s in singularities])
-    sing_solutions = [solveSingularity(prb, seed, tol=tol) for seed in sing_seeds]
+    sing_solutions = [solveSingularity(prb, s, tol=tol) for s in singularities]
     sing_orders, sing_dirs = zip(*sing_solutions)
 
     return out_singularities, singularities, sing_orders, sing_dirs
@@ -295,6 +295,8 @@ def solveWithSingularities(prb: curveCouplingProblem,
     sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities(prb, iter_points=iter_points, tol=tol)
 
     def computeTangets(orders, dirs):
+        if len(dirs)==0:
+            return np.array([])
         leading_order = np.min(orders)
         tangents = np.array([np.where(orders == leading_order, d, 0.0) for d in dirs])
         tangents /= np.linalg.norm(tangents, axis=1)[:, np.newaxis]
@@ -364,25 +366,33 @@ def solveWithIslands(prb: curveCouplingProblem,
 
 
 if __name__ == "__main__":
-    from curveGenerators import generate_curve_peaks
-    from curveCoupling import curveCouplingProblem_Equality, solveCurveCoupling_bruteForce_localSolve
+    from curveGenerators import *
+    from curveCoupling import solveCurveCoupling_bruteForce_localSolve
     from matplotlib import pyplot as plt
     from matplotlib import gridspec
+    
 
-    p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
-    p1 = np.array([[0.0, 0.0], [0.2, 0.5], [0.6, 0.2], [1.0, 1.0]])
-    p2 = np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.1],
-                   [0.7, 0.4], [0.8, 0.35], [1.0, 1.0]])
+    p0 = np.array([[0.0, 0.0], [0.55,0.6], [1.1, 0.88], [1.27, 0.72], [1.1,0.55]])
+    p0 = np.concatenate([p0, [2.0,1.0]-np.flip(p0,axis=0)])
+    p1 = np.array([[0.0, 0.0], [0.1, 0.4], [0.25, 0.64], [0.4, 0.6]])
+    p1 = np.concatenate([p1, [1.0,1.0]-np.flip(p1,axis=0)])
+    p2 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
     points = [p0, p1, p2]
-    data = [generate_curve_peaks(pts, 200) for pts in points]
-    match_index = 1
+    data = [generate_curve_CubicSpline(pts, 200) for pts in points]
 
     curves = ndcurve.createList(data)
-    prob = curveCouplingProblem_Equality(curves, 1).to_General()
+    constraint_matrices = np.zeros((len(data)-1, len(data), data[0].shape[1]))
+    output_matrices = np.zeros((data[0].shape[1], len(data), data[0].shape[1]))
+
+    constraint_matrices[0,:,0] = np.array([1.0,-1.0,-1.0])
+    constraint_matrices[1,:,1] = np.array([0.0,1.0,-1.0])
+    output_matrices[0,:,0] = np.array([1.0,0.0,0.0])
+    output_matrices[1,:,1] = np.array([1.0,1.0,0.0])
+    
+    prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
+
 
     out_lst, res_lst = solveWithIslands(prob)
-
-    out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=20)
 
     fig = plt.figure()
     plot_h = 2
@@ -405,22 +415,35 @@ if __name__ == "__main__":
     plt.pause(0.1)
     input("Press Enter")
 
-    p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
-    p1 = np.array([[0.0, 0.0], [0.2, 0.6], [0.6, 0.3], [1.0, 1.0]])
-    p2 = np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.3],
-                   [0.7, 0.5], [0.8, 0.4], [1.0, 1.0]])
 
+
+
+
+
+    p0 = np.array([[0.0, 0.0], [0.5,0.6], [1.1, 0.9], [1.35, 0.75], [1.1,0.55]])
+    p0 = np.concatenate([p0, [2.0,1.0]-np.flip(p0,axis=0)])
+    p1 = np.array([[0.0, 0.0], [0.3, 0.6], [0.7, 0.4], [1.0, 1.0]])
+    p2 = np.array([[0.0, 0.0], [0.2, 0.65], [0.35, 0.8], [0.46, 0.75], [0.43, 0.61], [0.38, 0.45], [0.6, 0.4], [0.85, 0.6], [1.0, 1.0]])
     points = [p0, p1, p2]
-    data = [generate_curve_peaks(pts, 200) for pts in points]
-    match_index = 1
+    data = [generate_curve_snaps(pts, 200) for pts in points]
 
     curves = ndcurve.createList(data)
-    prob = curveCouplingProblem_Equality(curves, 1).to_General()
+    constraint_matrices = np.zeros((len(data)-1, len(data), data[0].shape[1]))
+    output_matrices = np.zeros((data[0].shape[1], len(data), data[0].shape[1]))
+
+    constraint_matrices[0,:,0] = np.array([1.0,-1.0,-1.0])
+    constraint_matrices[1,:,1] = np.array([0.0,1.0,-1.0])
+    output_matrices[0,:,0] = np.array([1.0,0.0,0.0])
+    output_matrices[1,:,1] = np.array([1.0,1.0,0.0])
+    prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
 
     out_lst, res_lst = solveWithSingularities(prob, tol=1e-3)
-    out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=20)
-
     sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities(prob, 10)
+    for seed, order, dir in zip(sing_seeds, sing_orders, sing_dirs):
+        print(seed)
+        print(order)
+        print(dir)
+        print()
 
     fig = plt.figure()
     plot_h = 2
@@ -441,11 +464,11 @@ if __name__ == "__main__":
     for out in out_lst:
         axs[-2].plot(out[:, 0], out[:, 1])
 
-    t = np.linspace(0.0, 2e-1, 10)
+    t = np.linspace(0.0, 1e-1, 10)
     for seed, order, dirs in zip(sing_seeds, sing_orders, sing_dirs):
         for d in dirs:
             sing_res = (d[np.newaxis, :] * t[:, np.newaxis]) ** order[np.newaxis, :] + seed[np.newaxis, :]
-            axs[-1].plot(sing_res[:, 0], sing_res[:, 1], sing_res[:, 2], color='k')
+            axs[-1].plot(sing_res[:, 0], sing_res[:, 1], sing_res[:, 2], color='k', alpha=0.5)
 
     plt.pause(0.1)
     input("Press Enter")

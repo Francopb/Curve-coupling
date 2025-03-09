@@ -482,33 +482,93 @@ def solveCurveCoupling(
 if __name__ == "__main__":
     from matplotlib import pyplot as plt
     from matplotlib import gridspec
-    from curveGenerators import generate_curve_peaks
+    from curveGenerators import *
 
-    p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
-    p1 = np.array([[0.0, 0.0], [0.2, 0.5], [0.6, 0.2], [1.0, 1.0]])
-    p2 = np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.1],
-                   [0.7, 0.4], [0.8, 0.35], [1.0, 1.0]])
+    # p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
+    # p1 = np.array([[0.0, 0.0], [0.2, 0.5], [0.6, 0.2], [1.0, 1.0]])
+    # p2 = np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.1],
+    #                [0.7, 0.4], [0.8, 0.35], [1.0, 1.0]])
+    # points = [p0, p1, p2]
+    # data = [generate_curve_peaks(pts, 200) for pts in points]
+    # match_index = 1
+
+    # curves = ndcurve.createList(data)
+    # prob_eq = curveCouplingProblem_Equality(curves, match_index)
+
+    # params = np.array([0.0, 0.0, 0.0])
+    # fixed_index = 1
+    # print(prob_eq.computeConstraint(params, fixed_index))
+    # print(prob_eq.computeConstraintJac(params, fixed_index))
+    # print(prob_eq.computeOutput(params))
+
+    # prob = prob_eq.to_General(fixed_index)
+    # print(prob.computeConstraint(params))
+    # print(prob.computeConstraintJac(params))
+    # print(prob.computeOutput(params))
+
+    # out, res = solveCurveCoupling_Equality(prob_eq)
+    # out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=20)
+
+    # fig = plt.figure()
+    # plot_h = 2
+    # gs = gridspec.GridSpec(2, plot_h * len(data))
+    # axs = []
+
+    # for i in range(0, len(data)):
+    #     axs.append(fig.add_subplot(gs[0, plot_h * i:plot_h * (i + 1)]))
+    # axs.append(fig.add_subplot(gs[1, len(data):]))
+    # axs.append(fig.add_subplot(gs[1, :len(data)], projection='3d'))
+
+    # for i, d in enumerate(data):
+    #     axs[i].plot(d[:, 0], d[:, 1])
+
+    # axs[-1].plot(res[:, 0], res[:, 1], res[:, 2])
+    # axs[-1].scatter(res_brute[:, 0], res_brute[:, 1], res_brute[:, 2], color='r', marker ='.',alpha=0.1)
+
+    # axs[-2].plot(out[:, 0], out[:, 1])
+    # axs[-2].scatter(out_brute[:, 0], out_brute[:, 1], color='r', marker ='.',alpha=0.1)
+
+    # plt.pause(0.1)
+    # input("Press Enter")
+
+
+
+
+
+
+
+
+    # p0 = np.array([[0.0, 0.0], [1.0, 0.8], [1.2, 0.6], [0.8, 0.4], [1.0, 0.2], [2.0, 1.0]])
+    # p1 = np.array([[0.0, 0.0], [0.3, 0.7], [0.7, 0.3], [1.0, 1.0]])
+    # p2 = np.array([[0.0, 0.0], [0.4, 0.8], [0.5, 0.7], [0.4, 0.5], [0.6, 0.4], [1.0, 1.0]])
+
+    # For singularity
+    # p0 = np.array([[0.0, 0.0], [0.55,0.6], [1.1, 0.9], [1.25, 0.75], [1.1,0.55], [0.9,0.45], [0.75, 0.25], [0.9, 0.1], [1.45,0.4], [2.0, 1.0]])
+    # p1 = np.array([[0.0, 0.0], [0.3, 0.6], [0.7, 0.4], [1.0, 1.0]])
+    # p2 = np.array([[0.0, 0.0], [0.2, 0.65], [0.35, 0.8], [0.46, 0.75], [0.43, 0.61], [0.38, 0.45], [0.6, 0.4], [0.85, 0.6], [1.0, 1.0]])
+
+    # For island
+    p0 = np.array([[0.0, 0.0], [0.55,0.6], [1.1, 0.88], [1.27, 0.72], [1.1,0.55]])
+    p0 = np.concatenate([p0, [2.0,1.0]-np.flip(p0,axis=0)])
+    p1 = np.array([[0.0, 0.0], [0.1, 0.4], [0.25, 0.64], [0.4, 0.6]])
+    p1 = np.concatenate([p1, [1.0,1.0]-np.flip(p1,axis=0)])
+    p2 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
     points = [p0, p1, p2]
-    data = [generate_curve_peaks(pts, 200) for pts in points]
-    match_index = 1
+    data = [generate_curve_CubicSpline(pts, 200) for pts in points]
 
     curves = ndcurve.createList(data)
-    prob_eq = curveCouplingProblem_Equality(curves, match_index)
+    constraint_matrices = np.zeros((len(data)-1, len(data), data[0].shape[1]))
+    output_matrices = np.zeros((data[0].shape[1], len(data), data[0].shape[1]))
 
-    params = np.array([0.0, 0.0, 0.0])
-    fixed_index = 1
-    print(prob_eq.computeConstraint(params, fixed_index))
-    print(prob_eq.computeConstraintJac(params, fixed_index))
-    print(prob_eq.computeOutput(params))
+    constraint_matrices[0,:,0] = np.array([1.0,-1.0,-1.0])
+    constraint_matrices[1,:,1] = np.array([0.0,1.0,-1.0])
+    output_matrices[0,:,0] = np.array([1.0,0.0,0.0])
+    output_matrices[1,:,1] = np.array([1.0,1.0,0.0])
+    
+    prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
 
-    prob = prob_eq.to_General(fixed_index)
-    print(prob.computeConstraint(params))
-    print(prob.computeConstraintJac(params))
-    print(prob.computeOutput(params))
-
-    curves_all = ndcurve_matrix(curves)
-    out, res = solveCurveCoupling_Equality(prob_eq)
-    out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=20)
+    out, res = solveCurveCoupling(prob)
+    out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=10)
 
     fig = plt.figure()
     plot_h = 2
@@ -522,6 +582,7 @@ if __name__ == "__main__":
 
     for i, d in enumerate(data):
         axs[i].plot(d[:, 0], d[:, 1])
+
     axs[-1].plot(res[:, 0], res[:, 1], res[:, 2])
     axs[-1].scatter(res_brute[:, 0], res_brute[:, 1], res_brute[:, 2], color='r', marker ='.',alpha=0.1)
 
