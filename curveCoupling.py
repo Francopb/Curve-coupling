@@ -85,20 +85,27 @@ class curveCouplingProblem_Equality:
         self.curves_all = ndcurve_matrix(curves)
         self.curves_all_match_index = self.curves_all.extractIndex(match_index)
 
-    def computeConstraint_from_values(self, vals: np.ndarray, fixed_index=0) -> np.ndarray:
-        val_fixed = vals[fixed_index]
-        vals_others = np.delete(vals, fixed_index)
-        return vals_others - val_fixed
+    def computeConstraint_from_values(self, vals: np.ndarray, fixed_index: Optional[int] = None) -> np.ndarray:
+        if fixed_index is None:
+            return vals[:-1]-vals[1:]
+        else:
+            val_fixed = vals[fixed_index]
+            vals_others = np.delete(vals, fixed_index)
+            return vals_others - val_fixed
         
-    def computeConstraint(self, params: np.ndarray, fixed_index=0) -> np.ndarray:
+    def computeConstraint(self, params: np.ndarray, fixed_index: Optional[int] = None) -> np.ndarray:
         return self.computeConstraint_from_values(self.curves_all_match_index(params), fixed_index)
     
-    def computeConstraintJac(self, params, fixed_index=0, nu=1):
+    def computeConstraintJac(self, params, fixed_index: Optional[int] = None, nu=1):
         df = self.curves_all_match_index(params, nu=nu)
-        other_indices = np.delete(np.arange(self.numCurves), fixed_index)
         J_val = np.zeros([self.numCurves-1, self.numCurves])
-        J_val[np.arange(len(other_indices)), other_indices] = df[other_indices]
-        J_val[:, fixed_index] = -df[fixed_index]
+        if fixed_index is None:
+            J_val[np.arange(self.numCurves-1), np.arange(self.numCurves-1)] = df[np.arange(self.numCurves-1)]
+            J_val[np.arange(self.numCurves-1), np.arange(1,self.numCurves)] = -df[np.arange(1,self.numCurves)]
+        else:
+            other_indices = np.delete(np.arange(self.numCurves), fixed_index)
+            J_val[np.arange(self.numCurves-1), other_indices] = df[other_indices]
+            J_val[:, fixed_index] = -df[fixed_index]
         return J_val
     
     def computeTangent(self, params: np.ndarray):
@@ -112,12 +119,16 @@ class curveCouplingProblem_Equality:
     def computeOutput(self, params: np.ndarray) -> np.ndarray:
         return self.computeOutput_from_values(self.curves_all(params))
     
-    def to_General(self, fixed_index=0):
-        other_indices = np.delete(np.arange(self.numCurves), fixed_index)
-        match_index = 0 if self.match_index is None else self.match_index
+    def to_General(self, fixed_index: Optional[int] = None):
         ConstraintMatrices = np.zeros((self.numCurves-1, self.numCurves, self.Ndims))
-        ConstraintMatrices[np.arange(len(other_indices)), other_indices, match_index] = 1.0
-        ConstraintMatrices[:, fixed_index, match_index] = -1.0
+        match_index = 0 if self.match_index is None else self.match_index
+        if fixed_index is None:
+            ConstraintMatrices[np.arange(self.numCurves-1), np.arange(self.numCurves-1), match_index] = 1.0
+            ConstraintMatrices[np.arange(self.numCurves-1), np.arange(1,self.numCurves), match_index] = -1.0
+        else:
+            other_indices = np.delete(np.arange(self.numCurves), fixed_index)
+            ConstraintMatrices[np.arange(self.numCurves-1), other_indices, match_index] = 1.0
+            ConstraintMatrices[:, fixed_index, match_index] = -1.0
         return curveCouplingProblem(self.curves, ConstraintMatrices)
 
 
@@ -484,70 +495,57 @@ if __name__ == "__main__":
     from matplotlib import gridspec
     from curveGenerators import *
 
-    # p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
-    # p1 = np.array([[0.0, 0.0], [0.2, 0.5], [0.6, 0.2], [1.0, 1.0]])
-    # p2 = np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.1],
-    #                [0.7, 0.4], [0.8, 0.35], [1.0, 1.0]])
-    # points = [p0, p1, p2]
-    # data = [generate_curve_peaks(pts, 200) for pts in points]
-    # match_index = 1
+    p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
+    p1 = np.array([[0.0, 0.0], [0.2, 0.5], [0.6, 0.2], [1.0, 1.0]])
+    p2 = np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.1],
+                   [0.7, 0.4], [0.8, 0.35], [1.0, 1.0]])
+    points = [p0, p1, p2]
+    data = [generate_curve_peaks(pts, 200) for pts in points]
+    match_index = 1
 
-    # curves = ndcurve.createList(data)
-    # prob_eq = curveCouplingProblem_Equality(curves, match_index)
+    curves = ndcurve.createList(data)
+    prob_eq = curveCouplingProblem_Equality(curves, match_index)
 
-    # params = np.array([0.0, 0.0, 0.0])
-    # fixed_index = 1
-    # print(prob_eq.computeConstraint(params, fixed_index))
-    # print(prob_eq.computeConstraintJac(params, fixed_index))
-    # print(prob_eq.computeOutput(params))
+    params = np.array([0.1, 0.2, 0.3])
+    fixed_index = None
+    print(prob_eq.computeConstraint(params, fixed_index))
+    print(prob_eq.computeConstraintJac(params, fixed_index))
+    print(prob_eq.computeOutput(params))
 
-    # prob = prob_eq.to_General(fixed_index)
-    # print(prob.computeConstraint(params))
-    # print(prob.computeConstraintJac(params))
-    # print(prob.computeOutput(params))
+    prob = prob_eq.to_General(fixed_index)
+    print(prob.computeConstraint(params))
+    print(prob.computeConstraintJac(params))
+    print(prob.computeOutput(params))
 
-    # out, res = solveCurveCoupling_Equality(prob_eq)
-    # out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=20)
+    out, res = solveCurveCoupling_Equality(prob_eq)
+    out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=20)
 
-    # fig = plt.figure()
-    # plot_h = 2
-    # gs = gridspec.GridSpec(2, plot_h * len(data))
-    # axs = []
+    fig = plt.figure()
+    plot_h = 2
+    gs = gridspec.GridSpec(2, plot_h * len(data))
+    axs = []
 
-    # for i in range(0, len(data)):
-    #     axs.append(fig.add_subplot(gs[0, plot_h * i:plot_h * (i + 1)]))
-    # axs.append(fig.add_subplot(gs[1, len(data):]))
-    # axs.append(fig.add_subplot(gs[1, :len(data)], projection='3d'))
+    for i in range(0, len(data)):
+        axs.append(fig.add_subplot(gs[0, plot_h * i:plot_h * (i + 1)]))
+    axs.append(fig.add_subplot(gs[1, len(data):]))
+    axs.append(fig.add_subplot(gs[1, :len(data)], projection='3d'))
 
-    # for i, d in enumerate(data):
-    #     axs[i].plot(d[:, 0], d[:, 1])
+    for i, d in enumerate(data):
+        axs[i].plot(d[:, 0], d[:, 1])
 
-    # axs[-1].plot(res[:, 0], res[:, 1], res[:, 2])
-    # axs[-1].scatter(res_brute[:, 0], res_brute[:, 1], res_brute[:, 2], color='r', marker ='.',alpha=0.1)
+    axs[-1].plot(res[:, 0], res[:, 1], res[:, 2])
+    axs[-1].scatter(res_brute[:, 0], res_brute[:, 1], res_brute[:, 2], color='r', marker ='.',alpha=0.1)
 
-    # axs[-2].plot(out[:, 0], out[:, 1])
-    # axs[-2].scatter(out_brute[:, 0], out_brute[:, 1], color='r', marker ='.',alpha=0.1)
+    axs[-2].plot(out[:, 0], out[:, 1])
+    axs[-2].scatter(out_brute[:, 0], out_brute[:, 1], color='r', marker ='.',alpha=0.1)
 
-    # plt.pause(0.1)
-    # input("Press Enter")
-
-
+    plt.pause(0.1)
+    input("Press Enter")
 
 
 
 
 
-
-    # p0 = np.array([[0.0, 0.0], [1.0, 0.8], [1.2, 0.6], [0.8, 0.4], [1.0, 0.2], [2.0, 1.0]])
-    # p1 = np.array([[0.0, 0.0], [0.3, 0.7], [0.7, 0.3], [1.0, 1.0]])
-    # p2 = np.array([[0.0, 0.0], [0.4, 0.8], [0.5, 0.7], [0.4, 0.5], [0.6, 0.4], [1.0, 1.0]])
-
-    # For singularity
-    # p0 = np.array([[0.0, 0.0], [0.55,0.6], [1.1, 0.9], [1.25, 0.75], [1.1,0.55], [0.9,0.45], [0.75, 0.25], [0.9, 0.1], [1.45,0.4], [2.0, 1.0]])
-    # p1 = np.array([[0.0, 0.0], [0.3, 0.6], [0.7, 0.4], [1.0, 1.0]])
-    # p2 = np.array([[0.0, 0.0], [0.2, 0.65], [0.35, 0.8], [0.46, 0.75], [0.43, 0.61], [0.38, 0.45], [0.6, 0.4], [0.85, 0.6], [1.0, 1.0]])
-
-    # For island
     p0 = np.array([[0.0, 0.0], [0.55,0.6], [1.1, 0.88], [1.27, 0.72], [1.1,0.55]])
     p0 = np.concatenate([p0, [2.0,1.0]-np.flip(p0,axis=0)])
     p1 = np.array([[0.0, 0.0], [0.1, 0.4], [0.25, 0.64], [0.4, 0.6]])
