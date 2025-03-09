@@ -45,7 +45,7 @@ def generate_curve_Pchip(
     spline = interpolate.PchipInterpolator(t, points, axis=0)
 
     # Generate evenly spaced x values and interpolate y values
-    t_new = np.linspace(points[0, 0], points[-1, 0], num_points)
+    t_new = np.linspace(0.0, 1.0, num_points)
     return spline(t_new)
 
 def generate_curve_peaks(
@@ -117,7 +117,7 @@ def generate_curve_snaps(
     spline = [interpolate.BPoly.from_derivatives(t, d) for d in data]
 
     # Generate evenly spaced x values and interpolate y values
-    t_new = np.linspace(points[0, 0], points[-1, 0], num_points)
+    t_new = np.linspace(0.0, 1.0, num_points)
     v_new = [s(t_new) for s in spline]
 
     # Return the list of (x, y) points
