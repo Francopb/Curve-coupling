@@ -164,13 +164,13 @@ def findSnapPoints(curves: Union[ndcurve, List[ndcurve]]) -> List[criticalPoint]
     return snapPoints
 
 
-def __detectSingularities_critPoints_pair(
+def __findSingularities_critPoints_pair(
     critPoints1: List[criticalPoint],
     critPoints2: List[criticalPoint],
     tol: float = 1e-6
 ) -> Tuple[List[float], List[Tuple[int, int]]]:
     """
-    Detect singularities between the critical points of two curves.
+    Find singularities between the critical points of two curves.
 
     Args:
         critPoints1 (List[criticalPoint]): Critical points of the first curve.
@@ -196,12 +196,12 @@ def __detectSingularities_critPoints_pair(
     return singularity_res, singularity_idx
 
 
-def __detectSingularities_critPoints_mult(
+def __findSingularities_critPoints_mult(
     critPoints_lst: List[List[criticalPoint]],
     tol: float = 1e-6
 ) -> Tuple[List[float], List[Tuple[int, ...]]]:
     """
-    Detect singularities between the critical points of two or more curves.
+    Find singularities between the critical points of two or more curves.
 
     Args:
         critPoints_lst (List[List[criticalPoint]]): Critical points of the curves.
@@ -212,14 +212,14 @@ def __detectSingularities_critPoints_mult(
     """
     assert len(critPoints_lst) > 1, "At least two curves necessary"
     if len(critPoints_lst) == 2:
-        return __detectSingularities_critPoints_pair(critPoints_lst[0], critPoints_lst[1], tol)
+        return __findSingularities_critPoints_pair(critPoints_lst[0], critPoints_lst[1], tol)
 
     combs_curves = itertools.combinations(range(len(critPoints_lst)), 2)
 
     singularity_res = []
     singularity_idx = []
     for i1, i2 in combs_curves:
-        singularity_res_pair, singularity_idx_pair = __detectSingularities_critPoints_pair(
+        singularity_res_pair, singularity_idx_pair = __findSingularities_critPoints_pair(
             critPoints_lst[i1], critPoints_lst[i2], tol)
         for int_res_pair, int_indices_pair in zip(singularity_res_pair, singularity_idx_pair):
             n_input = []
@@ -255,7 +255,7 @@ def __detectSingularities_critPoints_mult(
     return singularity_res, singularity_idx
 
 
-def detectSingularities(
+def findSingularities_Equality(
     prb: curveCouplingProblem_Equality,
     tol: float = 1e-6
 ) -> Tuple[np.ndarray, np.ndarray, List[int], List[np.ndarray]]:
@@ -271,7 +271,7 @@ def detectSingularities(
     """
 
     criticalPoints = findCriticalPoints(prb.curves, analyze_index=prb.match_index)
-    singularity_res, singularity_idx = __detectSingularities_critPoints_mult(
+    singularity_res, singularity_idx = __findSingularities_critPoints_mult(
         criticalPoints, tol=tol)
 
     def analyzeSingularity(singularity_res, singularity_idx):
@@ -344,7 +344,7 @@ def detectSingularities(
 
     return np.array(output_vec), np.array(param_vec), order_vec, dirs_vec
 
-def solveWithSingularities(prb: curveCouplingProblem_Equality,
+def solveWithSingularities_Equality(prb: curveCouplingProblem_Equality,
     tol: float = 1e-6,
     d_step: float = 5e-2,
 ) -> Tuple[np.ndarray, np.ndarray, List[int], List[np.ndarray]]:
@@ -362,7 +362,7 @@ def solveWithSingularities(prb: curveCouplingProblem_Equality,
     from curveCoupling import solveCurveCoupling_Equality
     from auxFunc import remove_repeat_sets
 
-    sing_outs, sing_seeds, sing_orders, sing_dirs = detectSingularities(prob, tol=tol)
+    sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities_Equality(prob, tol=tol)
     def computeTangets(orders, dirs):
         leading_order = np.min(orders)
         tangents = np.array([np.where(orders==leading_order,d, 0.0) for d in dirs])
@@ -394,13 +394,13 @@ def solveWithSingularities(prb: curveCouplingProblem_Equality,
         out_lst.pop(idx)
     return out_lst, res_lst
 
-def __detectIslands_critPoints_pair(
+def __findIslands_critPoints_pair(
     critPoints1: List[criticalPoint],
     critPoints2: List[criticalPoint],
     tol: float = -1e-6
 ) -> Tuple[List[Tuple[float, float]], List[Tuple[Tuple[int, int], Tuple[int, int]]]]:
     """
-    Detect islands between the critical points of two curves.
+    Find islands between the critical points of two curves.
 
     Args:
         critPoints1 (List[criticalPoint]): Critical points of the first curve, its value, and the sign of second derivative.
@@ -411,7 +411,7 @@ def __detectIslands_critPoints_pair(
         Tuple[List[Tuple[float, float]], List[Tuple[Tuple[int, int], Tuple[int, int]]]]: List of intersections and their indices.
     """
 
-    def detectIslands_critPoints_single(crit1: criticalPoint, crit2: criticalPoint) -> Optional[Tuple[float, float]]:
+    def findIslands_critPoints_single(crit1: criticalPoint, crit2: criticalPoint) -> Optional[Tuple[float, float]]:
         # If crit points have same type (or zero), no intersection
         if not crit1.opositeType(crit2):
             return None
@@ -473,7 +473,7 @@ def __detectIslands_critPoints_pair(
         for i2, crit2 in enumerate(critPoints2):
             if crit2.getType() is None:
                 continue
-            intersection = detectIslands_critPoints_single(crit1, crit2)
+            intersection = findIslands_critPoints_single(crit1, crit2)
             if intersection is not None:
                 # Check points to see total range
                 flag_correct = True
@@ -501,12 +501,12 @@ def __detectIslands_critPoints_pair(
     return intersections_res, intersections_indices
 
 
-def __detectIslands_critPoints_mult(
+def __findIslands_critPoints_mult(
     critPoints_lst: List[List[criticalPoint]],
     tol: float = -1e-6
 ) -> Tuple[List[Tuple[float, float]], List[Tuple[Tuple[int, int], Tuple[int, int]]]]:
     """
-    Detect islands between the critical points of two or more curves.
+    Find islands between the critical points of two or more curves.
 
     Args:
         critPoints_lst (List[List[criticalPoint]]): Critical points of the curves.
@@ -517,13 +517,13 @@ def __detectIslands_critPoints_mult(
     """
     assert len(critPoints_lst) > 1, "At least two curves necessary"
     if len(critPoints_lst) == 2:
-        return __detectIslands_critPoints_pair(critPoints_lst[0], critPoints_lst[1], tol)
+        return __findIslands_critPoints_pair(critPoints_lst[0], critPoints_lst[1], tol)
 
     combs_curves = itertools.combinations(range(len(critPoints_lst)), 2)
     intersections_res = []
     intersections_indices = []
     for i1, i2 in combs_curves:
-        intersections_res_pair, intersections_indices_pair = __detectIslands_critPoints_pair(
+        intersections_res_pair, intersections_indices_pair = __findIslands_critPoints_pair(
             critPoints_lst[i1], critPoints_lst[i2], tol)
         for int_res_pair, int_indices_pair in zip(intersections_res_pair, intersections_indices_pair):
             n_input = []
@@ -566,7 +566,7 @@ def __detectIslands_critPoints_mult(
     return intersections_res, intersections_indices
 
 
-def detectIslands(
+def findIslands_Equality(
     prb: curveCouplingProblem_Equality,
     tol: float = -1e-6
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -582,7 +582,7 @@ def detectIslands(
     """
 
     criticalPoints = findCriticalPoints(prb.curves, analyze_index=prb.match_index)
-    intersections, indices = __detectIslands_critPoints_mult(
+    intersections, indices = __findIslands_critPoints_mult(
         criticalPoints, tol=tol)
 
     def getRangeCritPoints(tgt_value: float, critPoints: List[criticalPoint], indices: range) -> Optional[Tuple[float, float]]:
@@ -615,7 +615,7 @@ def detectIslands(
 
     return np.array(output_res), np.array(param_res), np.array(initial_dir)
 
-def solveWithIslands(prb: curveCouplingProblem_Equality,
+def solveWithIslands_Equality(prb: curveCouplingProblem_Equality,
     tol: float = -1e-6,
 ) -> Tuple[np.ndarray, np.ndarray, List[int], List[np.ndarray]]:
     """
@@ -630,7 +630,7 @@ def solveWithIslands(prb: curveCouplingProblem_Equality,
     """
     from curveCoupling import solveCurveCoupling_Equality
 
-    _, islands_seeds, islands_dirs = detectIslands(prob, tol=tol)
+    _, islands_seeds, islands_dirs = findIslands_Equality(prob, tol=tol)
 
     out, res = solveCurveCoupling_Equality(prob)
     res_lst = [res]
@@ -647,7 +647,7 @@ if __name__ == "__main__":
     from matplotlib import pyplot as plt
     from matplotlib import gridspec
     from curveGenerators import generate_curve_peaks
-    from curveCoupling import solveCurveCoupling_Equality, solveCurveCoupling_bruteForce_localSolve
+    from curveCoupling import solveCurveCoupling_bruteForce_localSolve
 
     p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
     p1 = np.array([[0.0, 0.0], [0.2, 0.5], [0.6, 0.2], [1.0, 1.0]])
@@ -660,9 +660,9 @@ if __name__ == "__main__":
     curves = ndcurve.createList(data)
     prob = curveCouplingProblem_Equality(curves,1)
 
-    islands_out, islands_seeds, islands_dirs = detectIslands(prob)
+    islands_out, islands_seeds, islands_dirs = findIslands_Equality(prob)
 
-    out_lst, res_lst = solveWithIslands(prob)
+    out_lst, res_lst = solveWithIslands_Equality(prob)
 
     out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=20)
 
@@ -709,9 +709,9 @@ if __name__ == "__main__":
     curves = ndcurve.createList(data)
     prob = curveCouplingProblem_Equality(curves,1)
 
-    sing_out, sing_seeds, sing_orders, sing_dirs = detectSingularities(prob, tol=1e-3)
+    sing_out, sing_seeds, sing_orders, sing_dirs = findSingularities_Equality(prob, tol=1e-3)
 
-    out_lst, res_lst = solveWithSingularities(prob, tol=1e-3)
+    out_lst, res_lst = solveWithSingularities_Equality(prob, tol=1e-3)
 
     out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=20)
 

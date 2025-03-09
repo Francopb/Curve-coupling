@@ -203,13 +203,15 @@ def solveSingularity(prb: curveCouplingProblem,
 
 
 def findSingularities(prb: curveCouplingProblem,
-                      iter_points: int = 100) -> Tuple[np.ndarray, np.ndarray]:
+                      iter_points: int = 100,
+                      tol: float = 1e-2) -> Tuple[np.ndarray, np.ndarray]:
     """
     Find singularities.
 
     Args:
         prb (curveCouplingProblem): The curve coupling problem instance.
         iter_points (int): Number of iteration points.
+        tol (float): Tolerance.
 
     Returns:
         Tuple[np.ndarray, np.ndarray]: Found singularities and their outputs.
@@ -235,17 +237,21 @@ def findSingularities(prb: curveCouplingProblem,
 
     singularities = removeRepeats(np.array(singularities))
     out_singularities = np.array([prb.computeOutput(s) for s in singularities])
-    return out_singularities, singularities
+    sing_solutions = [solveSingularity(prb, seed, tol=tol) for seed in sing_seeds]
+    sing_orders, sing_dirs = zip(*sing_solutions)
+    return out_singularities, singularities, sing_orders, sing_dirs
 
 
 def findSingularities_alongRes(prb: curveCouplingProblem,
-                               res: np.ndarray) -> np.ndarray:
+                               res: np.ndarray,
+                               tol: float = 1e-2) -> np.ndarray:
     """
     Find singularities along a solution curve.
 
     Args:
         prb (curveCouplingProblem): The curve coupling problem instance.
         res (np.ndarray): Parametric solution curve.
+        tol (float): Tolerance.
 
     Returns:
         np.ndarray: Found singularities.
@@ -259,11 +265,16 @@ def findSingularities_alongRes(prb: curveCouplingProblem,
     singVals_curve = ndcurve(singVals)
     res_curve = ndcurve(res)
     roots = singVals_curve.roots()
+    singularities = removeRepeats(res_curve(roots))
+    out_singularities = np.array([prb.computeOutput(s) for s in singularities])
+    sing_solutions = [solveSingularity(prb, seed, tol=tol) for seed in sing_seeds]
+    sing_orders, sing_dirs = zip(*sing_solutions)
 
-    return removeRepeats(res_curve(roots))
+    return out_singularities, singularities, sing_orders, sing_dirs
 
 
 def solveWithSingularities(prb: curveCouplingProblem,
+                           iter_points = 10,
                            tol: float = 1e-2,
                            d_step: float = 5e-2) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """
@@ -271,6 +282,7 @@ def solveWithSingularities(prb: curveCouplingProblem,
 
     Args:
         prb (curveCouplingProblem): The curve coupling problem instance.
+        iter_points (int): Number of iteration points.
         tol (float): Tolerance.
         d_step (float): Step from singularity.
 
@@ -280,9 +292,7 @@ def solveWithSingularities(prb: curveCouplingProblem,
     from curveCoupling import solveCurveCoupling
     from auxFunc import remove_repeat_sets
 
-    sing_outs, sing_seeds = findSingularities(prb, 20)
-    sing_solutions = [solveSingularity(prb, seed, tol=tol) for seed in sing_seeds]
-    sing_orders, sing_dirs = zip(*sing_solutions)
+    sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities(prb, iter_points=iter_points, tol=tol)
 
     def computeTangets(orders, dirs):
         leading_order = np.min(orders)
@@ -316,12 +326,15 @@ def solveWithSingularities(prb: curveCouplingProblem,
     return out_lst, res_lst
 
 
-def solveWithIslands(prb: curveCouplingProblem) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+def solveWithIslands(prb: curveCouplingProblem,
+                    iter_points = 10,
+) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """
     Finds the curve coupling considering islands.
 
     Args:
         prb (curveCouplingProblem): The curve coupling problem instance.
+        iter_points (int): Number of iteration points.
 
     Returns:
         Tuple[List[np.ndarray], List[np.ndarray]]: Output curves and results in parametric space.
@@ -337,7 +350,7 @@ def solveWithIslands(prb: curveCouplingProblem) -> Tuple[List[np.ndarray], List[
         dists = [min_dist_point_to_set(x, r) for r in res_lst]
         return min(dists)
 
-    _, res_brute = solveCurveCoupling_bruteForce_localSolve(prb, iter_points=20)
+    _, res_brute = solveCurveCoupling_bruteForce_localSolve(prb, iter_points=iter_points)
     for r in res_brute:
         if minDist(r) > 0.01:
             out, res = solveCurveCoupling(prb, param_start=r, stop_circulation=True)
@@ -407,9 +420,7 @@ if __name__ == "__main__":
     out_lst, res_lst = solveWithSingularities(prob, tol=1e-3)
     out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=20)
 
-    sing_outs, sing_seeds = findSingularities(prob, 10)
-    sing_solutions = [solveSingularity(prob, seed) for seed in sing_seeds]
-    sing_orders, sing_dirs = zip(*sing_solutions)
+    sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities(prob, 10)
 
     fig = plt.figure()
     plot_h = 2
