@@ -1,0 +1,79 @@
+import numpy as np
+from matplotlib import (pyplot as plt, gridspec, ticker)
+from typing import List, Optional
+
+def plotResults(data: np.ndarray,
+                out_lst: List[np.ndarray],
+                res_lst: List[np.ndarray],
+                out_brute: Optional[np.ndarray] = None,
+                res_brute: Optional[np.ndarray] = None):
+    
+    numCurves = len(data)
+    fig = plt.figure()
+    plot_h = 2
+    gs = gridspec.GridSpec(2, plot_h * numCurves)
+    axs = []
+
+    for i in range(0, numCurves):
+        axs.append(fig.add_subplot(gs[0, plot_h * i:plot_h * (i + 1)]))
+    axs.append(fig.add_subplot(gs[1, numCurves:]))
+    if numCurves == 2:
+        axs.append(fig.add_subplot(gs[1, :numCurves]))
+    elif numCurves == 3:
+        axs.append(fig.add_subplot(gs[1, :numCurves], projection='3d'))
+    fig.tight_layout(pad=2, h_pad=2, w_pad=2)
+
+    for i, d in enumerate(data):
+        axs[i].plot(d[:, 0], d[:, 1])
+        axs[i].set_title("Curve "+str(i))
+        
+        x_min, x_max = np.min(d[:, 0]), np.max(d[:, 0])
+        y_min, y_max = np.min(d[:, 1]), np.max(d[:, 1])
+        
+        axs[i].set_xlim([x_min, x_max])
+        axs[i].set_ylim([y_min, y_max])
+        
+        axs[i].xaxis.set_major_locator(ticker.LinearLocator(3))
+        axs[i].yaxis.set_major_locator(ticker.LinearLocator(3))
+
+    if numCurves == 2:
+        for res in res_lst:
+            axs[-1].plot(res[:, 0], res[:, 1])
+
+        if res_brute is not None:
+            axs[-1].scatter(res_brute[:, 0], res_brute[:, 1], color='r', marker ='.',alpha=0.1)
+
+        axs[-1].set_title("Parametric space")
+        axs[-1].set_xlim([0.0,1.0])
+        axs[-1].set_ylim([0.0,1.0])
+        axs[-1].xaxis.set_major_locator(ticker.LinearLocator(3))
+        axs[-1].yaxis.set_major_locator(ticker.LinearLocator(3))
+    elif numCurves == 3:
+        for res in res_lst:
+            axs[-1].plot(res[:, 0], res[:, 1], res[:, 2])
+
+        if res_brute is not None:
+            axs[-1].scatter(res_brute[:, 0], res_brute[:, 1], res_brute[:, 2], color='r', marker ='.',alpha=0.1)
+
+        axs[-1].set_title("Parametric space")
+        axs[-1].set_xlim([0.0,1.0])
+        axs[-1].set_ylim([0.0,1.0])
+        axs[-1].set_zlim([0.0,1.0])
+        axs[-1].xaxis.set_major_locator(ticker.LinearLocator(3))
+        axs[-1].yaxis.set_major_locator(ticker.LinearLocator(3))
+        axs[-1].zaxis.set_major_locator(ticker.LinearLocator(3))
+
+    for out in out_lst:
+        axs[-2].plot(out[:, 0], out[:, 1])
+    if out_brute is not None:
+        axs[-2].scatter(out_brute[:, 0], out_brute[:, 1], color='r', marker ='.',alpha=0.1)
+
+    out_x_min, out_x_max = np.min([np.min(out[:, 0]) for out in out_lst]), np.max([np.max(out[:, 0]) for out in out_lst])
+    out_y_min, out_y_max = np.min([np.min(out[:, 1]) for out in out_lst]), np.max([np.max(out[:, 1]) for out in out_lst])
+
+    axs[-2].set_title("Result curve")
+    axs[-2].set_xlim([out_x_min, out_x_max])
+    axs[-2].set_ylim([out_y_min, out_y_max])
+    axs[-2].xaxis.set_major_locator(ticker.LinearLocator(3))
+    axs[-2].yaxis.set_major_locator(ticker.LinearLocator(3))
+    plt.show(block=False)
