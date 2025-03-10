@@ -70,11 +70,6 @@ class curveCouplingProblem:
         else:
             return np.einsum('ijk,jk->ij', self.ConstraintMatrices, vals)
     
-    def computeTangent(self, params: np.ndarray):
-        J = self.computeConstraintJac(params)
-        nullspace = my_null_space(J)
-        return nullspace[:,0]
-    
     def computeOutput_from_values(self, vals: np.ndarray) -> np.ndarray:
         if self.Ndims == 0:
             return np.einsum('ij,j->i', self.OutputMatrices, vals)+self.OutputConstantVector
@@ -123,11 +118,6 @@ class curveCouplingProblem_Equality:
             J_val[np.arange(self.numCurves-1), other_indices] = df[other_indices]
             J_val[:, fixed_index] = -df[fixed_index]
         return J_val
-    
-    def computeTangent(self, params: np.ndarray):
-        J = self.computeConstraintJac(params)
-        nullspace = my_null_space(J)
-        return nullspace[:,0]
     
     def computeOutput_from_values(self, vals: np.ndarray) -> np.ndarray:
         return np.mean(vals, axis=0)
@@ -426,7 +416,9 @@ def solveCurveCoupling(
         return res.x
 
     def computeTangent(params: np.ndarray, prev_dir: np.ndarray) -> np.ndarray:
-        tangent = prb.computeTangent(params)
+        J = prb.computeConstraintJac(params)
+        nullspace = my_null_space(J)
+        tangent = nullspace[:,0]
         if np.dot(prev_dir, tangent) < 0:
             tangent *= -1.0
         return tangent
@@ -453,7 +445,7 @@ def solveCurveCoupling(
     if initial_dir is None:
         direction_0 = computeTangent(param_prev, np.ones(prb.numCurves))
     else:
-        direction_0 = initial_dir
+        direction_0 = computeTangent(param_prev, direction_0)
 
     step = step_0
     param_guess = param_prev + direction_0 * step * guess_factor

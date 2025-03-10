@@ -294,7 +294,7 @@ def solveWithSingularities(prb: curveCouplingProblem,
 
     sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities(prb, iter_points=iter_points, tol=tol)
 
-    def computeTangets(orders, dirs):
+    def computeTangents(orders, dirs):
         if len(dirs)==0:
             return np.array([])
         leading_order = np.min(orders)
@@ -302,7 +302,7 @@ def solveWithSingularities(prb: curveCouplingProblem,
         tangents /= np.linalg.norm(tangents, axis=1)[:, np.newaxis]
         return tangents
 
-    sing_tangents = [computeTangets(o, d) for o, d in zip(sing_orders, sing_dirs)]
+    sing_tangents = [computeTangents(o, d) for o, d in zip(sing_orders, sing_dirs)]
 
     out, res = solveCurveCoupling(prb, param_stop=sing_seeds)
     out_lst = [out]

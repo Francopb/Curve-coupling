@@ -363,13 +363,13 @@ def solveWithSingularities_Equality(prb: curveCouplingProblem_Equality,
     from auxFunc import remove_repeat_sets
 
     sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities_Equality(prob, tol=tol)
-    def computeTangets(orders, dirs):
+    def computeTangents(orders, dirs):
         leading_order = np.min(orders)
         tangents = np.array([np.where(orders==leading_order,d, 0.0) for d in dirs])
         tangents /= np.linalg.norm(tangents,axis=1)[:,np.newaxis]
         return tangents
 
-    sing_tangents = [computeTangets(o, d) for o,d in zip (sing_orders, sing_dirs)]
+    sing_tangents = [computeTangents(o, d) for o,d in zip (sing_orders, sing_dirs)]
 
     out, res = solveCurveCoupling_Equality(prb, param_stop=sing_seeds) 
     out_lst = [out]
