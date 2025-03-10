@@ -323,7 +323,7 @@ def solveCurveCoupling_Equality(
 def solveCurveCoupling(
     prb: curveCouplingProblem,
     param_start: Optional[np.ndarray] = None,
-    param_final: Optional[np.ndarray] = None,
+    param_range: Optional[np.ndarray] = None,
     param_stop: Optional[np.ndarray] = None,
     stop_circulation: bool = False,
     initial_dir: Optional[np.ndarray] = None,
@@ -345,7 +345,7 @@ def solveCurveCoupling(
     Args:
         prb (curveCouplingProblem): The curve coupling problem instance.
         param_start (Optional[np.ndarray]): Initial parameters.
-        param_final (Optional[np.ndarray]): Final parameters.
+        param_range (Optional[np.ndarray]): Min and Max parameters (stop if exit this range).
         param_stop (Optional[np.ndarray]): Stop if get close to one of these parameters.
         stop_circulation (bool): Whether to stop if get close to initial point.
         initial_dir (Optional[np.ndarray]): Initial direction.
@@ -362,11 +362,13 @@ def solveCurveCoupling(
     """
     if param_start is None:
         param_start = np.zeros(prb.numCurves, dtype=float)
-    if param_final is None:
-        param_final = np.ones(prb.numCurves, dtype=float)
+    if param_range is None:
+        param_range = np.stack([np.zeros(prb.numCurves, dtype=float),np.ones(prb.numCurves, dtype=float)], axis=0)
 
+    
     assert param_start.size == prb.numCurves, "Initial params must have the same number of values as curves"
-    assert param_final.size == prb.numCurves, "Final params must have the same number of values as curves"
+    assert param_range.shape[0] == 2, "Params range must have a minimum and maximum value"
+    assert param_range.shape[1] == prb.numCurves, "Params range must have the same number of values as curves"
     assert step_min <= step_max, "step_min should be less than or equal to step_max"
 
     if param_stop is not None:
@@ -460,7 +462,7 @@ def solveCurveCoupling(
     flag_stop = False
     it = 0
 
-    while np.all(param_prev < param_final) and it < it_max:
+    while it < it_max and np.all(param_prev <= param_range[1]) and np.all(param_prev >= param_range[0]):
         try:
             it += 1
             param = solveMult(param_guess, param_prev, step)
@@ -522,7 +524,7 @@ if __name__ == "__main__":
     print("Out", prob.computeOutput(params))
 
     out, res = solveCurveCoupling_Equality(prob_eq)
-    out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=20)
+    out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=10)
 
     fig = plt.figure()
     plot_h = 2

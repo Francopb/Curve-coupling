@@ -375,7 +375,6 @@ def solveWithSingularities_Equality(prb: curveCouplingProblem_Equality,
     out_lst = [out]
     res_lst = [res]
 
-    param_stop = np.concatenate([sing_seeds,[np.zeros(prb.numCurves),np.ones(prb.numCurves)]],axis=0)
     for sing_out, seed, order, dirs, tangents in zip(sing_outs, sing_seeds, sing_orders, sing_dirs, sing_tangents):
         for d, t in zip(dirs, tangents):
             def f_opt(a):
@@ -383,7 +382,7 @@ def solveWithSingularities_Equality(prb: curveCouplingProblem_Equality,
             factor = optimize.fsolve(f_opt,1.0)
             d_res = (factor * d) ** order
             sing_res = d_res + seed
-            out, res = solveCurveCoupling_Equality(prb, param_start=sing_res, param_stop=param_stop, initial_dir=t,it_max=5000) 
+            out, res = solveCurveCoupling_Equality(prb, param_start=sing_res, param_stop=sing_seeds, initial_dir=t,it_max=5000) 
             out = np.concatenate([[sing_out], out],axis=0)
             res = np.concatenate([[seed], res],axis=0)
             out_lst.append(out)
@@ -664,7 +663,7 @@ if __name__ == "__main__":
 
     out_lst, res_lst = solveWithIslands_Equality(prob)
 
-    out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=20)
+    out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=10)
 
     fig = plt.figure()
     plot_h = 2
@@ -713,7 +712,7 @@ if __name__ == "__main__":
 
     out_lst, res_lst = solveWithSingularities_Equality(prob, tol=1e-3)
 
-    out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=20)
+    out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=10)
 
     fig = plt.figure()
     plot_h = 2

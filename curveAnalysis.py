@@ -308,7 +308,6 @@ def solveWithSingularities(prb: curveCouplingProblem,
     out_lst = [out]
     res_lst = [res]
 
-    param_stop = np.concatenate([sing_seeds, [np.zeros(prb.numCurves), np.ones(prb.numCurves)]], axis=0)
     for sing_out, seed, order, dirs, tangents in zip(sing_outs, sing_seeds, sing_orders, sing_dirs, sing_tangents):
         for d, t in zip(dirs, tangents):
             def f_opt(a):
@@ -316,7 +315,7 @@ def solveWithSingularities(prb: curveCouplingProblem,
             factor = optimize.fsolve(f_opt, 1.0)
             d_res = (factor * d) ** order
             sing_res = d_res + seed
-            out, res = solveCurveCoupling(prb, param_start=sing_res, param_stop=param_stop, initial_dir=t, it_max=5000)
+            out, res = solveCurveCoupling(prb, param_start=sing_res, param_stop=sing_seeds, initial_dir=t, it_max=5000)
             out = np.concatenate([[sing_out], out], axis=0)
             res = np.concatenate([[seed], res], axis=0)
             out_lst.append(out)
@@ -439,11 +438,6 @@ if __name__ == "__main__":
 
     out_lst, res_lst = solveWithSingularities(prob, tol=1e-3)
     sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities(prob, 10)
-    for seed, order, dir in zip(sing_seeds, sing_orders, sing_dirs):
-        print(seed)
-        print(order)
-        print(dir)
-        print()
 
     fig = plt.figure()
     plot_h = 2
