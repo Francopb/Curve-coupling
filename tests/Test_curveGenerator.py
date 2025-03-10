@@ -15,9 +15,11 @@ axs = fig.subplots(1,2)
 
 for d in data0:
     axs[0].plot(d[:,0],d[:,1])
+axs[0].scatter(p0[:,0],p0[:,1], color='k')
 
 for d in data1:
     axs[1].plot(d[:,0],d[:,1])
+axs[1].scatter(p1[:,0],p1[:,1], color='k')
 
 plt.pause(0.1)
 input("Press Enter")
