@@ -315,7 +315,8 @@ def solveCurveCoupling(
     param_start: Optional[np.ndarray] = None,
     param_range: Optional[np.ndarray] = None,
     param_stop: Optional[np.ndarray] = None,
-    stop_circulation: bool = False,
+    stop_circulation: bool = True,
+    check_backward_dir: bool = True,
     initial_dir: Optional[np.ndarray] = None,
     solve_init: _INITIAL_OPT = "min_dist",
     step_0: float = 0.0025,
@@ -338,6 +339,7 @@ def solveCurveCoupling(
         param_range (Optional[np.ndarray]): Min and Max parameters (stop if exit this range).
         param_stop (Optional[np.ndarray]): Stop if get close to one of these parameters.
         stop_circulation (bool): Whether to stop if get close to initial point.
+        check_backward_dir (bool): Whether to also look back from initial point.
         initial_dir (Optional[np.ndarray]): Initial direction.
         solve_init (_INITIAL_OPT): Which solver to use initially.
         step_0 (float): Initial step size.
@@ -371,6 +373,8 @@ def solveCurveCoupling(
 
     if initial_dir is not None:
         assert initial_dir.size == prb.numCurves, "Initial_dir must have the same number of values as curves"
+
+    stopped_by_circulation = False
 
     def updateStep(direction: np.ndarray, direction_0: np.ndarray, step: float) -> float:
         corr = np.dot(direction, direction_0)
@@ -437,15 +441,14 @@ def solveCurveCoupling(
         if param_stop is None:
             param_stop = param_prev.reshape((1, -1))
         else:
-            param_stop = np.vstack([param_stop, param_prev])
+            param_stop = np.vstack([param_prev, param_prev])
 
     Res = [param_prev]
     Output = [prb.computeOutput(param_prev)]
 
     if initial_dir is None:
-        direction_0 = computeTangent(param_prev, np.ones(prb.numCurves))
-    else:
-        direction_0 = computeTangent(param_prev, initial_dir)
+        initial_dir = np.ones(prb.numCurves)
+    direction_0 = computeTangent(param_prev, initial_dir)
 
     step = step_0
     param_guess = param_prev + direction_0 * step * guess_factor
@@ -460,15 +463,17 @@ def solveCurveCoupling(
             param = solveMult(param_guess, param_prev, step)
 
             if param_stop is not None:
-                aux_vals = [(np.linalg.norm(param - p_stop), p_stop)
-                            for p_stop in param_stop]
-                dist_stop, close_param_stop = min(aux_vals, key=lambda x: x[0])
+                aux_vals = [(np.linalg.norm(param - p_stop), p_stop, i)
+                            for i, p_stop in enumerate(param_stop)]
+                dist_stop, close_param_stop, close_param_stop_idx = min(aux_vals, key=lambda x: x[0])
                 if dist_stop > dist_stop_max:
                     dist_stop_max = dist_stop
                 else:
                     if dist_stop < step:
                         param = close_param_stop
                         flag_stop = True
+                        if stop_circulation and close_param_stop_idx == 0:
+                            stopped_by_circulation = True
 
             Res.append(param)
             Output.append(prb.computeOutput(param))
@@ -486,4 +491,8 @@ def solveCurveCoupling(
             print(f"Exception: {e}")
             break
 
+    
+    if not stopped_by_circulation and check_backward_dir:
+        rev_output, rev_res = solveCurveCoupling(prb, param_start, param_range, param_stop, stop_circulation, False, -initial_dir, solve_init, step_0, step_min, step_max, guess_factor, tolerance, it_max)
+        return np.concatenate([np.flip(rev_output[1:], axis=0), Output], axis=0), np.concatenate([np.flip(rev_res[1:], axis=0), Res], axis=0)
     return np.array(Output), np.array(Res)
