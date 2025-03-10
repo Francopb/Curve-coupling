@@ -445,7 +445,7 @@ def solveCurveCoupling(
     if initial_dir is None:
         direction_0 = computeTangent(param_prev, np.ones(prb.numCurves))
     else:
-        direction_0 = computeTangent(param_prev, direction_0)
+        direction_0 = computeTangent(param_prev, initial_dir)
 
     step = step_0
     param_guess = param_prev + direction_0 * step * guess_factor

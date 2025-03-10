@@ -257,7 +257,7 @@ def findSingularities_Equality(
                 slope = prb.curves_match_index[i](param, nu=1)
 
                 params.append(param)
-                outputs.append(curves[i](param))
+                outputs.append(prb.curves[i](param))
                 denominators.append(1)
                 constants.append(slope)
             else:
@@ -328,7 +328,7 @@ def solveWithSingularities_Equality(prb: curveCouplingProblem_Equality,
     from curveCoupling import solveCurveCoupling_Equality
     from auxFunc import remove_repeat_sets
 
-    sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities_Equality(prob, tol=tol)
+    sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities_Equality(prb, tol=tol)
     def computeTangents(orders, dirs):
         leading_order = np.min(orders)
         tangents = np.array([np.where(orders==leading_order,d, 0.0) for d in dirs])
@@ -571,7 +571,7 @@ def findIslands_Equality(
         params = tuple([a.root for a in opt_res])
         param_res.append(params)
         output_res.append(np.mean([f(b)
-                                   for f, b in zip(curves, params)], axis=0))
+                                   for f, b in zip(prb.curves, params)], axis=0))
         slopes = [f(p, nu=1) for f, p in zip(prb.curves_match_index, params)]
         new_dir = np.array([np.prod([sl for j, sl in enumerate(slopes) if j != i])
                             for i in range(len(slopes))])
@@ -595,14 +595,14 @@ def solveWithIslands_Equality(prb: curveCouplingProblem_Equality,
     """
     from curveCoupling import solveCurveCoupling_Equality
 
-    _, islands_seeds, islands_dirs = findIslands_Equality(prob, tol=tol)
+    _, islands_seeds, islands_dirs = findIslands_Equality(prb, tol=tol)
 
-    out, res = solveCurveCoupling_Equality(prob)
+    out, res = solveCurveCoupling_Equality(prb)
     res_lst = [res]
     out_lst = [out]
 
     for s, d in zip(islands_seeds, islands_dirs):
-        out, res = solveCurveCoupling_Equality(prob, param_start=s, stop_circulation=True, initial_dir=d)
+        out, res = solveCurveCoupling_Equality(prb, param_start=s, stop_circulation=True, initial_dir=d)
         res_lst.append(res)
         out_lst.append(out)
 

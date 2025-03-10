@@ -3,7 +3,7 @@ from typing import *
 from curveInterpExtrapFunc import ndcurve
 from curveAnalysis_critPoints import findCriticalPoints
 from auxFunc import my_null_space
-from curveCoupling import curveCouplingProblem
+from curveCoupling import curveCouplingProblem, curveCouplingProblem_Equality
 from graphAnalysis import matrices_to_force_disp
 
 
@@ -182,7 +182,7 @@ def getEigenFunc_coupling_analytic(
     prb: curveCouplingProblem,
     res: np.ndarray,
     EnergyVector: Optional[np.ndarray] = None,
-) -> Callable[[np.ndarray], int]:
+) -> np.ndarray:
     """
     Find the number of unstable modes of a curve resulting from the coupling of curves analytically.
 
@@ -192,7 +192,7 @@ def getEigenFunc_coupling_analytic(
         EnergyVector (Optional[np.ndarray]): Energy vector.
 
     Returns:
-        Callable[[np.ndarray], int]: Function that gives the number of unstable eigenvalues as a function of params.
+        np.ndarray: Number of unstable eigenvalues as a function of res.
     """
     input_eigen = getEigenFuncs(prb.curves)
 
@@ -227,29 +227,43 @@ def getEigenFunc_coupling_analytic(
     else:
         return compute_eigen_analytic(res)
 
-
-def getEigenFunc_coupling(
-    prb: curveCouplingProblem,
-    out: np.ndarray,
+def getEigenFunc_coupling_analytic_Equality(
+    prb: curveCouplingProblem_Equality,
     res: np.ndarray,
-    EnergyVector: Optional[np.ndarray] = None,
-) -> Callable[[float], int]:
+) -> np.ndarray:
     """
-    Find the number of unstable modes of a curve resulting from the coupling of curves using the folds theorem.
+    Find the number of unstable modes of a curve resulting from the coupling of curves analytically.
 
     Args:
-        prb (curveCouplingProblem): The curve coupling problem instance.
-        out (np.ndarray): Output curve.
-        res (np.ndarray): Parametric data or function.
-        EnergyVector (Optional[np.ndarray]): Energy vector.
+        prb (curveCouplingProblem_Equality): The curve coupling problem instance.
+        res (np.ndarray): Parameters to test.
 
     Returns:
-        Callable[[float], int]: Function that gives the number of unstable eigenvalues as a function of params.
+        np.ndarray: Number of unstable eigenvalues as a function of res.
     """
-    out_curve = ndcurve(out)
-    init_eigen = getEigenFunc_coupling_analytic(prb, res[0], EnergyVector)
-    func = getEigenFunc(out_curve, init_eigen=init_eigen)
-    return np.array([func(x) for x in np.linspace(0.0, 1.0, res.shape[0])])
+    input_eigen = getEigenFuncs(prb.curves)
+    def compute_eigen_analytic(x: np.ndarray) -> int:
+        input_eigen_t = np.sum(input_eigen(x))
+        d_curve = prb.curves_all(x, nu=1)
+        slopes = d_curve[:, 1] / d_curve[:, 0]
+        N_neg = np.sum(slopes<0.0)
+        if N_neg==0:
+            return input_eigen_t
+        
+        if prb.match_index == 0: # Displacement constraint case
+            N_red = N_neg - (np.sum(slopes) < 0)
+            return input_eigen_t - N_red
+        elif prb.match_index == 1: # Force constraint case
+            N_add = N_neg - (np.sum(1/slopes) < 0)
+            return input_eigen_t + N_add
+        else:
+            raise Exception("Only acceptable if match_index is 0 (displacement) or 1 (force)")
+
+
+    if res.ndim > 1:
+        return np.array([compute_eigen_analytic(r) for r in res])
+    else:
+        return compute_eigen_analytic(res)
 
 
 def getEigenMatrix_coupling(
@@ -290,8 +304,77 @@ def eigen2stability(eigen: np.ndarray) -> np.ndarray:
 if __name__ == "__main__":
     from curveGenerators import *
     from curveAnalysis import solveWithIslands
+    from curveAnalysis_critPoints import solveWithIslands_Equality
     from matplotlib import pyplot as plt, gridspec, colors as mcolors
     from coloredLines import colored_line
+
+    p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
+    p1 = np.array([[0.0, 0.0], [0.2, 0.5], [0.6, 0.2], [1.0, 1.0]])
+    p2 = np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.1],
+                   [0.7, 0.4], [0.8, 0.35], [1.0, 1.0]])
+    points = [p0, p1, p2]
+    data = [generate_curve_peaks(pts, 200) for pts in points]
+    
+    # p0 = np.array([[0.0, 0.0], [0.55, 0.6], [1.1, 0.88], [1.27, 0.72], [1.1, 0.55]])
+    # p0 = np.concatenate([p0, [2.0, 1.0] - np.flip(p0, axis=0)])
+    # p1 = np.array([[0.0, 0.0], [0.1, 0.4], [0.25, 0.64], [0.4, 0.6]])
+    # p1 = np.concatenate([p1, [1.0, 1.0] - np.flip(p1, axis=0)])
+    # p2 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
+    # points = [p0, p1, p2]
+    # data = [generate_curve_CubicSpline(pts, 200) for pts in points]
+    match_index = 1
+
+    curves = ndcurve.createList(data)
+    prob = curveCouplingProblem_Equality(curves,match_index)
+
+    out_lst, res_lst = solveWithIslands_Equality(prob)
+
+    eigen_input_funcs = [getEigenFunc(c) for c in curves]
+    eigen_input_lst = [np.array([f(t) for t in np.linspace(0.0, 1.0, d.shape[0])]) for d, f in zip(data, eigen_input_funcs)]
+    eigen_analytic_lst = [getEigenFunc_coupling_analytic_Equality(prob, r) for r in res_lst]
+    eigen_folds_funcs_lst = [getEigenFunc(ndcurve(c)) for c in out_lst]
+    eigen_folds_lst = [np.array([f(t) for t in np.linspace(0.0, 1.0, d.shape[0])]) for d, f in zip(out_lst, eigen_folds_funcs_lst)]
+
+    
+    fig = plt.figure()
+    plot_h = 2
+    gs = gridspec.GridSpec(2, plot_h * len(data))
+    axs = []
+    custom_cmap = mcolors.LinearSegmentedColormap.from_list("custom_cmap", ["tab:red", "tab:olive", "tab:green"])
+    norm = mcolors.Normalize(vmin=-1, vmax=1)  # You can adjust vmin and vmax as needed
+
+    for i in range(0, len(data)):
+        axs.append(fig.add_subplot(gs[0, plot_h * i:plot_h * (i + 1)]))
+    axs.append(fig.add_subplot(gs[1, len(data):]))
+    axs.append(fig.add_subplot(gs[1, :len(data)], projection='3d'))
+
+    for i, (d, eigen) in enumerate(zip(data, eigen_input_lst)):
+        colored_line(axs[i], eigen2stability(eigen), d[:, 0], d[:, 1], cmap=custom_cmap, norm=norm)
+
+    for res, eigen in zip(res_lst, eigen_analytic_lst):
+        colored_line(axs[-1], eigen2stability(eigen), res[:, 0], res[:, 1], res[:, 2], cmap=custom_cmap, norm=norm)
+
+    for out, eigen in zip(out_lst, eigen_analytic_lst):
+        colored_line(axs[-2], eigen2stability(eigen), out[:, 0], out[:, 1], cmap=custom_cmap, norm=norm)
+
+    plt.figure()
+    a = eigen_analytic_lst[0]
+    b = eigen_folds_lst[0]
+    plt.plot(np.linspace(0.0, 1.0, len(a)),a)
+    plt.plot(np.linspace(0.0, 1.0, len(b)),b)
+
+    plt.pause(0.1)
+    input("Press Enter")
+
+
+
+
+
+
+
+
+
+
 
     p0 = np.array([[0.0, 0.0], [0.55, 0.6], [1.1, 0.88], [1.27, 0.72], [1.1, 0.55]])
     p0 = np.concatenate([p0, [2.0, 1.0] - np.flip(p0, axis=0)])
@@ -317,7 +400,8 @@ if __name__ == "__main__":
     eigen_input_funcs = [getEigenFunc(c) for c in curves]
     eigen_input_lst = [np.array([f(t) for t in np.linspace(0.0, 1.0, d.shape[0])]) for d, f in zip(data, eigen_input_funcs)]
     eigen_analytic_lst = [getEigenFunc_coupling_analytic(prob, r) for r in res_lst]
-    eigen_lst = [getEigenFunc_coupling(prob, out, r) for out, r in zip(out_lst, res_lst)]
+    eigen_folds_funcs_lst = [getEigenFunc(ndcurve(c)) for c in out_lst]
+    eigen_folds_lst = [np.array([f(t) for t in np.linspace(0.0, 1.0, d.shape[0])]) for d, f in zip(out_lst, eigen_folds_funcs_lst)]
 
     fig = plt.figure()
     plot_h = 2
@@ -340,10 +424,11 @@ if __name__ == "__main__":
     for out, eigen in zip(out_lst, eigen_analytic_lst):
         colored_line(axs[-2], eigen2stability(eigen), out[:, 0], out[:, 1], cmap=custom_cmap, norm=norm)
 
-    fig = plt.figure()
-    for a, f in zip(eigen_analytic_lst, eigen_lst):
-        plt.plot(f)
-        plt.plot(a, linestyle='--', color='k')
+    plt.figure()
+    a = eigen_analytic_lst[0]
+    b = eigen_folds_lst[0]
+    plt.plot(np.linspace(0.0, 1.0, len(a)),a)
+    plt.plot(np.linspace(0.0, 1.0, len(b)),b)
 
     plt.pause(0.1)
     input("Press Enter")
