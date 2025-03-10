@@ -15,7 +15,6 @@ curves = ndcurve.createList(data)
 prob = curveCouplingProblem_Equality(curves,1)
 
 out_lst, res_lst = solveWithIslands_Equality(prob)
-
 out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=10)
 
 fig = plt.figure()

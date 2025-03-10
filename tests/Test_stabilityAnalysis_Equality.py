@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt, gridspec, colors as mcolors
 from curveCoupling.utils import colored_line
 from curveCoupling.curveGenerators import *
 from curveCoupling import ndcurve, curveCouplingProblem_Equality, solveWithIslands_Equality
-from curveCoupling.compliantElements import getEigenFunc, getEigen_coupling_analytic_Equality, eigen2stability
+from curveCoupling.compliantElements import getEigenVals, getEigen_coupling_analytic_Equality, eigen2stability
 
 p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
 p1 = np.array([[0.0, 0.0], [0.2, 0.5], [0.6, 0.2], [1.0, 1.0]])
@@ -18,12 +18,11 @@ prob = curveCouplingProblem_Equality(curves,match_index)
 
 out_lst, res_lst = solveWithIslands_Equality(prob)
 
-eigen_input_funcs = [getEigenFunc(c) for c in curves]
-eigen_input_lst = [np.array([f(t) for t in np.linspace(0.0, 1.0, d.shape[0])]) for d, f in zip(data, eigen_input_funcs)]
+eigen_input_lst = [getEigenVals(d) for d in data]
+stability_input_lst = [eigen2stability(e) for e in eigen_input_lst]
 eigen_analytic_lst = [getEigen_coupling_analytic_Equality(prob, r) for r in res_lst]
-eigen_folds_funcs_lst = [getEigenFunc(ndcurve(c)) for c in out_lst]
-eigen_folds_lst = [np.array([f(t) for t in np.linspace(0.0, 1.0, d.shape[0])]) for d, f in zip(out_lst, eigen_folds_funcs_lst)]
-
+stability_analytic_lst = [eigen2stability(e) for e in eigen_analytic_lst]
+eigen_folds_lst = [getEigenVals(d) for d in out_lst]
 
 fig = plt.figure()
 plot_h = 2

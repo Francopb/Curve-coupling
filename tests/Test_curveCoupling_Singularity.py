@@ -22,7 +22,7 @@ output_matrices[1,:,1] = np.array([1.0,1.0,0.0])
 prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
 
 out_lst, res_lst = solveWithSingularities(prob, tol=1e-3)
-sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities(prob, 10)
+sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities(prob, 10, tol=1e-3)
 
 fig = plt.figure()
 plot_h = 2

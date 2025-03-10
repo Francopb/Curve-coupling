@@ -14,8 +14,6 @@ match_index = 1
 curves = ndcurve.createList(data)
 prob_eq = curveCouplingProblem_Equality(curves, match_index)
 
-params = np.array([0.1, 0.2, 0.3])
-
 out, res = solveCurveCoupling_Equality(prob_eq)
 out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob_eq, iter_points=10)
 

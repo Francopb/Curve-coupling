@@ -3,7 +3,6 @@ from matplotlib import (pyplot as plt, gridspec)
 from curveCoupling.curveGenerators import *
 from curveCoupling import ndcurve, curveCouplingProblem, solveWithIslands
     
-
 p0 = np.array([[0.0, 0.0], [0.55,0.6], [1.1, 0.88], [1.27, 0.72], [1.1,0.55]])
 p0 = np.concatenate([p0, [2.0,1.0]-np.flip(p0,axis=0)])
 p1 = np.array([[0.0, 0.0], [0.1, 0.4], [0.25, 0.64], [0.4, 0.6]])
@@ -22,8 +21,6 @@ output_matrices[0,:,0] = np.array([1.0,0.0,0.0])
 output_matrices[1,:,1] = np.array([1.0,1.0,0.0])
 
 prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
-
-
 out_lst, res_lst = solveWithIslands(prob)
 
 fig = plt.figure()

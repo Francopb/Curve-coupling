@@ -177,6 +177,26 @@ def getEigenFuncs(
 
     return func
 
+def getEigenVals(
+    data: np.ndarray,
+    init_eigen: int = 0,
+) -> np.ndarray:
+    """
+    Find stability and number of unstable modes of a curve.
+
+    Args:
+        curves (List[ndcurve]): The input curves.
+        res (Optional[ndcurve]): Parametric function of the curves.
+        init_eigen (int): Unstable modes of the first segment.
+
+    Returns:
+        Callable[[np.ndarray], np.ndarray]: Function that gives the number of unstable eigenvalues as a function of params.
+    """
+
+    curve = ndcurve(data)
+    eigen_func = getEigenFunc(curve, init_eigen=init_eigen)
+    
+    return np.array([eigen_func(t) for t in np.linspace(0.0,1.0,data.shape[0])])
 
 def getEigen_coupling_analytic(
     prb: curveCouplingProblem,
