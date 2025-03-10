@@ -6,7 +6,7 @@ setup(
     author="Franco N. Pinan Basualdo",
     author_email ="francopb.20@gmail.com",
     description="A package for curve coupling analysis",
-    # long_description=open("README.md").read(),
+    long_description=open("README.md").read(),
     packages=find_packages(where="src"),
     url="https://github.com/Francopb/Curve-coupling",
     package_dir={"": "src"},
