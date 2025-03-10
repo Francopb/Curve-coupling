@@ -1,5 +1,5 @@
 import numpy as np
-from scipy import optimize, interpolate
+from scipy import optimize
 from curveInterpExtrapFunc import ndcurve, ndcurve_matrix
 import itertools
 from auxFunc import my_null_space

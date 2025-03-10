@@ -1,6 +1,5 @@
 import numpy as np
 from scipy import interpolate
-from typing import List, Tuple
 
 def generate_curve_CubicSpline(
     points: np.ndarray,

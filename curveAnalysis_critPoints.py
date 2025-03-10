@@ -3,7 +3,6 @@ from scipy import optimize
 from typing import *
 from curveInterpExtrapFunc import ndcurve
 from curveCoupling import curveCouplingProblem_Equality
-from auxFunc import removeRepeats
 import itertools
 
 class criticalPoint:
