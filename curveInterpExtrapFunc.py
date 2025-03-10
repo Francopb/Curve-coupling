@@ -1,6 +1,6 @@
 import numpy as np
 from scipy import interpolate
-from typing import List, Tuple, Callable, Optional, Union
+from typing import *
 
 class ndcurve:
     def __init__(self, data: np.ndarray) -> None:

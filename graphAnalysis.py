@@ -1,6 +1,6 @@
 import networkx as nx
 import numpy as np
-from typing import Tuple, List
+from typing import *
 
 def generate_circuit_equations(edges: List[Tuple[str, str]], return_in_matrices: bool = False) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """

@@ -130,39 +130,6 @@ def filterCriticalPoints(
                     critPoints.pop(i)
 
 
-def findSnapPoints(curves: Union[ndcurve, List[ndcurve]]) -> List[criticalPoint]:
-    """
-    Find snap points (local maxima and minima in all axes) of a given curve.
-
-    Args:
-        curves (Union[ndcurve, List[ndcurve]]): The input curve(s).
-
-    Returns:
-        List[criticalPoint]: List of snap points.
-    """
-    if isinstance(curves, list):
-        return [findSnapPoints(c) for c in curves]
-
-    dim = curves.getNDim()
-    assert dim == 2, "Only possible for 2-dimensional case"
-
-    snapPoints = []
-    for i in range(dim):
-        snapPoints += findCriticalPoints(curves, analyze_index=i, add_init_end=False)
-
-    for sp in snapPoints:
-        xd, yd = curves(sp.param, nu=1)
-        xdd, ydd = curves(sp.param, nu=2)
-        k = (xd * ydd - yd * xdd) / (xd ** 2 + yd ** 2) ** (3.0 / 2.0)
-        sp.k = k
-
-    snapPoints.insert(0, criticalPoint(0.0, curves(0.0)))
-    snapPoints.append(criticalPoint(1.0, curves(1.0)))
-
-    snapPoints.sort(key=lambda x: x.param)
-    return snapPoints
-
-
 def __findSingularities_critPoints_pair(
     critPoints1: List[criticalPoint],
     critPoints2: List[criticalPoint],
@@ -642,8 +609,7 @@ def solveWithIslands_Equality(prb: curveCouplingProblem_Equality,
     return out_lst, res_lst
 
 if __name__ == "__main__":
-    from matplotlib import pyplot as plt
-    from matplotlib import gridspec
+    from matplotlib import (pyplot as plt, gridspec)
     from curveGenerators import generate_curve_peaks
     from curveCoupling import solveCurveCoupling_bruteForce_localSolve
 

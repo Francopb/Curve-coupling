@@ -489,8 +489,7 @@ def solveCurveCoupling(
     return np.array(Output), np.array(Res)
 
 if __name__ == "__main__":
-    from matplotlib import pyplot as plt
-    from matplotlib import gridspec
+    from matplotlib import (pyplot as plt, gridspec)
     from curveGenerators import *
 
     p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])

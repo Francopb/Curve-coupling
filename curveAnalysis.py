@@ -5,7 +5,7 @@ from auxFunc import rref, removeRepeats, reconstructSmooth
 from fractions import Fraction
 from curveInterpExtrapFunc import ndcurve
 import itertools
-from typing import Tuple, List
+from typing import *
 
 def _reorder_equations(prb: curveCouplingProblem,
                        param: np.ndarray,
@@ -340,7 +340,7 @@ def solveWithIslands(prb: curveCouplingProblem,
     Returns:
         Tuple[List[np.ndarray], List[np.ndarray]]: Output curves and results in parametric space.
     """
-    from curveCoupling import solveCurveCoupling
+    from curveCoupling import solveCurveCoupling, solveCurveCoupling_bruteForce_localSolve
     from auxFunc import min_dist_point_to_set, remove_repeat_sets
 
     out, res = solveCurveCoupling(prb)
@@ -366,9 +366,7 @@ def solveWithIslands(prb: curveCouplingProblem,
 
 if __name__ == "__main__":
     from curveGenerators import *
-    from curveCoupling import solveCurveCoupling_bruteForce_localSolve
-    from matplotlib import pyplot as plt
-    from matplotlib import gridspec
+    from matplotlib import (pyplot as plt, gridspec)
     
 
     p0 = np.array([[0.0, 0.0], [0.55,0.6], [1.1, 0.88], [1.27, 0.72], [1.1,0.55]])
