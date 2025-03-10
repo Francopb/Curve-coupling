@@ -311,7 +311,7 @@ def solveCurveCoupling_Equality(
 
 
 def solveCurveCoupling(
-    prb: curveCouplingProblem,
+    prb: Union[curveCouplingProblem, curveCouplingProblem_Equality],
     param_start: Optional[np.ndarray] = None,
     param_range: Optional[np.ndarray] = None,
     param_stop: Optional[np.ndarray] = None,
