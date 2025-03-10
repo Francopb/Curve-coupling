@@ -102,7 +102,7 @@ Find islands in curve coupling problems efficiently (in case of equality constra
 ```python
 import numpy as np
 from curveCoupling.curveGenerators import generate_curve_peaks
-from curveCoupling import ndcurve, curveCouplingProblem_Equality, solveCurveCoupling_bruteForce_localSolve, solveWithIslands_Equality
+from curveCoupling import ndcurve, curveCouplingProblem_Equality, solveWithIslands_Equality
 
 p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
 p1 = np.array([[0.0, 0.0], [0.2, 0.5], [0.6, 0.2], [1.0, 1.0]])
@@ -155,7 +155,7 @@ Deal with singularities in curve coupling problems efficiently (in case of equal
 ```python
 import numpy as np
 from curveCoupling.curveGenerators import generate_curve_peaks
-from curveCoupling import ndcurve, curveCouplingProblem_Equality, solveCurveCoupling_bruteForce_localSolve, solveWithSingularities_Equality, findSingularities_Equality
+from curveCoupling import ndcurve, curveCouplingProblem_Equality, solveWithSingularities_Equality, findSingularities_Equality
 
 p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
 p1 = np.array([[0.0, 0.0], [0.2, 0.6], [0.6, 0.3], [1.0, 1.0]])
@@ -328,6 +328,7 @@ Visualize curve coupling stability results with `matplotlib`:
 
 ```python
 import matplotlib.pyplot as plt
+from matplotlib import colors as mcolors
 from matplotlib import gridspec
 from curveCoupling.utils import colored_line
 
@@ -352,7 +353,6 @@ for res, s in zip(res_lst, stability_analytic_lst):
 
 for out, s in zip(out_lst, stability_analytic_lst):
     colored_line(axs[-2], s, out[:, 0], out[:, 1], cmap=custom_cmap, norm=norm)
-
 
 plt.show()
 ```
