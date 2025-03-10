@@ -281,13 +281,3 @@ def reconstructSmooth(data: np.ndarray) -> np.ndarray:
         index_min = np.argmin(np.abs(d_possibilities - pred))
         data[i] = d_possibilities[index_min]
     return data
-
-if __name__ == "__main__":
-    A = np.random.randint(-5, 5, (4, 5)).astype(float)
-    Ar, P, Q = PQ_decomp(A)
-    print(A)
-    print(rref(A)[0])
-    print(P)
-    print(Q)
-    print(Ar)
-    print(P @ A @ Q)
