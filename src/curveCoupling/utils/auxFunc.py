@@ -46,11 +46,16 @@ def remove_repeat_sets(S_lst: List[np.ndarray], tol: float = 1e-6):
     Returns:
         Tuple[int]: removed indices.
     """
+    KD_trees = [spatial.KDTree(s) for s in S_lst]
     removed_idx = []
     for i in reversed(range(1,len(S_lst))):
         for j in range(i):
-            if max_min_dist_set_to_set(S_lst[i],S_lst[j])<tol:
+            dist_A, _ = KD_trees[i].query(S_lst[j])
+            dist_B, _ = KD_trees[j].query(S_lst[i])
+            dist = max(np.max(dist_A),np.max(dist_B))
+            if dist < tol:
                 S_lst.pop(i)
+                KD_trees.pop(i)
                 removed_idx.append(i)
                 break
     return tuple(removed_idx)
