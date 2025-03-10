@@ -1,9 +1,9 @@
 import numpy as np
-from curveCoupling import curveCouplingProblem
+from curveCoupling import curveCouplingProblem, solveCurveCoupling, solveCurveCoupling_bruteForce_localSolve
 from scipy import optimize, linalg
-from auxFunc import rref, removeRepeats, reconstructSmooth
+from curveCoupling.utils.auxFunc import rref, removeRepeats, reconstructSmooth, min_dist_point_to_set, remove_repeat_sets
 from fractions import Fraction
-from curveInterpExtrapFunc import ndcurve
+from curveCoupling.curveInterpExtrapFunc import ndcurve
 import itertools
 from typing import *
 
@@ -289,8 +289,6 @@ def solveWithSingularities(prb: curveCouplingProblem,
     Returns:
         Tuple[List[np.ndarray], List[np.ndarray]]: Output curves and results in parametric space.
     """
-    from curveCoupling import solveCurveCoupling
-    from auxFunc import remove_repeat_sets
 
     sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities(prb, iter_points=iter_points, tol=tol)
 
@@ -340,8 +338,6 @@ def solveWithIslands(prb: curveCouplingProblem,
     Returns:
         Tuple[List[np.ndarray], List[np.ndarray]]: Output curves and results in parametric space.
     """
-    from curveCoupling import solveCurveCoupling, solveCurveCoupling_bruteForce_localSolve
-    from auxFunc import min_dist_point_to_set, remove_repeat_sets
 
     out, res = solveCurveCoupling(prb)
     out_lst = [out]

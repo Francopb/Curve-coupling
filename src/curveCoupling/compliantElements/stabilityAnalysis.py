@@ -1,10 +1,10 @@
 import numpy as np
 from typing import *
-from curveInterpExtrapFunc import ndcurve
-from curveAnalysis_critPoints import findCriticalPoints
-from auxFunc import my_null_space
-from curveCoupling import curveCouplingProblem, curveCouplingProblem_Equality
-from graphAnalysis import matrices_to_force_disp
+from curveCoupling.curveInterpExtrapFunc import ndcurve
+from curveCoupling.curveAnalysis_Equality import findCriticalPoints
+from curveCoupling.utils.auxFunc import my_null_space
+from curveCoupling.curveCoupling import curveCouplingProblem, curveCouplingProblem_Equality
+from curveCoupling.compliantElements.graphAnalysis import matrices_to_force_disp
 
 
 
@@ -178,7 +178,7 @@ def getEigenFuncs(
     return func
 
 
-def getEigenFunc_coupling_analytic(
+def getEigen_coupling_analytic(
     prb: curveCouplingProblem,
     res: np.ndarray,
     EnergyVector: Optional[np.ndarray] = None,
@@ -227,7 +227,7 @@ def getEigenFunc_coupling_analytic(
     else:
         return compute_eigen_analytic(res)
 
-def getEigenFunc_coupling_analytic_Equality(
+def getEigen_coupling_analytic_Equality(
     prb: curveCouplingProblem_Equality,
     res: np.ndarray,
 ) -> np.ndarray:

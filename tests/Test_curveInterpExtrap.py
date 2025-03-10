@@ -1,6 +1,6 @@
 import numpy as np
-from curveGenerators import *
-from curveInterpExtrapFunc import ndcurve, ndcurve_matrix
+from curveCoupling.curveGenerators import *
+from curveCoupling import ndcurve, ndcurve_matrix
 
 p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
 p1 = np.array([[0.0, 0.0], [0.2, 0.5], [0.6, 0.2], [1.0, 1.0]])

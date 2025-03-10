@@ -1,4 +1,4 @@
-from graphAnalysis import generate_circuit_equations, force_disp_to_matrices, matrices_to_force_disp
+from curveCoupling.compliantElements import generate_circuit_equations, force_disp_to_matrices, matrices_to_force_disp
 
 
 edges = [

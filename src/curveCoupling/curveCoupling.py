@@ -1,8 +1,8 @@
 import numpy as np
 from scipy import optimize
-from curveInterpExtrapFunc import ndcurve, ndcurve_matrix
+from curveCoupling.curveInterpExtrapFunc import ndcurve, ndcurve_matrix
 import itertools
-from auxFunc import my_null_space
+from curveCoupling.utils.auxFunc import my_null_space
 from typing import *
 
 _INITIAL_OPT = Literal["fix_largest", "min_dist", "off"]
@@ -316,7 +316,7 @@ def solveCurveCoupling(
     param_range: Optional[np.ndarray] = None,
     param_stop: Optional[np.ndarray] = None,
     stop_circulation: bool = True,
-    check_backward_dir: bool = True,
+    check_backward_dir: bool = False,
     initial_dir: Optional[np.ndarray] = None,
     solve_init: _INITIAL_OPT = "min_dist",
     step_0: float = 0.0025,
@@ -441,7 +441,7 @@ def solveCurveCoupling(
         if param_stop is None:
             param_stop = param_prev.reshape((1, -1))
         else:
-            param_stop = np.vstack([param_prev, param_prev])
+            param_stop = np.vstack([param_prev, param_stop])
 
     Res = [param_prev]
     Output = [prb.computeOutput(param_prev)]

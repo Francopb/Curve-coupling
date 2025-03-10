@@ -1,11 +1,9 @@
 import numpy as np
 from matplotlib import pyplot as plt, gridspec, colors as mcolors
-from coloredLines import colored_line
-from curveGenerators import *
-from curveAnalysis import solveWithIslands
-from curveInterpExtrapFunc import ndcurve
-from curveCoupling import curveCouplingProblem
-from stabilityAnalysis import getEigenFunc, getEigenFunc_coupling_analytic, eigen2stability
+from curveCoupling.utils import colored_line
+from curveCoupling.curveGenerators import *
+from curveCoupling import ndcurve, curveCouplingProblem, solveWithIslands
+from curveCoupling.compliantElements import getEigenFunc, getEigen_coupling_analytic, eigen2stability
 
 p0 = np.array([[0.0, 0.0], [0.55, 0.6], [1.1, 0.88], [1.27, 0.72], [1.1, 0.55]])
 p0 = np.concatenate([p0, [2.0, 1.0] - np.flip(p0, axis=0)])
@@ -30,7 +28,7 @@ out_lst, res_lst = solveWithIslands(prob, iter_points=10)
 
 eigen_input_funcs = [getEigenFunc(c) for c in curves]
 eigen_input_lst = [np.array([f(t) for t in np.linspace(0.0, 1.0, d.shape[0])]) for d, f in zip(data, eigen_input_funcs)]
-eigen_analytic_lst = [getEigenFunc_coupling_analytic(prob, r) for r in res_lst]
+eigen_analytic_lst = [getEigen_coupling_analytic(prob, r) for r in res_lst]
 eigen_folds_funcs_lst = [getEigenFunc(ndcurve(c)) for c in out_lst]
 eigen_folds_lst = [np.array([f(t) for t in np.linspace(0.0, 1.0, d.shape[0])]) for d, f in zip(out_lst, eigen_folds_funcs_lst)]
 

@@ -1,9 +1,7 @@
 import numpy as np
 from matplotlib import (pyplot as plt, gridspec)
-from curveGenerators import generate_curve_peaks
-from curveInterpExtrapFunc import ndcurve
-from curveCoupling import curveCouplingProblem_Equality, solveCurveCoupling_bruteForce_localSolve
-from curveAnalysis_critPoints import solveWithSingularities_Equality, findSingularities_Equality
+from curveCoupling.curveGenerators import generate_curve_peaks
+from curveCoupling import ndcurve, curveCouplingProblem_Equality, solveCurveCoupling_bruteForce_localSolve, solveWithSingularities_Equality, findSingularities_Equality
 
 p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
 p1 = np.array([[0.0, 0.0], [0.2, 0.6], [0.6, 0.3], [1.0, 1.0]])

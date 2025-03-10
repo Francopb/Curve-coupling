@@ -1,13 +1,7 @@
 import numpy as np
 from matplotlib import (pyplot as plt, gridspec)
-from curveGenerators import *
-from curveInterpExtrapFunc import ndcurve
-from curveCoupling import curveCouplingProblem
-from curveAnalysis import solveWithIslands
-
-from curveGenerators import *
-from matplotlib import (pyplot as plt, gridspec)
-    
+from curveCoupling.curveGenerators import *
+from curveCoupling import ndcurve, curveCouplingProblem, solveCurveCoupling, solveCurveCoupling_bruteForce_localSolve
 
 p0 = np.array([[0.0, 0.0], [0.55,0.6], [1.1, 0.88], [1.27, 0.72], [1.1,0.55]])
 p0 = np.concatenate([p0, [2.0,1.0]-np.flip(p0,axis=0)])
@@ -28,8 +22,8 @@ output_matrices[1,:,1] = np.array([1.0,1.0,0.0])
 
 prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
 
-
-out_lst, res_lst = solveWithIslands(prob)
+out, res = solveCurveCoupling(prob)
+out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=10)
 
 fig = plt.figure()
 plot_h = 2
@@ -43,12 +37,12 @@ axs.append(fig.add_subplot(gs[1, :len(data)], projection='3d'))
 
 for i, d in enumerate(data):
     axs[i].plot(d[:, 0], d[:, 1])
-for res in res_lst:
-    axs[-1].plot(res[:, 0], res[:, 1], res[:, 2])
 
-for out in out_lst:
-    axs[-2].plot(out[:, 0], out[:, 1])
+axs[-1].plot(res[:, 0], res[:, 1], res[:, 2])
+axs[-1].scatter(res_brute[:, 0], res_brute[:, 1], res_brute[:, 2], color='r', marker ='.',alpha=0.1)
+
+axs[-2].plot(out[:, 0], out[:, 1])
+axs[-2].scatter(out_brute[:, 0], out_brute[:, 1], color='r', marker ='.',alpha=0.1)
 
 plt.pause(0.1)
 input("Press Enter")
-

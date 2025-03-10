@@ -1,9 +1,10 @@
 import numpy as np
 from scipy import optimize
 from typing import *
-from curveInterpExtrapFunc import ndcurve
-from curveCoupling import curveCouplingProblem_Equality
+from curveCoupling.curveInterpExtrapFunc import ndcurve
+from curveCoupling.curveCoupling import curveCouplingProblem_Equality, solveCurveCoupling_Equality
 import itertools
+from curveCoupling.utils.auxFunc import remove_repeat_sets
 
 class criticalPoint:
     """
@@ -325,8 +326,7 @@ def solveWithSingularities_Equality(prb: curveCouplingProblem_Equality,
     Returns:
         Tuple[List[np.ndarray], List[np.ndarray]]: Output curves and results in parametric space.
     """
-    from curveCoupling import solveCurveCoupling_Equality
-    from auxFunc import remove_repeat_sets
+
 
     sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities_Equality(prb, tol=tol)
     def computeTangents(orders, dirs):
@@ -593,8 +593,6 @@ def solveWithIslands_Equality(prb: curveCouplingProblem_Equality,
     Returns:
         Tuple[List[np.ndarray], List[np.ndarray]]: Output curves and results in parametric space.
     """
-    from curveCoupling import solveCurveCoupling_Equality
-
     _, islands_seeds, islands_dirs = findIslands_Equality(prb, tol=tol)
 
     out, res = solveCurveCoupling_Equality(prb)
