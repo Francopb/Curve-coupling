@@ -334,8 +334,6 @@ def solveCurveCoupling(
     guess_factor: float = 2.0,
     tolerance: float = 1e-9,
     it_max: int = 1e5,
-    output_points: Optional[int] = None,
-    callbacFunc: Optional[Callable[[np.ndarray, np.ndarray], None]] = None
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute the semiaddition of parametric curves.
@@ -358,8 +356,6 @@ def solveCurveCoupling(
         guess_factor (float): Scale factor for guess in the desired direction.
         tolerance (float): Tolerance for solving the equality condition.
         it_max (int): Maximum iterations.
-        output_points (Optional[int]): Number of output points.
-        callbacFunc (Optional[Callable[[np.ndarray, np.ndarray], None]]): Callback function.
 
     Returns:
         Tuple[np.ndarray, np.ndarray]: Output curve and results in parametric space.
@@ -427,12 +423,6 @@ def solveCurveCoupling(
                             'eps': 0.1, 'diag': [dist_tgt] * prb.numCurves})
         return res.x
 
-    def reparametrizeCurve(c: np.ndarray, nsteps: int) -> np.ndarray:
-        x_interp = np.linspace(0.0, 1.0, num=c.shape[0])
-        f_interp = interpolate.CubicSpline(
-            x_interp, c, axis=0, bc_type="natural")
-        return np.array([f_interp(x) for x in np.linspace(0.0, 1.0, num=nsteps)])
-
     def computeTangent(params: np.ndarray, prev_dir: np.ndarray) -> np.ndarray:
         tangent = prb.computeTangent(params)
         if np.dot(prev_dir, tangent) < 0:
@@ -496,24 +486,13 @@ def solveCurveCoupling(
             param_prev = param
             direction_0 = direction
 
-            if callbacFunc is not None:
-                callbacFunc(np.array(Output), np.array(Res))
             if flag_stop:
                 break
         except Exception as e:
             print(f"Exception: {e}")
             break
 
-    if output_points is None:
-        return np.array(Output), np.array(Res)
-    if output_points <= 0:
-        c_sizes = [c.shape[0] for c in prb.curves]
-        output_points = sum(c_sizes)
-
-    Output = reparametrizeCurve(np.array(Output), output_points)
-    Res = reparametrizeCurve(np.array(Res), output_points)
-
-    return Output, Res
+    return np.array(Output), np.array(Res)
 
 if __name__ == "__main__":
     from matplotlib import pyplot as plt
