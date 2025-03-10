@@ -77,3 +77,4 @@ def plotResults(data: np.ndarray,
     axs[-2].xaxis.set_major_locator(ticker.LinearLocator(3))
     axs[-2].yaxis.set_major_locator(ticker.LinearLocator(3))
     plt.show(block=False)
+    return axs

@@ -1,3 +1,5 @@
+LICENSE
+README.md
 setup.py
 src/curveCoupling/__init__.py
 src/curveCoupling/curveAnalysis.py
@@ -14,8 +16,9 @@ src/curveCoupling/compliantElements/__init__.py
 src/curveCoupling/compliantElements/graphAnalysis.py
 src/curveCoupling/compliantElements/stabilityAnalysis.py
 src/curveCoupling/utils/__init__.py
-src/curveCoupling/utils/auxFunc.py
 src/curveCoupling/utils/coloredLines.py
+src/curveCoupling/utils/filterSetsOfPoints.py
+src/curveCoupling/utils/matrixOperations.py
 tests/Test_curveCoupling.py
 tests/Test_curveCoupling_Equality.py
 tests/Test_curveCoupling_Islands.py
