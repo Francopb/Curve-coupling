@@ -1,7 +1,8 @@
 import numpy as np
 from curveCoupling import curveCouplingProblem, solveCurveCoupling, solveCurveCoupling_bruteForce_localSolve
 from scipy import optimize, linalg
-from curveCoupling.utils.auxFunc import rref, removeRepeats, reconstructSmooth, min_dist_point_to_set, remove_repeat_sets
+from curveCoupling.utils.filterSetsOfPoints import removeRepeats, min_dist_point_to_set, remove_repeat_sets
+from curveCoupling.utils.matrixOperations import rref
 from fractions import Fraction
 from curveCoupling.curveInterpExtrapFunc import ndcurve
 import itertools
@@ -240,38 +241,6 @@ def findSingularities(prb: curveCouplingProblem,
     sing_solutions = [solveSingularity(prb, s, tol=tol) for s in singularities]
     sing_orders, sing_dirs = zip(*sing_solutions)
     return out_singularities, singularities, sing_orders, sing_dirs
-
-
-def findSingularities_alongRes(prb: curveCouplingProblem,
-                               res: np.ndarray,
-                               tol: float = 1e-2) -> np.ndarray:
-    """
-    Find singularities along a solution curve.
-
-    Args:
-        prb (curveCouplingProblem): The curve coupling problem instance.
-        res (np.ndarray): Parametric solution curve.
-        tol (float): Tolerance.
-
-    Returns:
-        np.ndarray: Found singularities.
-    """
-    def computeMinSingVal(param):
-        J = prb.computeConstraintJac(param)
-        return np.min(np.linalg.svd(J, compute_uv=False))
-
-    singVals = reconstructSmooth(np.array([computeMinSingVal(r) for r in res]))
-
-    singVals_curve = ndcurve(singVals)
-    res_curve = ndcurve(res)
-    roots = singVals_curve.roots()
-    singularities = removeRepeats(res_curve(roots))
-    out_singularities = np.array([prb.computeOutput(s) for s in singularities])
-    sing_solutions = [solveSingularity(prb, s, tol=tol) for s in singularities]
-    sing_orders, sing_dirs = zip(*sing_solutions)
-
-    return out_singularities, singularities, sing_orders, sing_dirs
-
 
 def solveWithSingularities(prb: curveCouplingProblem,
                            iter_points = 10,

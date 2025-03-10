@@ -2,7 +2,7 @@ import numpy as np
 from typing import *
 from curveCoupling.curveInterpExtrapFunc import ndcurve
 from curveCoupling.curveAnalysis_Equality import findCriticalPoints
-from curveCoupling.utils.auxFunc import my_null_space
+from curveCoupling.utils.matrixOperations import my_null_space
 from curveCoupling.curveCoupling import curveCouplingProblem, curveCouplingProblem_Equality
 from curveCoupling.compliantElements.graphAnalysis import matrices_to_force_disp
 

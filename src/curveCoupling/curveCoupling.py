@@ -2,7 +2,7 @@ import numpy as np
 from scipy import optimize
 from curveCoupling.curveInterpExtrapFunc import ndcurve, ndcurve_matrix
 import itertools
-from curveCoupling.utils.auxFunc import my_null_space
+from curveCoupling.utils.matrixOperations import my_null_space
 from typing import *
 
 _INITIAL_OPT = Literal["fix_largest", "min_dist", "off"]

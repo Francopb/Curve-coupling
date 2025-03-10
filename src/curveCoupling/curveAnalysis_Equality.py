@@ -4,7 +4,7 @@ from typing import *
 from curveCoupling.curveInterpExtrapFunc import ndcurve
 from curveCoupling.curveCoupling import curveCouplingProblem_Equality, solveCurveCoupling_Equality
 import itertools
-from curveCoupling.utils.auxFunc import remove_repeat_sets
+from curveCoupling.utils.filterSetsOfPoints import remove_repeat_sets
 
 class criticalPoint:
     """
