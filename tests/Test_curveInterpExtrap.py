@@ -26,3 +26,8 @@ print()
 for i in range(len(data)):
     print("At", x[i], ":", f_curves_0[i](x[i]))
 print("At", x, ":", f_curves_matrix_0(x))
+
+# Author: Franco N. Pinan Basualdo
+# Project: Curve Coupling
+# URL: https://github.com/Francopb/Curve-coupling
+# Description: This script is part of the Curve Coupling project. Unauthorized use or distribution is prohibited.

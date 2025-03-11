@@ -198,3 +198,7 @@ def matrices_to_force_disp(ConstraintMatrices: np.ndarray, OutputMatrices: np.nd
 
     return disp_constr, force_constr, disp_out, force_out
 
+# Author: Franco N. Pinan Basualdo
+# Project: Curve Coupling
+# URL: https://github.com/Francopb/Curve-coupling
+# Description: This script is part of the Curve Coupling project. Unauthorized use or distribution is prohibited.

@@ -1,6 +1,8 @@
 # Curve Coupling
 
-A package for curve coupling analysis. This package helps finding the solution for a coupling of N curves with N-1 constraints (which gives a curve as a solution).
+A package for curve coupling analysis. This package helps finding the solution for a coupling of N curves with N-1 constraints (which gives a curve as a solution). In particular, this is used to compute the equilibrium points of a network of nonlinear compliant elements and their stability.
+
+Made at: [Soft Robotics Group @ KU Leuven](https://softroboticsgroup.com/)
 
 ## Overview
 

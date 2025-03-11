@@ -496,3 +496,8 @@ def solveCurveCoupling(
         rev_output, rev_res = solveCurveCoupling(prb, param_start, param_range, param_stop, stop_circulation, False, -initial_dir, solve_init, step_0, step_min, step_max, guess_factor, tolerance, it_max)
         return np.concatenate([np.flip(rev_output[1:], axis=0), Output], axis=0), np.concatenate([np.flip(rev_res[1:], axis=0), Res], axis=0)
     return np.array(Output), np.array(Res)
+
+# Author: Franco N. Pinan Basualdo
+# Project: Curve Coupling
+# URL: https://github.com/Francopb/Curve-coupling
+# Description: This script is part of the Curve Coupling project. Unauthorized use or distribution is prohibited.

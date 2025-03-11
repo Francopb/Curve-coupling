@@ -121,3 +121,8 @@ def generate_curve_snaps(
 
     # Return the list of (x, y) points
     return np.stack(v_new, axis=1)
+
+# Author: Franco N. Pinan Basualdo
+# Project: Curve Coupling
+# URL: https://github.com/Francopb/Curve-coupling
+# Description: This script is part of the Curve Coupling project. Unauthorized use or distribution is prohibited.

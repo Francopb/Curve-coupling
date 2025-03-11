@@ -161,3 +161,8 @@ def plot_stability(ax, data, stability):
         colored_line(ax, stability, data[:, 0], data[:, 1], norm=norm, cmap=custom_cmap)
     elif nDims == 3:
         colored_line(ax, stability, data[:, 0], data[:, 1], data[:, 2], norm=norm, cmap=custom_cmap)
+
+# Author: Franco N. Pinan Basualdo
+# Project: Curve Coupling
+# URL: https://github.com/Francopb/Curve-coupling
+# Description: This script is part of the Curve Coupling project. Unauthorized use or distribution is prohibited.

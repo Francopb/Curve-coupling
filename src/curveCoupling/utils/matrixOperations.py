@@ -173,3 +173,8 @@ def PQ_decomp(A: np.ndarray, tol: float = 1e-6) -> Tuple[np.ndarray, np.ndarray,
     Ar = Ar @ Q
     Ar = remove_small_vals(Ar, tol=tol)
     return Ar, P, Q
+
+# Author: Franco N. Pinan Basualdo
+# Project: Curve Coupling
+# URL: https://github.com/Francopb/Curve-coupling
+# Description: This script is part of the Curve Coupling project. Unauthorized use or distribution is prohibited.

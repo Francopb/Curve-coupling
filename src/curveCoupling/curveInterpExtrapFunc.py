@@ -232,3 +232,8 @@ def Integral2D(curves: Union[np.ndarray, List[np.ndarray]], is_axisymmetric_y: b
     E_f = dE_f.antiderivative()
     E = E_f(t)
     return E
+
+# Author: Franco N. Pinan Basualdo
+# Project: Curve Coupling
+# URL: https://github.com/Francopb/Curve-coupling
+# Description: This script is part of the Curve Coupling project. Unauthorized use or distribution is prohibited.

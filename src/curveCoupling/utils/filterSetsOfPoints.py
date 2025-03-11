@@ -94,3 +94,8 @@ def removeProportional(points: np.ndarray, tol: float = 1e-2) -> np.ndarray:
                 points = np.delete(points, i, axis=0)
             break
     return points
+
+# Author: Franco N. Pinan Basualdo
+# Project: Curve Coupling
+# URL: https://github.com/Francopb/Curve-coupling
+# Description: This script is part of the Curve Coupling project. Unauthorized use or distribution is prohibited.

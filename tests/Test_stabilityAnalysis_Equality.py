@@ -41,3 +41,8 @@ plt.plot(np.linspace(0.0, 1.0, len(b)),b)
 plt.show(block=False)
 
 input("Press Enter")
+
+# Author: Franco N. Pinan Basualdo
+# Project: Curve Coupling
+# URL: https://github.com/Francopb/Curve-coupling
+# Description: This script is part of the Curve Coupling project. Unauthorized use or distribution is prohibited.
