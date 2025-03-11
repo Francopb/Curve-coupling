@@ -27,54 +27,51 @@ def plotResults(data: np.ndarray,
         axs[i].plot(d[:, 0], d[:, 1])
         axs[i].set_title("Curve "+str(i))
         
-        x_min, x_max = np.min(d[:, 0]), np.max(d[:, 0])
-        y_min, y_max = np.min(d[:, 1]), np.max(d[:, 1])
+        range_d = np.round(np.stack((np.min(d,axis=0), np.max(d,axis=0)), axis=1),decimals=1)
         
-        axs[i].set_xlim([x_min, x_max])
-        axs[i].set_ylim([y_min, y_max])
+        axs[i].set_xlim(range_d[0])
+        axs[i].set_ylim(range_d[1])
         
         axs[i].xaxis.set_major_locator(ticker.LinearLocator(3))
         axs[i].yaxis.set_major_locator(ticker.LinearLocator(3))
 
+    min_res = np.min([np.min(res, axis=0) for res in res_lst], axis=0)
+    max_res = np.max([np.max(res, axis=0) for res in res_lst], axis=0)
+    range_res = np.round(np.stack((min_res, max_res), axis=1),decimals=1)
+
     if numCurves == 2:
         for res in res_lst:
             axs[-1].plot(res[:, 0], res[:, 1])
-
         if res_brute is not None:
             axs[-1].scatter(res_brute[:, 0], res_brute[:, 1], color='r', marker ='.',alpha=0.1)
-
-        axs[-1].set_title("Parametric space")
-        axs[-1].set_xlim([0.0,1.0])
-        axs[-1].set_ylim([0.0,1.0])
-        axs[-1].xaxis.set_major_locator(ticker.LinearLocator(3))
-        axs[-1].yaxis.set_major_locator(ticker.LinearLocator(3))
     elif numCurves == 3:
         for res in res_lst:
             axs[-1].plot(res[:, 0], res[:, 1], res[:, 2])
-
         if res_brute is not None:
             axs[-1].scatter(res_brute[:, 0], res_brute[:, 1], res_brute[:, 2], color='r', marker ='.',alpha=0.1)
 
-        axs[-1].set_title("Parametric space")
-        axs[-1].set_xlim([0.0,1.0])
-        axs[-1].set_ylim([0.0,1.0])
-        axs[-1].set_zlim([0.0,1.0])
-        axs[-1].xaxis.set_major_locator(ticker.LinearLocator(3))
-        axs[-1].yaxis.set_major_locator(ticker.LinearLocator(3))
-        axs[-1].zaxis.set_major_locator(ticker.LinearLocator(3))
+    axs[-1].set_zlim(range_res[2])
+    axs[-1].zaxis.set_major_locator(ticker.LinearLocator(3))
+
+    axs[-1].set_title("Parametric space")
+    axs[-1].set_xlim(range_res[0])
+    axs[-1].set_ylim(range_res[1])
+    axs[-1].xaxis.set_major_locator(ticker.LinearLocator(3))
+    axs[-1].yaxis.set_major_locator(ticker.LinearLocator(3))
 
     for out in out_lst:
         axs[-2].plot(out[:, 0], out[:, 1])
     if out_brute is not None:
         axs[-2].scatter(out_brute[:, 0], out_brute[:, 1], color='r', marker ='.',alpha=0.1)
 
-    out_x_min, out_x_max = np.min([np.min(out[:, 0]) for out in out_lst]), np.max([np.max(out[:, 0]) for out in out_lst])
-    out_y_min, out_y_max = np.min([np.min(out[:, 1]) for out in out_lst]), np.max([np.max(out[:, 1]) for out in out_lst])
+    min_out = np.min([np.min(out, axis=0) for out in out_lst], axis=0)
+    max_out = np.max([np.max(out, axis=0) for out in out_lst], axis=0)
+    range_out = np.round(np.stack((min_out, max_out), axis=1),decimals=1)
 
     axs[-2].set_title("Result curve")
-    axs[-2].set_xlim([out_x_min, out_x_max])
-    axs[-2].set_ylim([out_y_min, out_y_max])
+    axs[-2].set_xlim(range_out[0])
+    axs[-2].set_ylim(range_out[1])
     axs[-2].xaxis.set_major_locator(ticker.LinearLocator(3))
     axs[-2].yaxis.set_major_locator(ticker.LinearLocator(3))
     plt.show(block=False)
-    return axs
+    return fig, axs

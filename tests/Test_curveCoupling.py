@@ -2,6 +2,7 @@ import numpy as np
 from curveCoupling.curveGenerators import *
 from curveCoupling import ndcurve, curveCouplingProblem, solveCurveCoupling, solveCurveCoupling_bruteForce_localSolve
 from curveCoupling.utils.defaultPlots import plotResults
+from matplotlib import pyplot as plt
 
 p0 = np.array([[0.0, 0.0], [0.55,0.6], [1.1, 0.88], [1.27, 0.72], [1.1,0.55]])
 p0 = np.concatenate([p0, [2.0,1.0]-np.flip(p0,axis=0)])
@@ -26,4 +27,10 @@ out, res = solveCurveCoupling(prob)
 out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=10)
 
 plotResults(data,[out],[res],out_brute,res_brute)
+
+name = "curveCoupling_General"
+folder = "assets\\"
+extension = ".png"
+plt.savefig(folder+name+extension)
+print("Figure saved as "+name+extension)
 input("Press Enter")

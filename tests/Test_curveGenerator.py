@@ -11,15 +11,18 @@ p1 =np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.1],
 data1 = [generate_curve_CubicSpline(p1, 200), generate_curve_Pchip(p1,200), generate_curve_snaps(p1,200), generate_curve_peaks(p1,200)]
 
 fig = plt.figure()
-axs = fig.subplots(1,2)
+labels = ["CubicSpline", "Pchip", "Snaps"]
+plt.scatter(p0[:,0],p0[:,1], color='k', label="Control points")
+for i,d in enumerate(data0):
+    plt.plot(d[:,0],d[:,1], label=labels[i])
+plt.legend(loc="lower right")
 
-for d in data0:
-    axs[0].plot(d[:,0],d[:,1])
-axs[0].scatter(p0[:,0],p0[:,1], color='k')
 
-for d in data1:
-    axs[1].plot(d[:,0],d[:,1])
-axs[1].scatter(p1[:,0],p1[:,1], color='k')
+plt.show(block=False)
 
-plt.pause(0.1)
+name = "curveGenerator"
+folder = "assets\\"
+extension = ".png"
+plt.savefig(folder+name+extension)
+print("Figure saved as "+name+extension)
 input("Press Enter")

@@ -1,6 +1,7 @@
 import numpy as np
 from curveCoupling.curveGenerators import *
-from curveCoupling import ndcurve, curveCouplingProblem, solveWithSingularities, findSingularities, solveCurveCoupling_bruteForce_localSolve
+from curveCoupling import ndcurve, curveCouplingProblem, solveCurveCoupling_bruteForce_localSolve
+from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Singularities, findSingularities
 from curveCoupling.utils.defaultPlots import plotResults
 from matplotlib import pyplot as plt
 
@@ -21,17 +22,22 @@ output_matrices[0,:,0] = np.array([1.0,0.0,0.0])
 output_matrices[1,:,1] = np.array([1.0,1.0,0.0])
 prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
 
-out_lst, res_lst = solveWithSingularities(prob, tol=1e-3)
+out_lst, res_lst = solveCurveCoupling_Singularities(prob, tol=1e-3)
 sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities(prob, 10, tol=1e-3)
 out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=10)
 
-axs = plotResults(data,out_lst,res_lst,out_brute,res_brute)
+_, axs = plotResults(data,out_lst,res_lst)
 
-t = np.linspace(0.0, 1e-1, 10)
+t = np.linspace(0.0, 0.1, 10)
 for seed, order, dirs in zip(sing_seeds, sing_orders, sing_dirs):
     for d in dirs:
         sing_res = (d[np.newaxis, :] * t[:, np.newaxis]) ** order[np.newaxis, :] + seed[np.newaxis, :]
         axs[-1].plot(sing_res[:, 0], sing_res[:, 1], sing_res[:, 2], color='k', alpha=0.5)
 
 plt.show(block=False)
+name = "curveCoupling_Singularities_General"
+folder = "assets\\"
+extension = ".png"
+plt.savefig(folder+name+extension)
+print("Figure saved as "+name+extension)
 input("Press Enter")

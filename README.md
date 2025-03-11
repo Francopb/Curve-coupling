@@ -7,9 +7,10 @@ A package for curve coupling analysis.
 Curve Coupling is a Python package designed for analyzing and solving curve coupling problems. It provides tools for:
 
 - Generating different types of curves
-- Finding singularities in coupled curves
 - Solving curve coupling problems with constraints
 - Visualizing results with `matplotlib`
+
+![imgDemo Animation](assets/animation.gif)
 
 ## Installation
 
@@ -39,6 +40,9 @@ data = [
 ]
 ```
 
+Comparison of generated curves:
+![Generated curves](assets/curveGenerator.png)
+
 ### Solving Curve Coupling Problems (Equality)
 
 Solve curve coupling problems efficiently (in case of equality constraints):
@@ -62,6 +66,66 @@ prob_eq = curveCouplingProblem_Equality(curves, match_index)
 out, res = solveCurveCoupling_Equality(prob_eq)
 out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob_eq, iter_points=10)
 ```
+
+Comparison with brute force results, we are missing the islands.
+![curveCoupling-Equality](assets/curveCoupling_Equality.png)
+
+### Finding islands in Curve Coupling Problems (Equality)
+
+Find islands in curve coupling problems efficiently (in case of equality constraints):
+
+```python
+import numpy as np
+from curveCoupling.curveGenerators import generate_curve_peaks
+from curveCoupling import ndcurve, curveCouplingProblem_Equality, solveCurveCoupling_bruteForce_localSolve
+from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Islands_Equality
+
+
+p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
+p1 = np.array([[0.0, 0.0], [0.2, 0.5], [0.6, 0.2], [1.0, 1.0]])
+p2 = np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.1],
+                [0.7, 0.4], [0.8, 0.35], [1.0, 1.0]])
+points = [p0, p1, p2]
+data = [generate_curve_peaks(pts, 200) for pts in points]
+match_index = 1
+
+curves = ndcurve.createList(data)
+prob = curveCouplingProblem_Equality(curves,1)
+
+out_lst, res_lst = solveCurveCoupling_Islands_Equality(prob)
+```
+
+We now get the islands.
+![curveCoupling-Islands-Equality](assets/curveCoupling_Islands_Equality.png)
+
+### Dealing with singularities in Curve Coupling Problems (Equality)
+
+Deal with singularities in curve coupling problems efficiently (in case of equality constraints):
+
+```python
+import numpy as np
+from curveCoupling.curveGenerators import generate_curve_peaks
+from curveCoupling import ndcurve, curveCouplingProblem_Equality, solveCurveCoupling_bruteForce_localSolve
+from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Singularities_Equality, findSingularities_Equality
+
+p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
+p1 = np.array([[0.0, 0.0], [0.2, 0.6], [0.6, 0.3], [1.0, 1.0]])
+p2 = np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.3],
+                [0.7, 0.5], [0.8, 0.4], [1.0, 1.0]])
+
+points = [p0, p1, p2]
+data = [generate_curve_peaks(pts, 200) for pts in points]
+match_index = 1
+
+curves = ndcurve.createList(data)
+prob = curveCouplingProblem_Equality(curves,1)
+
+sing_out, sing_seeds, sing_orders, sing_dirs = findSingularities_Equality(prob, tol=1e-3)
+out_lst, res_lst = solveWithSingularities_Equality(prob, tol=1e-3)
+```
+
+We get the different branches from the singular points.
+![curveCoupling-Singularities-Equality](assets/curveCoupling_Singularities_Equality.png)
 
 ### Solving Curve Coupling Problems (General)
 
@@ -95,28 +159,8 @@ out, res = solveCurveCoupling(prob)
 out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=10)
 ```
 
-### Finding islands in Curve Coupling Problems (Equality)
-
-Find islands in curve coupling problems efficiently (in case of equality constraints):
-
-```python
-import numpy as np
-from curveCoupling.curveGenerators import generate_curve_peaks
-from curveCoupling import ndcurve, curveCouplingProblem_Equality, solveWithIslands_Equality
-
-p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
-p1 = np.array([[0.0, 0.0], [0.2, 0.5], [0.6, 0.2], [1.0, 1.0]])
-p2 = np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.1],
-                [0.7, 0.4], [0.8, 0.35], [1.0, 1.0]])
-points = [p0, p1, p2]
-data = [generate_curve_peaks(pts, 200) for pts in points]
-match_index = 1
-
-curves = ndcurve.createList(data)
-prob = curveCouplingProblem_Equality(curves,1)
-
-out_lst, res_lst = solveWithIslands_Equality(prob)
-```
+Comparison with brute force results, we are missing the islands.
+![curveCoupling-General](assets/curveCoupling_General.png)
 
 ### Finding islands in Curve Coupling Problems (General)
 
@@ -124,8 +168,8 @@ Find islands in curve coupling problems efficiently (in case of general constrai
 
 ```python
 import numpy as np
-from curveCoupling.curveGenerators import generate_curve_CubicSpline
-from curveCoupling import ndcurve, curveCouplingProblem, solveWithIslands
+from curveCoupling import ndcurve, curveCouplingProblem, solveCurveCoupling_bruteForce_localSolve
+from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Islands
     
 p0 = np.array([[0.0, 0.0], [0.55,0.6], [1.1, 0.88], [1.27, 0.72], [1.1,0.55]])
 p0 = np.concatenate([p0, [2.0,1.0]-np.flip(p0,axis=0)])
@@ -145,33 +189,11 @@ output_matrices[0,:,0] = np.array([1.0,0.0,0.0])
 output_matrices[1,:,1] = np.array([1.0,1.0,0.0])
 
 prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
-out_lst, res_lst = solveWithIslands(prob)
+out_lst, res_lst = solveCurveCoupling_Islands(prob)
 ```
 
-### Dealing with singularities in Curve Coupling Problems (Equality)
-
-Deal with singularities in curve coupling problems efficiently (in case of equality constraints):
-
-```python
-import numpy as np
-from curveCoupling.curveGenerators import generate_curve_peaks
-from curveCoupling import ndcurve, curveCouplingProblem_Equality, solveWithSingularities_Equality, findSingularities_Equality
-
-p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
-p1 = np.array([[0.0, 0.0], [0.2, 0.6], [0.6, 0.3], [1.0, 1.0]])
-p2 = np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.3],
-                [0.7, 0.5], [0.8, 0.4], [1.0, 1.0]])
-
-points = [p0, p1, p2]
-data = [generate_curve_peaks(pts, 200) for pts in points]
-match_index = 1
-
-curves = ndcurve.createList(data)
-prob = curveCouplingProblem_Equality(curves,1)
-
-sing_out, sing_seeds, sing_orders, sing_dirs = findSingularities_Equality(prob, tol=1e-3)
-out_lst, res_lst = solveWithSingularities_Equality(prob, tol=1e-3)
-```
+We now get the islands.
+![curveCoupling-Islands-General](assets/curveCoupling_Islands_General.png)
 
 ### Dealing with singularities in Curve Coupling Problems (General)
 
@@ -180,7 +202,9 @@ Deal with singularities in curve coupling problems efficiently (in case of gener
 ```python
 import numpy as np
 from curveCoupling.curveGenerators import generate_curve_snaps
-from curveCoupling import ndcurve, curveCouplingProblem, solveWithSingularities, findSingularities
+from curveCoupling import ndcurve, curveCouplingProblem, solveCurveCoupling_bruteForce_localSolve
+from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Singularities, findSingularities
+
     
 
 p0 = np.array([[0.0, 0.0], [0.5,0.6], [1.1, 0.9], [1.35, 0.75], [1.1,0.55]])
@@ -201,8 +225,11 @@ output_matrices[1,:,1] = np.array([1.0,1.0,0.0])
 prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
 
 sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities(prob, 10, tol=1e-3)
-out_lst, res_lst = solveWithSingularities(prob, tol=1e-3)
+out_lst, res_lst = solveCurveCoupling_Singularities(prob, tol=1e-3)
 ```
+
+We get the different branches from the singular points.
+![curveCoupling-Singularities-General](assets/curveCoupling_Singularities_General.png)
 
 ### Plotting Results
 
@@ -233,6 +260,12 @@ for out in out_lst:
 axs[-2].scatter(out_brute[:, 0], out_brute[:, 1], color='r', marker ='.',alpha=0.1)
 
 plt.show()
+```
+
+Alternatively, use the provided default plot:
+```python
+from curveCoupling.utils.defaultPlots import plotResults
+fig, axs = plotResults(data,out_lst,res_lst,out_brute,res_brute)
 ```
 
 ## Usage: compliant elements networks

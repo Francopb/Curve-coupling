@@ -311,7 +311,7 @@ def findSingularities_Equality(
 
     return np.array(output_vec), np.array(param_vec), order_vec, dirs_vec
 
-def solveWithSingularities_Equality(prb: curveCouplingProblem_Equality,
+def solveCurveCoupling_Singularities_Equality(prb: curveCouplingProblem_Equality,
     tol: float = 1e-6,
     d_step: float = 5e-2,
 ) -> Tuple[np.ndarray, np.ndarray, List[int], List[np.ndarray]]:
@@ -580,7 +580,7 @@ def findIslands_Equality(
 
     return np.array(output_res), np.array(param_res), np.array(initial_dir)
 
-def solveWithIslands_Equality(prb: curveCouplingProblem_Equality,
+def solveCurveCoupling_Islands_Equality(prb: curveCouplingProblem_Equality,
     tol: float = -1e-6,
 ) -> Tuple[np.ndarray, np.ndarray, List[int], List[np.ndarray]]:
     """

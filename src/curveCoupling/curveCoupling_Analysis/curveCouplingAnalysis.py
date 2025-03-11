@@ -4,7 +4,6 @@ from scipy import optimize, linalg
 from curveCoupling.utils.filterSetsOfPoints import removeRepeats, min_dist_point_to_set, remove_repeat_sets
 from curveCoupling.utils.matrixOperations import rref
 from fractions import Fraction
-from curveCoupling.curveInterpExtrapFunc import ndcurve
 import itertools
 from typing import *
 
@@ -242,7 +241,7 @@ def findSingularities(prb: curveCouplingProblem,
     sing_orders, sing_dirs = zip(*sing_solutions)
     return out_singularities, singularities, sing_orders, sing_dirs
 
-def solveWithSingularities(prb: curveCouplingProblem,
+def solveCurveCoupling_Singularities(prb: curveCouplingProblem,
                            iter_points = 10,
                            tol: float = 1e-2,
                            d_step: float = 5e-2) -> Tuple[List[np.ndarray], List[np.ndarray]]:
@@ -294,7 +293,7 @@ def solveWithSingularities(prb: curveCouplingProblem,
     return out_lst, res_lst
 
 
-def solveWithIslands(prb: curveCouplingProblem,
+def solveCurveCoupling_Islands(prb: curveCouplingProblem,
                     iter_points = 10,
 ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """

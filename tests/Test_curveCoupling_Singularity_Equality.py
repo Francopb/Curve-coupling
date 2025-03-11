@@ -1,6 +1,7 @@
 import numpy as np
 from curveCoupling.curveGenerators import generate_curve_peaks
-from curveCoupling import ndcurve, curveCouplingProblem_Equality, solveCurveCoupling_bruteForce_localSolve, solveWithSingularities_Equality, findSingularities_Equality
+from curveCoupling import ndcurve, curveCouplingProblem_Equality, solveCurveCoupling_bruteForce_localSolve
+from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Singularities_Equality, findSingularities_Equality
 from curveCoupling.utils.defaultPlots import plotResults
 from matplotlib import pyplot as plt
 
@@ -18,17 +19,21 @@ prob = curveCouplingProblem_Equality(curves,1)
 
 sing_out, sing_seeds, sing_orders, sing_dirs = findSingularities_Equality(prob, tol=1e-3)
 
-out_lst, res_lst = solveWithSingularities_Equality(prob, tol=1e-3)
+out_lst, res_lst = solveCurveCoupling_Singularities_Equality(prob, tol=1e-3)
 out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=10)
 
-axs = plotResults(data,out_lst,res_lst,out_brute,res_brute)
+_, axs = plotResults(data,out_lst,res_lst)
 
-t = np.linspace(0.0,5e-1,10)
+t = np.linspace(0.0,0.25,10)
 for seed,order,dirs in zip(sing_seeds, sing_orders, sing_dirs):
     for d in dirs:
         sing_res = (d[np.newaxis,:] * t[:,np.newaxis])**order[np.newaxis,:]+seed[np.newaxis,:]
         axs[-1].plot(sing_res[:,0],sing_res[:,1],sing_res[:,2], color='k')
 
-
 plt.show(block=False)
+name = "curveCoupling_Singularities_Equality"
+folder = "assets\\"
+extension = ".png"
+plt.savefig(folder+name+extension)
+print("Figure saved as "+name+extension)
 input("Press Enter")
