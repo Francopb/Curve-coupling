@@ -101,6 +101,30 @@ Comparison of generated curves:
   <img src="assets/curveGenerator.png" alt="Generated curves" style="border-radius: 15px;">
 </p>
 
+### Interpolating and extrpolating Curves
+
+Generate a function that interpolates and extrapolates data points as a parametric curve using the class `ndcurves`:
+
+```python
+import numpy as np
+from curveCoupling.curveGenerators import generate_curve_CubicSpline
+from curveCoupling import ndcurve
+
+p0 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
+data = generate_curve_CubicSpline(p0, 200)
+
+curve = ndcurve(data)
+t = np.linspace(0.0,1.0,200)
+values = curve(t)
+deriv = curve(t, nu=1)
+```
+
+Resulting values:
+
+<p align="center">
+  <img src="assets/curveInterpolator.png" alt="Interpolated curves" style="border-radius: 15px;">
+</p>
+
 ### Solving Curve Coupling Problems (Equality)
 
 Solve curve coupling problems efficiently (in case of equality constraints):

@@ -11,6 +11,9 @@ def make_fig(name):
 from Test_curveGenerator import run
 make_fig("curveGenerator")
 
+from Test_curveInterpolator import run
+make_fig("curveInterpolator")
+
 from Test_curveCoupling_Equality import run
 make_fig("curveCoupling_Equality")
 
