@@ -32,7 +32,7 @@ t = np.linspace(0.0, 0.1, 10)
 for seed, order, dirs in zip(sing_seeds, sing_orders, sing_dirs):
     for d in dirs:
         sing_res = (d[np.newaxis, :] * t[:, np.newaxis]) ** order[np.newaxis, :] + seed[np.newaxis, :]
-        axs[-1].plot(sing_res[:, 0], sing_res[:, 1], sing_res[:, 2], color='k', alpha=0.5)
+        axs[-1].plot(sing_res[:, 0], sing_res[:, 1], sing_res[:, 2], color='k')
 
 plt.show(block=False)
 name = "curveCoupling_Singularities_General"
