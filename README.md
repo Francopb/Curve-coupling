@@ -563,6 +563,7 @@ from matplotlib import pyplot as plt
 
 ax = plt.subplot()
 plot_stability(ax,data,stability)
+plt.show()
 ```
 
 For a network:
