@@ -34,7 +34,7 @@ e_i=\sum_{j,k} \mathbf{M}_{C_{i,j,k}}\,c_{j_k}(t_j) + \mathbf{V}_{C_i}= 0.
 Similarly, we define the output array $\mathbf{M}_O\in\mathbb{R}^{d_o\times N \times d}$, and output vector $\mathbf{V}_O\in\mathbb{R}^{d_o}$, where $d_o$ is the dimension of the output (generally the same as the inputs). In that case, the output is:
 
 ```math
-c_{\mathrm{out}_i}(t_0,t_1,\dots,t_N)=\sum_{j,k} \mathbf{M}_{O_{i,j,k}}\,c_{j_k}(t_j) + \mathbf{V}_{O_i}.```
+c_{\mathrm{out}_i}(t_0,t_1,\dots,t_N)=\sum_{j,k} \mathbf{M}_{O_{i,j,k}}\,c_{j_k}(t_j) + \mathbf{V}_{O_i}.
 ```
 
 ### Solution
