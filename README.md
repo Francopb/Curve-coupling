@@ -1,6 +1,6 @@
 # Curve Coupling
 
-A package for curve coupling analysis.
+A package for curve coupling analysis. This package helps finding the solution for a coupling of N curves with N-1 constraints (which gives a curve as a solution).
 
 ## Overview
 
@@ -9,6 +9,15 @@ Curve Coupling is a Python package designed for analyzing and solving curve coup
 - Generating different types of curves
 - Solving curve coupling problems with constraints
 - Visualizing results with `matplotlib`
+
+We consider two cases, the equality case and the general case:
+
+- In the equality case, the constraint is that some dimension of the input curves must be equal. For example for a match dimension $k$, the constraints are $c_{0_k}(t_0) = c_{1_k}(t_1) = \dots = c_{N_k}(t_N)$. The output for a solution point is just the average of the inputs, $c_\mathrm{out}(t_0,t_1,\dots,t_N)=\frac{1}{N} \sum_i c_i(t_t)$.
+- In the general case, we define a constraint array $\mathbf{M_c}\in\mathbb{R}^{(N-1)\times N \times d}$, and constraint vector $\mathbf{V_c}\in\mathbb{R}^{(N-1)}$, where $d$ is the dimension of the curves (generally 2). In that case, the constraints are $e_i=\sum_{j,k} \mathbf{M}_{\mathbf{c}_{i,j,k}}\,c_{j_k}(t_j) + \mathbf{V}_{\mathbf{c}_i}= 0$. Similarly, we define the output array $\mathbf{M_o}\in\mathbb{R}^{d_o\times N \times d}$, and output vector $\mathbf{V_0}\in\mathbb{R}^{d_o}$, where $d_o$ is the dimension of the output. In that case, the output is $c_\mathrm{out}(t_0,t_1,\dots,t_N)=\sum_{j,k} \mathbf{M}_{\mathbf{o}_{i,j,k}}\,c_{j_k}(t_j) + \mathbf{V}_{\mathbf{o}_i}= 0$.
+
+In both cases, given an initial seed point, the solution is computed in the parametric space by a continuation algorithm based on computing the tangent to the solution at each step.
+
+As an example, we consider the constraints $c_{0_0}(t_0) = c_{1_0}(t_1) + c_{2_0}(t_2)$ and $ c_{1_1}(t_1) = c_{2_1}(t_2)$, and outputs $c_{\mathrm{out}_0}(t_0,t_1,t_2) = c_{0_0}(t_0)$ and $c_{\mathrm{out}_1}(t_0,t_1,t_2) = c_{0_1}(t_0) + c_{1_1}(t_1)$. The continuation algorithm iterative solution can be seen below.
 
 ![imgDemo Animation](assets/animation.gif)
 
