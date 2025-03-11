@@ -100,7 +100,7 @@ def plotResults_stability(data: List[np.ndarray],
         axs.append(fig.add_subplot(gs[1, :numCurves]))
     elif numCurves == 3:
         axs.append(fig.add_subplot(gs[1, :numCurves], projection='3d'))
-    fig.tight_layout(pad=2, h_pad=2, w_pad=2)
+    fig.tight_layout(pad=2, h_pad=3, w_pad=2)
 
     for i, (d,s) in enumerate(zip(data,data_stability)):
         plot_stability(axs[i],d,s)
@@ -110,9 +110,10 @@ def plotResults_stability(data: List[np.ndarray],
         
         axs[i].set_xlim(range_d[0])
         axs[i].set_ylim(range_d[1])
-        
         axs[i].xaxis.set_major_locator(ticker.LinearLocator(3))
         axs[i].yaxis.set_major_locator(ticker.LinearLocator(3))
+        axs[i].set_xlabel("$x_"+str(i)+"$")
+        axs[i].set_ylabel("$F_"+str(i)+"$")
 
     min_res = np.min([np.min(res, axis=0) for res in res_lst], axis=0)
     max_res = np.max([np.max(res, axis=0) for res in res_lst], axis=0)
@@ -125,12 +126,15 @@ def plotResults_stability(data: List[np.ndarray],
     if numCurves == 3:
         axs[-1].set_zlim(range_res[2])
         axs[-1].zaxis.set_major_locator(ticker.LinearLocator(3))
+        axs[-1].set_zlabel("$t_2$")
 
     axs[-1].set_title("Parametric space")
     axs[-1].set_xlim(range_res[0])
     axs[-1].set_ylim(range_res[1])
     axs[-1].xaxis.set_major_locator(ticker.LinearLocator(3))
     axs[-1].yaxis.set_major_locator(ticker.LinearLocator(3))
+    axs[-1].set_xlabel("$t_0$")
+    axs[-1].set_ylabel("$t_1$")
 
     for out, s in zip(out_lst, out_stability_lst):
         plot_stability(axs[-2],out,s)
@@ -144,6 +148,8 @@ def plotResults_stability(data: List[np.ndarray],
     axs[-2].set_ylim(range_out[1])
     axs[-2].xaxis.set_major_locator(ticker.LinearLocator(3))
     axs[-2].yaxis.set_major_locator(ticker.LinearLocator(3))
+    axs[-2].set_xlabel("$x_\mathrm{out}$")
+    axs[-2].set_ylabel("$F_\mathrm{out}$")
     plt.show(block=False)
     return fig, axs
 
@@ -151,7 +157,6 @@ def plot_stability(ax, data, stability):
     custom_cmap = mcolors.LinearSegmentedColormap.from_list("custom_cmap", ["tab:red", "tab:olive", "tab:green"])
     norm = mcolors.Normalize(vmin=-1, vmax=1)  # You can adjust vmin and vmax as needed
     nDims = data.shape[1]
-    print(nDims)
     if nDims == 2:
         colored_line(ax, stability, data[:, 0], data[:, 1], norm=norm, cmap=custom_cmap)
     elif nDims == 3:

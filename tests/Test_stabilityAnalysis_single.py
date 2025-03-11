@@ -10,11 +10,14 @@ eigen = getEigenVals(data)
 stability = eigen2stability(eigen)
 
 ax = plt.subplot()
-
+ax.plot(0, 0, color="tab:green", label="Stable")
+ax.plot(0, 0, color="tab:olive", label="Cond.stable")
+ax.plot(0, 0, color="tab:red"  , label="Unstable")
 plot_stability(ax,data,stability)
-plt.show(block=False)
 ax.set_xlabel("Displacement")
 ax.set_ylabel("Force")
+ax.legend(loc="lower right")
+plt.show(block=False)
 
 name = "curveCoupling_Stability_Single"
 folder = "assets\\"
