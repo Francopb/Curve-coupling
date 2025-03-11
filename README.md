@@ -347,6 +347,73 @@ Constr_D, Constr_F, Out_D, Out_F = generate_circuit_equations(edges)
 ConstraintMatrices, OutputMatrices = force_disp_to_matrices(Constr_D, Constr_F, Out_D, Out_F)
 ```
 
+In the example, the graph is:
+```
+  Start
+   /  \
+  1    4
+ /      \
+A---2---B
+ \     /
+  5   3
+   \ /
+   End
+```
+The output is:
+```
+Constr_D:
+ [[ 0.  1.  1.  0. -1.]
+ [-1. -1.  0.  1.  0.]]
+ 
+Constr_F:
+ [[-1.  1.  0.  0.  1.]
+ [ 0. -1.  1. -1.  0.]]
+
+Out_D:
+ [0. 0. 1. 1. 0.]
+
+Out_F:
+ [1. 0. 0. 1. 0.]
+
+ ConstraintMatrices:
+ [[[ 0.  0.]
+  [ 1.  0.]
+  [ 1.  0.]
+  [ 0.  0.]
+  [-1.  0.]]
+
+ [[-1.  0.]
+  [-1.  0.]
+  [ 0.  0.]
+  [ 1.  0.]
+  [ 0.  0.]]
+
+ [[ 0. -1.]
+  [ 0.  1.]
+  [ 0.  0.]
+  [ 0.  0.]
+  [ 0.  1.]]
+
+ [[ 0.  0.]
+  [ 0. -1.]
+  [ 0.  1.]
+  [ 0. -1.]
+  [ 0.  0.]]]
+
+OutputMatrices:
+ [[[0. 0.]
+  [0. 0.]
+  [1. 0.]
+  [1. 0.]
+  [0. 0.]]
+
+ [[0. 1.]
+  [0. 0.]
+  [0. 0.]
+  [0. 1.]
+  [0. 0.]]]
+```
+
 ### Computing stability (Equality)
 
 Compute stability of network from components (in case of equality constraints):

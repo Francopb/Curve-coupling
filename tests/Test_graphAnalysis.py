@@ -12,13 +12,16 @@ edges = [
 Constr_D, Constr_F, Out_D, Out_F = generate_circuit_equations(edges)
 
 # Display the results
-print("Displacement constraints:\n", Constr_D)
-print("Force constraints:\n", Constr_F)
+print("Constr_D:\n", Constr_D)
+print("Constr_F:\n", Constr_F)
 
-print("Displacement output:\n", Out_D)
-print("Force output:\n", Out_F)
+print("Out_D:\n", Out_D)
+print("Out_F:\n", Out_F)
 
 ConstraintMatrices, OutputMatrices = force_disp_to_matrices(Constr_D, Constr_F, Out_D, Out_F)
+
+print("ConstraintMatrices:\n", ConstraintMatrices)
+print("OutputMatrices:\n", OutputMatrices)
 
 print("ConstraintMatrices (disp):\n", ConstraintMatrices[:, :, 0])
 print("ConstraintMatrices (force):\n", ConstraintMatrices[:, :, 1])
