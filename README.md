@@ -6,11 +6,14 @@ Made at: [Soft Robotics Group @ KU Leuven](https://softroboticsgroup.com/)
 
 ## Overview
 
-Curve Coupling is a Python package designed for analyzing and solving curve coupling problems. It provides tools for:
+Curve Coupling is a Python package designed for analyzing and solving curve coupling problems. It provides tools for solving curve coupling problems with constraints. Applied to networks nonlinear of compliant elements, this package allows to
 
-- Generating different types of curves
-- Solving curve coupling problems with constraints
-- Visualizing results with `matplotlib`
+- Find the system constriants from its graph structure.
+- Compute the equilibirum points.
+- Find isolated islands.
+- Find singularities and branching points.
+- Compute the stability of the elements and the network
+- Visualizing the results.
 
 ### Equality problem
 
