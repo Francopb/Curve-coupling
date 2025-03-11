@@ -59,10 +59,9 @@ c_\mathrm{out}(t_0,t_1,t_2) = \left[c_{0_0}(t_0);\, c_{0_1}(t_0) + c_{1_1}(t_1)\
 
 The continuation algorithm solution process can be seen below.
 
-<div style="display: flex; justify-content: center;">
-<img src="assets/animation.gif" alt="Demo Animation" style="border-radius: 8px;">
-</div>
-
+<p align="center">
+  <img src="assets/animation.gif" alt="Demo Animation">
+</p>
 
 ### Compliant elements network
 
@@ -98,9 +97,9 @@ data = [
 
 Comparison of generated curves:
 
-<div style="display: flex; justify-content: center;">
-<img src="assets/curveGenerator.png" alt="Generated curves" style="border-radius: 8px;">
-</div>
+<p align="center">
+  <img src="assets/curveGenerator.png" alt="Generated curves">
+</p>
 
 ### Solving Curve Coupling Problems (Equality)
 
@@ -128,9 +127,9 @@ out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob_eq, iter_po
 
 Comparison with brute force results, we are missing the islands.
 
-<div style="display: flex; justify-content: center;">
-<img src="assets/curveCoupling_Equality.png" alt="curveCoupling Equality" style="border-radius: 8px;">
-</div>
+<p align="center">
+  <img src="assets/curveCoupling_Equality.png" alt="curveCoupling Equality">
+</p>
 
 ### Finding islands in Curve Coupling Problems (Equality)
 
@@ -159,9 +158,9 @@ out_lst, res_lst = solveCurveCoupling_Islands_Equality(prob)
 
 We now get the islands.
 
-<div style="display: flex; justify-content: center;">
-<img src="assets/curveCoupling_Islands_Equality.png" alt="curveCoupling Islands Equality" style="border-radius: 8px;">
-</div>
+<p align="center">
+  <img src="assets/curveCoupling_Islands_Equality.png" alt="curveCoupling Islands Equality">
+</p>
 
 ### Dealing with singularities in Curve Coupling Problems (Equality)
 
@@ -191,9 +190,9 @@ out_lst, res_lst = solveCurveCoupling_Singularities_Equality(prob, tol=1e-3)
 
 We get the different branches from the singular points.
 
-<div style="display: flex; justify-content: center;">
-<img src="assets/curveCoupling_Singularities_Equality.png" alt="curveCoupling Singularities Equality" style="border-radius: 8px;">
-</div>
+<p align="center">
+  <img src="assets/curveCoupling_Singularities_Equality.png" alt="curveCoupling Singularities Equality">
+</p>
 
 ### Solving Curve Coupling Problems (General)
 
@@ -229,9 +228,9 @@ out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_point
 
 Comparison with brute force results, we are missing the islands.
 
-<div style="display: flex; justify-content: center;">
-<img src="assets/curveCoupling_General.png" alt="curveCoupling General" style="border-radius: 8px;">
-</div>
+<p align="center">
+  <img src="assets/curveCoupling_General.png" alt="curveCoupling General">
+</p>
 
 ### Finding islands in Curve Coupling Problems (General)
 
@@ -265,9 +264,9 @@ out_lst, res_lst = solveCurveCoupling_Islands(prob)
 
 We now get the islands.
 
-<div style="display: flex; justify-content: center;">
-<img src="assets/curveCoupling_Islands_General.png" alt="curveCoupling Islands General" style="border-radius: 8px;">
-</div>
+<p align="center">
+  <img src="assets/curveCoupling_Islands_General.png" alt="curveCoupling Islands General">
+</p>
 
 ### Dealing with singularities in Curve Coupling Problems (General)
 
@@ -277,9 +276,7 @@ Deal with singularities in curve coupling problems efficiently (in case of gener
 import numpy as np
 from curveCoupling.curveGenerators import generate_curve_snaps
 from curveCoupling import ndcurve, curveCouplingProblem, solveCurveCoupling_bruteForce_localSolve
-from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Singularities, findSingularities
-
-    
+from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Singularities, findSingularities    
 
 p0 = np.array([[0.0, 0.0], [0.5,0.6], [1.1, 0.9], [1.35, 0.75], [1.1,0.55]])
 p0 = np.concatenate([p0, [2.0,1.0]-np.flip(p0,axis=0)])
@@ -304,9 +301,9 @@ out_lst, res_lst = solveCurveCoupling_Singularities(prob, tol=1e-3)
 
 We get the different branches from the singular points.
 
-<div style="display: flex; justify-content: center;">
-<img src="assets/curveCoupling_Singularities_General.png" alt="curveCoupling Singularities General" style="border-radius: 8px;">
-</div>
+<p align="center">
+  <img src="assets/curveCoupling_Singularities_General.png" alt="curveCoupling Singularities General">
+</p>
 
 ### Plotting Results
 
@@ -389,6 +386,7 @@ In the example, the graph is:
     |
    End
 ```
+
 The output is:
 ```console
 Constr_D:
@@ -461,9 +459,9 @@ stability = eigen2stability(eigen)
 
 We get the input stability evolution along the curve, assuming the initial point is stable.
 
-<div style="display: flex; justify-content: center;">
-<img src="assets/curveCoupling_Stability_Single.png" alt="Stability Element" style="border-radius: 8px;">
-</div>
+<p align="center">
+  <img src="assets/curveCoupling_Stability_Single.png" alt="Stability Element">
+</p>
 
 ### Computing stability of a network (Equality)
 
@@ -498,9 +496,9 @@ stability_analytic_lst = [eigen2stability(e) for e in eigen_analytic_lst]
 
 We get the input and output stabilities, including islands.
 
-<div style="display: flex; justify-content: center;">
-<img src="assets/curveCoupling_Stability_Equality.png" alt="Coupling Stability Equality" style="border-radius: 8px;">
-</div>
+<p align="center">
+  <img src="assets/curveCoupling_Stability_Equality.png" alt="Coupling Stability Equality">
+</p>
 
 ### Computing stability of a network (General)
 
@@ -542,9 +540,9 @@ stability_analytic_lst = [eigen2stability(e) for e in eigen_analytic_lst]
 
 We get the input and output stabilities, including islands.
 
-<div style="display: flex; justify-content: center;">
-<img src="assets/curveCoupling_Stability_General.png" alt="Coupling Stability General" style="border-radius: 8px;">
-</div>
+<p align="center">
+  <img src="assets/curveCoupling_Stability_General.png" alt="Coupling Stability General">
+</p>
 
 ### Plotting Results
 
