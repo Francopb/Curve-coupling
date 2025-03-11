@@ -60,7 +60,7 @@ c_\mathrm{out}(t_0,t_1,t_2) = \left[c_{0_0}(t_0);\, c_{0_1}(t_0) + c_{1_1}(t_1)\
 The continuation algorithm solution process can be seen below.
 
 <p align="center">
-  <img src="assets/animation.gif" alt="Demo Animation">
+  <img src="assets/animation.gif" alt="Demo Animation" style="border-radius: 15px;">
 </p>
 
 ### Compliant elements network
@@ -98,7 +98,7 @@ data = [
 Comparison of generated curves:
 
 <p align="center">
-  <img src="assets/curveGenerator.png" alt="Generated curves">
+  <img src="assets/curveGenerator.png" alt="Generated curves" style="border-radius: 15px;">
 </p>
 
 ### Solving Curve Coupling Problems (Equality)
@@ -128,7 +128,7 @@ out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob_eq, iter_po
 Comparison with brute force results, we are missing the islands.
 
 <p align="center">
-  <img src="assets/curveCoupling_Equality.png" alt="curveCoupling Equality">
+  <img src="assets/curveCoupling_Equality.png" alt="curveCoupling Equality" style="border-radius: 15px;">
 </p>
 
 ### Finding islands in Curve Coupling Problems (Equality)
@@ -159,7 +159,7 @@ out_lst, res_lst = solveCurveCoupling_Islands_Equality(prob)
 We now get the islands.
 
 <p align="center">
-  <img src="assets/curveCoupling_Islands_Equality.png" alt="curveCoupling Islands Equality">
+  <img src="assets/curveCoupling_Islands_Equality.png" alt="curveCoupling Islands Equality" style="border-radius: 15px;">
 </p>
 
 ### Dealing with singularities in Curve Coupling Problems (Equality)
@@ -191,7 +191,7 @@ out_lst, res_lst = solveCurveCoupling_Singularities_Equality(prob, tol=1e-3)
 We get the different branches from the singular points.
 
 <p align="center">
-  <img src="assets/curveCoupling_Singularities_Equality.png" alt="curveCoupling Singularities Equality">
+  <img src="assets/curveCoupling_Singularities_Equality.png" alt="curveCoupling Singularities Equality" style="border-radius: 15px;">
 </p>
 
 ### Solving Curve Coupling Problems (General)
@@ -229,7 +229,7 @@ out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_point
 Comparison with brute force results, we are missing the islands.
 
 <p align="center">
-  <img src="assets/curveCoupling_General.png" alt="curveCoupling General">
+  <img src="assets/curveCoupling_General.png" alt="curveCoupling General" style="border-radius: 15px;">
 </p>
 
 ### Finding islands in Curve Coupling Problems (General)
@@ -265,7 +265,7 @@ out_lst, res_lst = solveCurveCoupling_Islands(prob)
 We now get the islands.
 
 <p align="center">
-  <img src="assets/curveCoupling_Islands_General.png" alt="curveCoupling Islands General">
+  <img src="assets/curveCoupling_Islands_General.png" alt="curveCoupling Islands General" style="border-radius: 15px;">
 </p>
 
 ### Dealing with singularities in Curve Coupling Problems (General)
@@ -302,7 +302,7 @@ out_lst, res_lst = solveCurveCoupling_Singularities(prob, tol=1e-3)
 We get the different branches from the singular points.
 
 <p align="center">
-  <img src="assets/curveCoupling_Singularities_General.png" alt="curveCoupling Singularities General">
+  <img src="assets/curveCoupling_Singularities_General.png" alt="curveCoupling Singularities General" style="border-radius: 15px;">
 </p>
 
 ### Plotting Results
@@ -460,7 +460,7 @@ stability = eigen2stability(eigen)
 We get the input stability evolution along the curve, assuming the initial point is stable.
 
 <p align="center">
-  <img src="assets/curveCoupling_Stability_Single.png" alt="Stability Element">
+  <img src="assets/curveCoupling_Stability_Single.png" alt="Stability Element" style="border-radius: 15px;">
 </p>
 
 ### Computing stability of a network (Equality)
@@ -497,7 +497,7 @@ stability_analytic_lst = [eigen2stability(e) for e in eigen_analytic_lst]
 We get the input and output stabilities, including islands.
 
 <p align="center">
-  <img src="assets/curveCoupling_Stability_Equality.png" alt="Coupling Stability Equality">
+  <img src="assets/curveCoupling_Stability_Equality.png" alt="Coupling Stability Equality" style="border-radius: 15px;">
 </p>
 
 ### Computing stability of a network (General)
@@ -541,7 +541,7 @@ stability_analytic_lst = [eigen2stability(e) for e in eigen_analytic_lst]
 We get the input and output stabilities, including islands.
 
 <p align="center">
-  <img src="assets/curveCoupling_Stability_General.png" alt="Coupling Stability General">
+  <img src="assets/curveCoupling_Stability_General.png" alt="Coupling Stability General" style="border-radius: 15px;">
 </p>
 
 ### Plotting Results
