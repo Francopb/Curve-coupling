@@ -348,23 +348,31 @@ ConstraintMatrices, OutputMatrices = force_disp_to_matrices(Constr_D, Constr_F, 
 ```
 
 In the example, the graph is:
-```
+```text
   Start
-   /  \
-  1    4
- /      \
-A---2---B
- \     /
-  5   3
-   \ /
+    |
+-----
+|   |
+|   1
+|   |
+4   A----
+|   |   |
+|   2   |
+|   |   |
+----B   5
+    |   |
+    3   |
+    |   |
+    |----
+    |
    End
 ```
 The output is:
-```
+```console
 Constr_D:
  [[ 0.  1.  1.  0. -1.]
  [-1. -1.  0.  1.  0.]]
- 
+
 Constr_F:
  [[-1.  1.  0.  0.  1.]
  [ 0. -1.  1. -1.  0.]]
