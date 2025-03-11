@@ -26,7 +26,9 @@ prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
 out, res = solveCurveCoupling(prob)
 out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=10)
 
-plotResults(data,[out],[res],out_brute,res_brute)
+fig = plt.figure()
+plotResults(fig, data, [out], [res], out_brute, res_brute)
+plt.show(block=False)
 
 name = "curveCoupling_General"
 folder = "assets\\"

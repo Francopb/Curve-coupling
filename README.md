@@ -325,7 +325,10 @@ plt.show()
 Alternatively, use the provided default plot:
 ```python
 from curveCoupling.utils.defaultPlots import plotResults
-fig, axs = plotResults(data,out_lst,res_lst,out_brute,res_brute)
+
+fig = plt.figure()
+axs = plotResults(fig, data, out_lst, res_lst, out_brute, res_brute)
+plt.show(block=False)
 ```
 
 ## Usage: compliant elements networks
@@ -570,7 +573,10 @@ For a network:
 
 ```python
 from curveCoupling.utils.defaultPlots import plotResults_stability
-fig, axs = plotResults_stability(data, stability_input_lst, out_lst, res_lst, stability_analytic_lst)
+
+fig = plt.figure()
+axs = plotResults_stability(fig, data, stability_input_lst, out_lst, res_lst, stability_analytic_lst)
+plt.show()
 ```
 
 ## License

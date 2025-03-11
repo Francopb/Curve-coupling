@@ -1,16 +1,19 @@
 import numpy as np
 from matplotlib import (pyplot as plt, gridspec, ticker, colors as mcolors)
+from matplotlib.figure import Figure
 from typing import List, Optional
 from curveCoupling.utils import colored_line
 
-def plotResults(data: List[np.ndarray],
+def plotResults(fig: Figure,
+                data: List[np.ndarray],
                 out_lst: List[np.ndarray],
                 res_lst: List[np.ndarray],
                 out_brute: Optional[np.ndarray] = None,
-                res_brute: Optional[np.ndarray] = None):
+                res_brute: Optional[np.ndarray] = None,):
     
     numCurves = len(data)
-    fig = plt.figure()
+    fig.clear()
+    
     plot_h = 2
     gs = gridspec.GridSpec(2, plot_h * numCurves)
     axs = []
@@ -78,17 +81,17 @@ def plotResults(data: List[np.ndarray],
     axs[-2].set_ylim(range_out[1])
     axs[-2].xaxis.set_major_locator(ticker.LinearLocator(3))
     axs[-2].yaxis.set_major_locator(ticker.LinearLocator(3))
-    plt.show(block=False)
-    return fig, axs
+    return axs
 
-def plotResults_stability(data: List[np.ndarray],
+def plotResults_stability(fig: Figure,
+                data: List[np.ndarray],
                 data_stability: List[np.ndarray],
                 out_lst: List[np.ndarray],
                 res_lst: List[np.ndarray],
                 out_stability_lst: List[np.ndarray]):
     
     numCurves = len(data)
-    fig = plt.figure()
+    fig.clear()
     plot_h = 2
     gs = gridspec.GridSpec(2, plot_h * numCurves)
     axs = []
@@ -150,8 +153,7 @@ def plotResults_stability(data: List[np.ndarray],
     axs[-2].yaxis.set_major_locator(ticker.LinearLocator(3))
     axs[-2].set_xlabel("$x_\mathrm{out}$")
     axs[-2].set_ylabel("$F_\mathrm{out}$")
-    plt.show(block=False)
-    return fig, axs
+    return axs
 
 def plot_stability(ax, data, stability):
     custom_cmap = mcolors.LinearSegmentedColormap.from_list("custom_cmap", ["tab:red", "tab:olive", "tab:green"])

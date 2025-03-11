@@ -33,7 +33,10 @@ eigen_analytic_lst = [getEigen_coupling_analytic(prob, r) for r in res_lst]
 stability_analytic_lst = [eigen2stability(e) for e in eigen_analytic_lst]
 eigen_folds_lst = [getEigenVals(d) for d in out_lst]
 
-plotResults_stability(data, stability_input_lst, out_lst, res_lst, stability_analytic_lst)
+fig = plt.figure()
+plotResults_stability(fig, data, stability_input_lst, out_lst, res_lst, stability_analytic_lst)
+plt.show(block=False)
+
 name = "curveCoupling_Stability_General"
 folder = "assets\\"
 extension = ".png"

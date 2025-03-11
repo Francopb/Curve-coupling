@@ -26,7 +26,8 @@ out_lst, res_lst = solveCurveCoupling_Singularities(prob, tol=1e-3)
 sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities(prob, 10, tol=1e-3)
 out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_points=10)
 
-_, axs = plotResults(data,out_lst,res_lst)
+fig = plt.figure()
+axs = plotResults(fig, data, out_lst, res_lst)
 
 t = np.linspace(0.0, 0.1, 10)
 for seed, order, dirs in zip(sing_seeds, sing_orders, sing_dirs):

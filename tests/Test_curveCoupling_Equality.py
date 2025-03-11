@@ -19,7 +19,9 @@ prob_eq = curveCouplingProblem_Equality(curves, match_index)
 out, res = solveCurveCoupling_Equality(prob_eq)
 out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob_eq, iter_points=10)
 
-plotResults(data,[out],[res],out_brute,res_brute)
+fig = plt.figure()
+plotResults(fig, data, [out], [res], out_brute, res_brute)
+plt.show(block=False)
 
 name = "curveCoupling_Equality"
 folder = "assets\\"
