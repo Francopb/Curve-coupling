@@ -14,29 +14,28 @@ Curve Coupling is a Python package designed for analyzing and solving curve coup
 
 In the equality case, the constraint is that some dimension of the input curves must be equal. For example for a match dimension $k$, the constraints are
 
-$$
+```math
 c_{0_k}(t_0) = c_{1_k}(t_1) = \dots = c_{N_k}(t_N).
-$$
+```
 
 The output for a solution point is just the average of the inputs,
 
-$$
+```math
 c_\mathrm{out}(t_0,t_1,\dots,t_N)=\frac{1}{N} \sum_i c_i(t_i).
-$$
+```
 
 ### General problem
 In the general case, we define a constraint array $\mathbf{M}_C\in\mathbb{R}^{(N-1)\times N \times d}$, and constraint vector $\mathbf{V}_C\in\mathbb{R}^{(N-1)}$, where $d$ is the dimension of the curves (generally 2, like force-displacement, current-voltage, etc.). In that case, the constraints are:
 
-$$
+```math
 e_i=\sum_{j,k} \mathbf{M}_{C_{i,j,k}}\,c_{j_k}(t_j) + \mathbf{V}_{C_i}= 0.
-$$
+```
 
 Similarly, we define the output array $\mathbf{M}_O\in\mathbb{R}^{d_o\times N \times d}$, and output vector $\mathbf{V}_O\in\mathbb{R}^{d_o}$, where $d_o$ is the dimension of the output (generally the same as the inputs). In that case, the output is:
 
-$$
-c_{\mathrm{out}_i}(t_0,t_1,\dots,t_N)=\sum_{j,k} \mathbf{M}_{O_{i,j,k}}\,c_{j_k}(t_j) + \mathbf{V}_{O_i}.
-$$
-
+```math
+c_{\mathrm{out}_i}(t_0,t_1,\dots,t_N)=\sum_{j,k} \mathbf{M}_{O_{i,j,k}}\,c_{j_k}(t_j) + \mathbf{V}_{O_i}.```
+```
 
 ### Solution
 
@@ -46,15 +45,15 @@ In both cases, given an initial seed point, the solution is computed in the para
 
 As an example, we consider the constraints
 
-$$
+```math
 \left[c_{0_0}(t_0) - c_{1_0}(t_1) - c_{2_0}(t_2); \, c_{1_1}(t_1) - c_{2_1}(t_2) \right]= \left[0;\,0\right],
-$$
+```
 
 and output
 
-$$
+```math
 c_\mathrm{out}(t_0,t_1,t_2) = \left[c_{0_0}(t_0);\, c_{0_1}(t_0) + c_{1_1}(t_1)\right].
-$$
+```
 
 The continuation algorithm solution process can be seen below.
 
