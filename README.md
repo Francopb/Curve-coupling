@@ -422,9 +422,28 @@ OutputMatrices:
   [0. 0.]]]
 ```
 
-### Computing stability (Equality)
+### Computing stability of an element
 
-Compute stability of network from components (in case of equality constraints):
+Compute stability of an element from its force-displacement curve:
+
+```python
+import numpy as np
+from curveCoupling.curveGenerators import generate_curve_CubicSpline
+from curveCoupling.compliantElements import getEigenVals, eigen2stability
+
+p0 =  np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
+data = generate_curve_CubicSpline(p0, 200)
+eigen = getEigenVals(data)
+stability = eigen2stability(eigen)
+```
+
+We get the input stability evolution along the curve, assuming the initial point is stable.
+
+![Stability-element](assets/curveCoupling_Stability_Single.png)
+
+### Computing stability of a network (Equality)
+
+Compute stability of a network from components (in case of equality constraints):
 
 ```python
 import numpy as np
@@ -457,9 +476,9 @@ We get the input and output stabilities, including islands.
 
 ![curveCoupling-Stability-Equality](assets/curveCoupling_Stability_Equality.png)
 
-### Computing stability (General)
+### Computing stability of a network (General)
 
-Compute stability of network from components (in case of general constraints):
+Compute stability of a network from components (in case of general constraints):
 
 ```python
 import numpy as np
@@ -534,7 +553,18 @@ for out, s in zip(out_lst, stability_analytic_lst):
 plt.show()
 ```
 
-Alternatively, use the provided default plot:
+Alternatively, use the provided default plot, for an element:
+
+```python
+from curveCoupling.utils.defaultPlots import plot_stability
+from matplotlib import pyplot as plt
+
+ax = plt.subplot()
+plot_stability(ax,data,stability)
+```
+
+For a network:
+
 ```python
 from curveCoupling.utils.defaultPlots import plotResults_stability
 fig, axs = plotResults_stability(data, stability_input_lst, out_lst, res_lst, stability_analytic_lst)

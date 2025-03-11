@@ -52,14 +52,17 @@ def plotResults(data: List[np.ndarray],
         if res_brute is not None:
             axs[-1].scatter(res_brute[:, 0], res_brute[:, 1], res_brute[:, 2], color='r', marker ='.',alpha=0.1)
 
-    axs[-1].set_zlim(range_res[2])
-    axs[-1].zaxis.set_major_locator(ticker.LinearLocator(3))
+        axs[-1].set_zlim(range_res[2])
+        axs[-1].zaxis.set_major_locator(ticker.LinearLocator(3))
+        axs[-1].set_zlabel("$t_2$")
 
     axs[-1].set_title("Parametric space")
     axs[-1].set_xlim(range_res[0])
     axs[-1].set_ylim(range_res[1])
     axs[-1].xaxis.set_major_locator(ticker.LinearLocator(3))
     axs[-1].yaxis.set_major_locator(ticker.LinearLocator(3))
+    axs[-1].set_xlabel("$t_0$")
+    axs[-1].set_ylabel("$t_1$")
 
     for out in out_lst:
         axs[-2].plot(out[:, 0], out[:, 1])
@@ -89,9 +92,6 @@ def plotResults_stability(data: List[np.ndarray],
     plot_h = 2
     gs = gridspec.GridSpec(2, plot_h * numCurves)
     axs = []
-    custom_cmap = mcolors.LinearSegmentedColormap.from_list("custom_cmap", ["tab:red", "tab:olive", "tab:green"])
-    norm = mcolors.Normalize(vmin=-1, vmax=1)  # You can adjust vmin and vmax as needed
-
 
     for i in range(0, numCurves):
         axs.append(fig.add_subplot(gs[0, plot_h * i:plot_h * (i + 1)]))
@@ -103,7 +103,7 @@ def plotResults_stability(data: List[np.ndarray],
     fig.tight_layout(pad=2, h_pad=2, w_pad=2)
 
     for i, (d,s) in enumerate(zip(data,data_stability)):
-        colored_line(axs[i], s, d[:, 0], d[:, 1], norm=norm, cmap=custom_cmap)
+        plot_stability(axs[i],d,s)
         axs[i].set_title("Curve "+str(i))
         
         range_d = np.round(np.stack((np.min(d,axis=0), np.max(d,axis=0)), axis=1),decimals=1)
@@ -118,15 +118,13 @@ def plotResults_stability(data: List[np.ndarray],
     max_res = np.max([np.max(res, axis=0) for res in res_lst], axis=0)
     range_res = np.round(np.stack((min_res, max_res), axis=1),decimals=1)
 
-    if numCurves == 2:
-        for res, s in zip(res_lst, out_stability_lst):
-            colored_line(axs[-1], s, res[:, 0], res[:, 1], norm=norm, cmap=custom_cmap)
-    elif numCurves == 3:
-        for res, s in zip(res_lst, out_stability_lst):
-            colored_line(axs[-1], s, res[:, 0], res[:, 1], res[:, 2], norm=norm, cmap=custom_cmap)
 
-    axs[-1].set_zlim(range_res[2])
-    axs[-1].zaxis.set_major_locator(ticker.LinearLocator(3))
+    for res, s in zip(res_lst, out_stability_lst):
+        plot_stability(axs[-1],res,s)
+
+    if numCurves == 3:
+        axs[-1].set_zlim(range_res[2])
+        axs[-1].zaxis.set_major_locator(ticker.LinearLocator(3))
 
     axs[-1].set_title("Parametric space")
     axs[-1].set_xlim(range_res[0])
@@ -135,7 +133,7 @@ def plotResults_stability(data: List[np.ndarray],
     axs[-1].yaxis.set_major_locator(ticker.LinearLocator(3))
 
     for out, s in zip(out_lst, out_stability_lst):
-        colored_line(axs[-2], s, out[:, 0], out[:, 1], norm=norm, cmap=custom_cmap)
+        plot_stability(axs[-2],out,s)
 
     min_out = np.min([np.min(out, axis=0) for out in out_lst], axis=0)
     max_out = np.max([np.max(out, axis=0) for out in out_lst], axis=0)
@@ -148,3 +146,13 @@ def plotResults_stability(data: List[np.ndarray],
     axs[-2].yaxis.set_major_locator(ticker.LinearLocator(3))
     plt.show(block=False)
     return fig, axs
+
+def plot_stability(ax, data, stability):
+    custom_cmap = mcolors.LinearSegmentedColormap.from_list("custom_cmap", ["tab:red", "tab:olive", "tab:green"])
+    norm = mcolors.Normalize(vmin=-1, vmax=1)  # You can adjust vmin and vmax as needed
+    nDims = data.shape[1]
+    print(nDims)
+    if nDims == 2:
+        colored_line(ax, stability, data[:, 0], data[:, 1], norm=norm, cmap=custom_cmap)
+    elif nDims == 3:
+        colored_line(ax, stability, data[:, 0], data[:, 1], data[:, 2], norm=norm, cmap=custom_cmap)
