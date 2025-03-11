@@ -121,7 +121,7 @@ curves = ndcurve.createList(data)
 prob = curveCouplingProblem_Equality(curves,1)
 
 sing_out, sing_seeds, sing_orders, sing_dirs = findSingularities_Equality(prob, tol=1e-3)
-out_lst, res_lst = solveWithSingularities_Equality(prob, tol=1e-3)
+out_lst, res_lst = solveCurveCoupling_Singularities_Equality(prob, tol=1e-3)
 ```
 
 We get the different branches from the singular points.
@@ -296,8 +296,10 @@ Compute stability of network from components (in case of equality constraints):
 ```python
 import numpy as np
 from curveCoupling.curveGenerators import generate_curve_peaks
-from curveCoupling import ndcurve, curveCouplingProblem_Equality, solveWithIslands_Equality
+from curveCoupling import ndcurve, curveCouplingProblem_Equality
+from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Islands_Equality
 from curveCoupling.compliantElements import getEigenVals, getEigen_coupling_analytic_Equality, eigen2stability
+
 
 p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
 p1 = np.array([[0.0, 0.0], [0.2, 0.5], [0.6, 0.2], [1.0, 1.0]])
@@ -310,13 +312,16 @@ match_index = 1
 curves = ndcurve.createList(data)
 prob = curveCouplingProblem_Equality(curves,match_index)
 
-out_lst, res_lst = solveWithIslands_Equality(prob)
+out_lst, res_lst = solveCurveCoupling_Islands_Equality(prob)
 
 eigen_input_lst = [getEigenVals(d) for d in data]
 stability_input_lst = [eigen2stability(e) for e in eigen_input_lst]
 eigen_analytic_lst = [getEigen_coupling_analytic_Equality(prob, r) for r in res_lst]
 stability_analytic_lst = [eigen2stability(e) for e in eigen_analytic_lst]
 ```
+
+We get the input and output stabilities, including on the islands.
+![curveCoupling-Stability-Equality](assets/curveCoupling_Stability_Equality.png)
 
 ### Computing stability (General)
 
@@ -325,7 +330,8 @@ Compute stability of network from components (in case of general constraints):
 ```python
 import numpy as np
 from curveCoupling.curveGenerators import generate_curve_CubicSpline
-from curveCoupling import ndcurve, curveCouplingProblem, solveWithIslands
+from curveCoupling import ndcurve, curveCouplingProblem
+from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Islands
 from curveCoupling.compliantElements import getEigenVals, getEigen_coupling_analytic, eigen2stability
 
 p0 = np.array([[0.0, 0.0], [0.55, 0.6], [1.1, 0.88], [1.27, 0.72], [1.1, 0.55]])
@@ -347,13 +353,16 @@ output_matrices[1, :, 1] = np.array([1.0, 1.0, 0.0])
 
 prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
 
-out_lst, res_lst = solveWithIslands(prob, iter_points=10)
+out_lst, res_lst = solveCurveCoupling_Islands(prob, iter_points=10)
 
 eigen_input_lst = [getEigenVals(d) for d in data]
 stability_input_lst = [eigen2stability(e) for e in eigen_input_lst]
 eigen_analytic_lst = [getEigen_coupling_analytic(prob, r) for r in res_lst]
 stability_analytic_lst = [eigen2stability(e) for e in eigen_analytic_lst]
 ```
+
+We get the input and output stabilities, including on the islands.
+![curveCoupling-Stability-General](assets/curveCoupling_Stability_General.png)
 
 ### Plotting Results
 
@@ -388,6 +397,12 @@ for out, s in zip(out_lst, stability_analytic_lst):
     colored_line(axs[-2], s, out[:, 0], out[:, 1], cmap=custom_cmap, norm=norm)
 
 plt.show()
+```
+
+Alternatively, use the provided default plot:
+```python
+from curveCoupling.utils.defaultPlots import plotResults_stability
+fig, axs = plotResults_stability(data, stability_input_lst, out_lst, res_lst, stability_analytic_lst)
 ```
 
 ## License
