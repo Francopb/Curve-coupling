@@ -41,6 +41,7 @@ data = [
 ```
 
 Comparison of generated curves:
+
 ![Generated curves](assets/curveGenerator.png)
 
 ### Solving Curve Coupling Problems (Equality)
@@ -68,6 +69,7 @@ out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob_eq, iter_po
 ```
 
 Comparison with brute force results, we are missing the islands.
+
 ![curveCoupling-Equality](assets/curveCoupling_Equality.png)
 
 ### Finding islands in Curve Coupling Problems (Equality)
@@ -96,6 +98,7 @@ out_lst, res_lst = solveCurveCoupling_Islands_Equality(prob)
 ```
 
 We now get the islands.
+
 ![curveCoupling-Islands-Equality](assets/curveCoupling_Islands_Equality.png)
 
 ### Dealing with singularities in Curve Coupling Problems (Equality)
@@ -125,6 +128,7 @@ out_lst, res_lst = solveCurveCoupling_Singularities_Equality(prob, tol=1e-3)
 ```
 
 We get the different branches from the singular points.
+
 ![curveCoupling-Singularities-Equality](assets/curveCoupling_Singularities_Equality.png)
 
 ### Solving Curve Coupling Problems (General)
@@ -160,6 +164,7 @@ out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(prob, iter_point
 ```
 
 Comparison with brute force results, we are missing the islands.
+
 ![curveCoupling-General](assets/curveCoupling_General.png)
 
 ### Finding islands in Curve Coupling Problems (General)
@@ -193,6 +198,7 @@ out_lst, res_lst = solveCurveCoupling_Islands(prob)
 ```
 
 We now get the islands.
+
 ![curveCoupling-Islands-General](assets/curveCoupling_Islands_General.png)
 
 ### Dealing with singularities in Curve Coupling Problems (General)
@@ -229,6 +235,7 @@ out_lst, res_lst = solveCurveCoupling_Singularities(prob, tol=1e-3)
 ```
 
 We get the different branches from the singular points.
+
 ![curveCoupling-Singularities-General](assets/curveCoupling_Singularities_General.png)
 
 ### Plotting Results
@@ -320,7 +327,8 @@ eigen_analytic_lst = [getEigen_coupling_analytic_Equality(prob, r) for r in res_
 stability_analytic_lst = [eigen2stability(e) for e in eigen_analytic_lst]
 ```
 
-We get the input and output stabilities, including on the islands.
+We get the input and output stabilities, including islands.
+
 ![curveCoupling-Stability-Equality](assets/curveCoupling_Stability_Equality.png)
 
 ### Computing stability (General)
@@ -361,7 +369,8 @@ eigen_analytic_lst = [getEigen_coupling_analytic(prob, r) for r in res_lst]
 stability_analytic_lst = [eigen2stability(e) for e in eigen_analytic_lst]
 ```
 
-We get the input and output stabilities, including on the islands.
+We get the input and output stabilities, including islands.
+
 ![curveCoupling-Stability-General](assets/curveCoupling_Stability_General.png)
 
 ### Plotting Results
