@@ -43,9 +43,12 @@ def run():
         fig = plt.figure()
         plotResults(fig, data_inverse, [out_inverse], [res_inverse])
 
-
-
 if __name__ == "__main__":
     run()
     plt.show(block=False)
     input("Press Enter")
+
+# Author: Franco N. Pinan Basualdo
+# Project: Curve Coupling
+# URL: https://github.com/Francopb/Curve-coupling
+# Description: This script is part of the Curve Coupling project. Unauthorized use or distribution is prohibited.

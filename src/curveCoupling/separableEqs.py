@@ -32,9 +32,7 @@ class separableEqs:
             total = np.vstack((top, bottom))
             total_swapped = total.copy()
             total_swapped[:, [0, solve_for_idx+1]] = total_swapped [:, [solve_for_idx+1,0]]
-            print("total_swapped\n",total_swapped)
             total_swapped_ref = ref(total_swapped, tol=1e-6)
-            print("total_swapped_ref\n",total_swapped_ref)
 
             if total_swapped_ref[0,0] != 1.0:
                 raise Exception("Independent variable")
