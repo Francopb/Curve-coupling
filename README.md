@@ -415,12 +415,11 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
 fig = plt.figure()
-plot_h = 2
-gs = gridspec.GridSpec(2, plot_h * len(data))
+gs = gridspec.GridSpec(2, 2 * len(data))
 axs = []
 
 for i in range(0, len(data)):
-    axs.append(fig.add_subplot(gs[0, plot_h * i:plot_h * (i + 1)]))
+    axs.append(fig.add_subplot(gs[0, 2 * i:2 * (i + 1)]))
 axs.append(fig.add_subplot(gs[1, len(data):]))
 axs.append(fig.add_subplot(gs[1, :len(data)], projection='3d'))
 
@@ -650,31 +649,27 @@ Visualize curve coupling stability results with `matplotlib`:
 
 ```python
 import matplotlib.pyplot as plt
-from matplotlib import colors as mcolors
 from matplotlib import gridspec
-from curveCoupling.utils import colored_line
+from curveCoupling.utils.defaultPlots import plot_stability
 
 fig = plt.figure()
-plot_h = 2
-gs = gridspec.GridSpec(2, plot_h * len(data))
+gs = gridspec.GridSpec(2, 2 * len(data))
 axs = []
 
 for i in range(0, len(data)):
-    axs.append(fig.add_subplot(gs[0, plot_h * i:plot_h * (i + 1)]))
+    axs.append(fig.add_subplot(gs[0, 2 * i:2 * (i + 1)]))
 axs.append(fig.add_subplot(gs[1, len(data):]))
 axs.append(fig.add_subplot(gs[1, :len(data)], projection='3d'))
 
-custom_cmap = mcolors.LinearSegmentedColormap.from_list("custom_cmap", ["tab:red", "tab:olive", "tab:green"])
-norm = mcolors.Normalize(vmin=-1, vmax=1)
 
 for i, (d, s) in enumerate(zip(data, stability_input_lst)):
-    colored_line(axs[i], s, d[:, 0], d[:, 1], cmap=custom_cmap, norm=norm)
+    plot_stability(axs[i], s, d[:, 0], d[:, 1])
 
 for res, s in zip(res_lst, stability_analytic_lst):
-    colored_line(axs[-1], s, res[:, 0], res[:, 1], res[:, 2], cmap=custom_cmap, norm=norm)
+    plot_stability(axs[-1], s, res[:, 0], res[:, 1], res[:, 2])
 
 for out, s in zip(out_lst, stability_analytic_lst):
-    colored_line(axs[-2], s, out[:, 0], out[:, 1], cmap=custom_cmap, norm=norm)
+    plot_stability(axs[-2], s, out[:, 0], out[:, 1])
 
 plt.show()
 ```

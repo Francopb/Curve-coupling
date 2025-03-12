@@ -14,12 +14,12 @@ def plotResults(fig: Figure,
     numCurves = len(data)
     fig.clear()
     
-    plot_h = 2
-    gs = gridspec.GridSpec(2, plot_h * numCurves)
+    plot_step = 2
+    gs = gridspec.GridSpec(2, plot_step * numCurves)
     axs = []
 
     for i in range(0, numCurves):
-        axs.append(fig.add_subplot(gs[0, plot_h * i:plot_h * (i + 1)]))
+        axs.append(fig.add_subplot(gs[0, plot_step * i:plot_step * (i + 1)]))
     axs.append(fig.add_subplot(gs[1, numCurves:]))
     if numCurves == 2:
         axs.append(fig.add_subplot(gs[1, :numCurves]))
@@ -92,12 +92,12 @@ def plotResults_stability(fig: Figure,
     
     numCurves = len(data)
     fig.clear()
-    plot_h = 2
-    gs = gridspec.GridSpec(2, plot_h * numCurves)
+    plot_step = 2
+    gs = gridspec.GridSpec(2, plot_step * numCurves)
     axs = []
 
     for i in range(0, numCurves):
-        axs.append(fig.add_subplot(gs[0, plot_h * i:plot_h * (i + 1)]))
+        axs.append(fig.add_subplot(gs[0, plot_step * i:plot_step * (i + 1)]))
     axs.append(fig.add_subplot(gs[1, numCurves:]))
     if numCurves == 2:
         axs.append(fig.add_subplot(gs[1, :numCurves]))
@@ -106,7 +106,7 @@ def plotResults_stability(fig: Figure,
     fig.tight_layout(pad=2, h_pad=3, w_pad=2)
 
     for i, (d,s) in enumerate(zip(data,data_stability)):
-        plot_stability(axs[i],d,s)
+        plot_stability(axs[i], s, d[:,0], d[:,1])
         axs[i].set_title("Curve "+str(i))
         
         range_d = np.round(np.stack((np.min(d,axis=0), np.max(d,axis=0)), axis=1),decimals=1)
@@ -123,8 +123,12 @@ def plotResults_stability(fig: Figure,
     range_res = np.round(np.stack((min_res, max_res), axis=1),decimals=1)
 
 
-    for res, s in zip(res_lst, out_stability_lst):
-        plot_stability(axs[-1],res,s)
+    if numCurves == 2:
+        for res, s in zip(res_lst, out_stability_lst):
+            plot_stability(axs[-1],s, res[:,0], res[:,1])
+    elif numCurves == 3:
+        for res, s in zip(res_lst, out_stability_lst):
+            plot_stability(axs[-1],s, res[:,0], res[:,1], res[:,2])
 
     if numCurves == 3:
         axs[-1].set_zlim(range_res[2])
@@ -140,7 +144,7 @@ def plotResults_stability(fig: Figure,
     axs[-1].set_ylabel("$t_1$")
 
     for out, s in zip(out_lst, out_stability_lst):
-        plot_stability(axs[-2],out,s)
+        plot_stability(axs[-2], s, out[:,0], out[:,1])
 
     min_out = np.min([np.min(out, axis=0) for out in out_lst], axis=0)
     max_out = np.max([np.max(out, axis=0) for out in out_lst], axis=0)
@@ -155,14 +159,13 @@ def plotResults_stability(fig: Figure,
     axs[-2].set_ylabel("$F_\mathrm{out}$")
     return axs
 
-def plot_stability(ax, data, stability):
+def plot_stability(ax, stability, x, y, z = None):
     custom_cmap = mcolors.LinearSegmentedColormap.from_list("custom_cmap", ["tab:red", "tab:olive", "tab:green"])
     norm = mcolors.Normalize(vmin=-1, vmax=1)  # You can adjust vmin and vmax as needed
-    nDims = data.shape[1]
-    if nDims == 2:
-        colored_line(ax, stability, data[:, 0], data[:, 1], norm=norm, cmap=custom_cmap)
-    elif nDims == 3:
-        colored_line(ax, stability, data[:, 0], data[:, 1], data[:, 2], norm=norm, cmap=custom_cmap)
+    if z is None == 2:
+        colored_line(ax, stability, x, y, norm=norm, cmap=custom_cmap)
+    else:
+        colored_line(ax, stability, x, y, z, norm=norm, cmap=custom_cmap)
 
 # Author: Franco N. Pinan Basualdo
 # Project: Curve Coupling

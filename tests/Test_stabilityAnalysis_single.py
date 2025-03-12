@@ -14,7 +14,7 @@ def run():
     ax.plot(0, 0, color="tab:green", label="Stable")
     ax.plot(0, 0, color="tab:olive", label="Cond.stable")
     ax.plot(0, 0, color="tab:red"  , label="Unstable")
-    plot_stability(ax,data,stability)
+    plot_stability(ax, stability, data[:,0], data[:,1])
     ax.set_xlabel("Displacement")
     ax.set_ylabel("Force")
     ax.legend(loc="lower right")
