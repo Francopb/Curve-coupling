@@ -1,5 +1,5 @@
 import numpy as np
-from matplotlib import (pyplot as plt, gridspec, ticker, colors as mcolors)
+from matplotlib import (gridspec, ticker, colors as mcolors)
 from matplotlib.figure import Figure
 from typing import List, Optional
 from curveCoupling.utils import colored_line
@@ -29,7 +29,6 @@ def plotResults(fig: Figure,
 
     for i, d in enumerate(data):
         axs[i].plot(d[:, 0], d[:, 1])
-        colored_line
         axs[i].set_title("Curve "+str(i))
         
         range_d = np.round(np.stack((np.min(d,axis=0), np.max(d,axis=0)), axis=1),decimals=1)
@@ -57,15 +56,15 @@ def plotResults(fig: Figure,
 
         axs[-1].set_zlim(range_res[2])
         axs[-1].zaxis.set_major_locator(ticker.LinearLocator(3))
-        axs[-1].set_zlabel("$t_2$")
+        axs[-1].set_zlabel(r"$t_2$")
 
     axs[-1].set_title("Parametric space")
     axs[-1].set_xlim(range_res[0])
     axs[-1].set_ylim(range_res[1])
     axs[-1].xaxis.set_major_locator(ticker.LinearLocator(3))
     axs[-1].yaxis.set_major_locator(ticker.LinearLocator(3))
-    axs[-1].set_xlabel("$t_0$")
-    axs[-1].set_ylabel("$t_1$")
+    axs[-1].set_xlabel(r"$t_0$")
+    axs[-1].set_ylabel(r"$t_1$")
 
     for out in out_lst:
         axs[-2].plot(out[:, 0], out[:, 1])
@@ -115,8 +114,8 @@ def plotResults_stability(fig: Figure,
         axs[i].set_ylim(range_d[1])
         axs[i].xaxis.set_major_locator(ticker.LinearLocator(3))
         axs[i].yaxis.set_major_locator(ticker.LinearLocator(3))
-        axs[i].set_xlabel("$x_"+str(i)+"$")
-        axs[i].set_ylabel("$F_"+str(i)+"$")
+        axs[i].set_xlabel(r"$x_"+str(i)+r"$")
+        axs[i].set_ylabel(r"$F_"+str(i)+r"$")
 
     min_res = np.min([np.min(res, axis=0) for res in res_lst], axis=0)
     max_res = np.max([np.max(res, axis=0) for res in res_lst], axis=0)
@@ -133,15 +132,15 @@ def plotResults_stability(fig: Figure,
     if numCurves == 3:
         axs[-1].set_zlim(range_res[2])
         axs[-1].zaxis.set_major_locator(ticker.LinearLocator(3))
-        axs[-1].set_zlabel("$t_2$")
+        axs[-1].set_zlabel(r"$t_2$")
 
     axs[-1].set_title("Parametric space")
     axs[-1].set_xlim(range_res[0])
     axs[-1].set_ylim(range_res[1])
     axs[-1].xaxis.set_major_locator(ticker.LinearLocator(3))
     axs[-1].yaxis.set_major_locator(ticker.LinearLocator(3))
-    axs[-1].set_xlabel("$t_0$")
-    axs[-1].set_ylabel("$t_1$")
+    axs[-1].set_xlabel(r"$t_0$")
+    axs[-1].set_ylabel(r"$t_1$")
 
     for out, s in zip(out_lst, out_stability_lst):
         plot_stability(axs[-2], s, out[:,0], out[:,1])
@@ -155,8 +154,8 @@ def plotResults_stability(fig: Figure,
     axs[-2].set_ylim(range_out[1])
     axs[-2].xaxis.set_major_locator(ticker.LinearLocator(3))
     axs[-2].yaxis.set_major_locator(ticker.LinearLocator(3))
-    axs[-2].set_xlabel("$x_\mathrm{out}$")
-    axs[-2].set_ylabel("$F_\mathrm{out}$")
+    axs[-2].set_xlabel(r"$x_\mathrm{out}$")
+    axs[-2].set_ylabel(r"$F_\mathrm{out}$")
     return axs
 
 def plot_stability(ax, stability, x, y, z = None):
