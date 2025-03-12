@@ -1,11 +1,14 @@
 import networkx as nx
 import numpy as np
-from typing import List, Tuple
-from curveCoupling.compliantElements.compliantNetwork import compliantNetworkEqs
+from typing import List, Tuple, Union
+from curveCoupling.separableEqs import _split2joint_constr, _split2joint_out
 
-def generate_circuit_equations(edges: List[Tuple[str, str]]) -> compliantNetworkEqs:
+def generate_network_equations(edges: List[Tuple[str, str]],
+                               return_in_joint_matrices: bool = False
+    ) -> Union[Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+    Tuple[np.ndarray, np.ndarray]]:
     """
-    Generate Force and Displacement equations for a circuit graph, handling multi-edges.
+    Generate Force and Displacement equations for a network graph, handling multi-edges.
     
     Parameters:
     - edges (List[Tuple[str, str]]): List of tuples representing edges (e.g., [('A', 'B'), ('B', 'C'), ('C', 'A')]).
@@ -18,6 +21,10 @@ def generate_circuit_equations(edges: List[Tuple[str, str]]) -> compliantNetwork
     - Force constraint matrix.
     - Displacement output matrix.
     - Force output matrix.
+    OR
+    Tuple[np.ndarray, np.ndarray]:
+    - Joint constraint matrices.
+    - Joint output matrices.
     """
     
     # Step 1: Kirchhoff's Current Law (for Forces)
@@ -114,7 +121,10 @@ def generate_circuit_equations(edges: List[Tuple[str, str]]) -> compliantNetwork
     disp_constr = np.array(disp_constr)
     force_constr = np.array(force_constr)
     
-    return compliantNetworkEqs(disp_constr, force_constr, disp_out, force_out)
+    if return_in_joint_matrices:
+        return _split2joint_constr([disp_constr, force_constr]), _split2joint_out([disp_out, force_out])
+    else:
+        return disp_constr, force_constr, disp_out, force_out
 
 
 # Author: Franco N. Pinan Basualdo

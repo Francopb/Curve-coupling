@@ -1,4 +1,4 @@
-from curveCoupling.compliantElements import generate_circuit_equations
+from curveCoupling.compliantElements import generate_network_equations
 
 def run():
     edges = [
@@ -9,17 +9,23 @@ def run():
         ('A', 'End'),
     ]
 
-    eqs = generate_circuit_equations(edges)
+    disp_constr, force_constr, disp_out, force_out = generate_network_equations(edges)
+    ConstraintMatrices, OutputMatrices = generate_network_equations(edges, return_in_joint_matrices=True)
 
     # Display the results
-    print("eqs.disp_constr:\n", eqs.disp_constr)
-    print("eqs.force_constr:\n", eqs.force_constr)
+    print("disp_constr:\n", disp_constr)
+    print()
+    print("force_constr:\n", force_constr)
+    print()
 
-    print("eqs.disp_out:\n", eqs.disp_out)
-    print("eqs.force_out:\n", eqs.force_out)
+    print("disp_out:\n", disp_out)
+    print()
+    print("force_out:\n", force_out)
+    print()
 
-    print("ConstraintMatrices:\n", eqs.getConstraintMatrices())
-    print("OutputMatrices:\n", eqs.getOutputMatrices())
+    print("ConstraintMatrices:\n", ConstraintMatrices)
+    print()
+    print("OutputMatrices:\n", OutputMatrices)
 
 if __name__ == "__main__":
     run()

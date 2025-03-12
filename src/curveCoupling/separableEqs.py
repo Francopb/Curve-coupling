@@ -138,18 +138,3 @@ def _joint2split_out(OutputMatrices: np.ndarray) -> List[np.ndarray]:
         outputVectors_lst.append(OutputMatrices[idx[0], :, i])
 
     return outputVectors_lst
-
-if __name__ == "__main__":
-    N = 3
-    d = 2
-    constraint_matrices = np.zeros((N-1, N, d))
-    output_matrices = np.zeros((d, N, d))
-
-    constraint_matrices[0,:,0] = np.array([1.0,-1.0,-1.0])
-    constraint_matrices[1,:,1] = np.array([0.0,1.0,-1.0])
-    output_matrices[0,:,0] = np.array([1.0,0.0,0.0])
-    output_matrices[1,:,1] = np.array([1.0,1.0,0.0])
-
-    eqs = separableEqs.from_jointMatrices(constraint_matrices, output_matrices)
-    print("constraintMatrices_lst\n",eqs.constraintMatrices_lst)
-    print("outputVectors_lst\n",eqs.outputVectors_lst)

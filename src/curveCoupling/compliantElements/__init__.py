@@ -1,5 +1,4 @@
-from curveCoupling.compliantElements.graphAnalysis import generate_circuit_equations
-from curveCoupling.compliantElements.compliantNetwork import compliantNetworkEqs
+from curveCoupling.compliantElements.graphAnalysis import generate_network_equations
 from curveCoupling.compliantElements.stabilityAnalysis import (getEigenFunc,
                                 getEigenVals,
                                 getEigen_coupling_analytic,

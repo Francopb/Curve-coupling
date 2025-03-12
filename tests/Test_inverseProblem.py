@@ -1,7 +1,7 @@
 import numpy as np
 from curveCoupling.curveGenerators import *
 from curveCoupling import ndcurve, curveCouplingProblem, solveCurveCoupling
-from curveCoupling.compliantElements import generate_circuit_equations
+from curveCoupling.separableEqs import separableEqs
 from curveCoupling.utils.defaultPlots import plotResults
 from matplotlib import pyplot as plt
 
@@ -16,13 +16,16 @@ def run():
 
     curves = ndcurve.createList(data)
 
-    edges = [
-        ('Start', 'End'),
-        ('Start', 'A'),
-        ('A', 'End'),
-    ]
-    eqs = generate_circuit_equations(edges)
-    prob = curveCouplingProblem(curves, eqs.getConstraintMatrices(), eqs.getOutputMatrices())
+    constraint_matrices = np.zeros((len(data)-1, len(data), data[0].shape[1]))
+    output_matrices = np.zeros((data[0].shape[1], len(data), data[0].shape[1]))
+
+    constraint_matrices[0,:,0] = np.array([1.0,-1.0,-1.0])
+    constraint_matrices[1,:,1] = np.array([0.0,1.0,-1.0])
+    output_matrices[0,:,0] = np.array([1.0,0.0,0.0])
+    output_matrices[1,:,1] = np.array([1.0,1.0,0.0])
+
+    prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
+    eqs = separableEqs.from_jointMatrices(constraint_matrices, output_matrices)
 
     out, res = solveCurveCoupling(prob)
     fig = plt.figure()

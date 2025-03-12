@@ -2,7 +2,8 @@ import numpy as np
 from curveCoupling.curveGenerators import *
 from curveCoupling import ndcurve, curveCouplingProblem
 from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Islands
-from curveCoupling.compliantElements import getEigenVals, getEigen_coupling_analytic, eigen2stability, generate_circuit_equations
+from curveCoupling.compliantElements import getEigenVals, getEigen_coupling_analytic, eigen2stability, generate_network_equations
+from curveCoupling.separableEqs import separableEqs
 from curveCoupling.utils.defaultPlots import plotResults_stability
 from matplotlib import pyplot as plt
 
@@ -22,8 +23,8 @@ def run():
         ('Start', 'A'),
         ('A', 'End'),
     ]
-    eqs = generate_circuit_equations(edges)
-    prob = curveCouplingProblem(curves, eqs.getConstraintMatrices(), eqs.getOutputMatrices())
+    ConstraintMatrices, OutputMatrices = generate_network_equations(edges, return_in_joint_matrices=True)
+    prob = curveCouplingProblem(curves, ConstraintMatrices, OutputMatrices)
 
     out_lst, res_lst = solveCurveCoupling_Islands(prob, iter_points=10)
 

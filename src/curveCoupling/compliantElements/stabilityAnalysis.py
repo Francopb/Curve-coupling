@@ -4,9 +4,7 @@ from curveCoupling.curveInterpExtrapFunc import ndcurve
 from curveCoupling.curveCoupling_Analysis.curveCouplingAnalysis_Equality import findCriticalPoints
 from curveCoupling.utils.matrixOperations import my_null_space
 from curveCoupling.curveCoupling import curveCouplingProblem, curveCouplingProblem_Equality
-from curveCoupling.compliantElements.compliantNetwork import compliantNetworkEqs
-
-
+from curveCoupling.separableEqs import separableEqs
 
 class snapPoint:
     """
@@ -214,10 +212,10 @@ def getEigen_coupling_analytic(
     """
     input_eigen = getEigenFuncs(prb.curves)
 
-    eqs = compliantNetworkEqs.from_Matrices(prb.ConstraintMatrices, prb.OutputMatrices)
+    eqs = separableEqs.from_jointMatrices(prb.ConstraintMatrices, prb.OutputMatrices)
 
-    Total_constr_Disp = np.vstack([eqs.disp_out, eqs.disp_constr])
-    Total_constr_Forc = np.vstack([eqs.force_out, eqs.force_constr])
+    Total_constr_Disp = np.vstack([eqs.outputVectors_lst[0], eqs.constraintMatrices_lst[0]])
+    Total_constr_Forc = np.vstack([eqs.outputVectors_lst[1], eqs.constraintMatrices_lst[1]])
 
     if EnergyVector is None:
         EnergyVector = np.ones(prb.numCurves)
