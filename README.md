@@ -178,7 +178,7 @@ data = [generate_curve_peaks(pts, 200) for pts in points]
 match_index = 1
 
 curves = ndcurve.createList(data)
-prob = curveCouplingProblem_Equality(curves,1)
+prob = curveCouplingProblem_Equality(curves, match_index)
 
 out_lst, res_lst = solveCurveCoupling_Islands_Equality(prob)
 ```
@@ -209,7 +209,7 @@ data = [generate_curve_peaks(pts, 200) for pts in points]
 match_index = 1
 
 curves = ndcurve.createList(data)
-prob = curveCouplingProblem_Equality(curves,1)
+prob = curveCouplingProblem_Equality(curves, match_index)
 
 sing_out, sing_seeds, sing_orders, sing_dirs = findSingularities_Equality(prob, tol=1e-3)
 out_lst, res_lst = solveCurveCoupling_Singularities_Equality(prob, tol=1e-3)
