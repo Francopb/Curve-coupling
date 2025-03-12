@@ -16,6 +16,7 @@ Curve Coupling is a Python package designed for analyzing and solving curve coup
 - Visualizing the results.
 
 On [GitHub](https://github.com/Francopb/Curve-coupling)
+
 On [GitLab](https://gitlab.kuleuven.be/softrobotics/Curve-coupling)
 
 ### Equality problem
