@@ -645,7 +645,7 @@ We get the input and output stabilities, including islands.
 
 ### Plotting Results
 
-Visualize curve coupling stability results with `matplotlib`:
+Visualize curve coupling stability results with `plot_stability` to plot the stability of each curve:
 
 ```python
 import matplotlib.pyplot as plt
@@ -674,18 +674,7 @@ for out, s in zip(out_lst, stability_analytic_lst):
 plt.show()
 ```
 
-Alternatively, use the provided default plot, for an element:
-
-```python
-from curveCoupling.utils.defaultPlots import plot_stability
-from matplotlib import pyplot as plt
-
-ax = plt.subplot()
-plot_stability(ax,data,stability)
-plt.show()
-```
-
-For a network:
+Alternatively, use the provided default plot for a network:
 
 ```python
 from curveCoupling.utils.defaultPlots import plotResults_stability
