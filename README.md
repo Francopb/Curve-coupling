@@ -20,7 +20,7 @@ Curve Coupling is a Python package designed for analyzing and solving curve coup
 In the equality case, the constraint is that some dimension of the input curves must be equal. For example for a match dimension $k$, the constraints are
 
 ```math
-c_{0_k}(t_0) = c_{1_k}(t_1) = \dots = c_{N_k}(t_N).
+c_{0,k}(t_0) = c_{1,k}(t_1) = \dots = c_{N,k}(t_N).
 ```
 
 The output for a solution point is just the average of the inputs,
@@ -33,13 +33,13 @@ c_\mathrm{out}(t_0,t_1,\dots,t_N)=\frac{1}{N} \sum_i c_i(t_i).
 In the general case, we define a constraint array $\mathbf{M}_C\in\mathbb{R}^{(N-1)\times N \times d}$, and constraint vector $\mathbf{V}_C\in\mathbb{R}^{(N-1)}$, where $d$ is the dimension of the curves (generally 2, like force-displacement, current-voltage, etc.). In that case, the constraints are:
 
 ```math
-e_i=\sum_{j,k} \mathbf{M}_{C_{i,j,k}}\,c_{j_k}(t_j) + \mathbf{V}_{C_i}= 0.
+e_i=\sum_{j,k} \mathbf{M}_{C_{i,j,k}}\,c_{j,k}(t_j) + \mathbf{V}_{C_i}= 0.
 ```
 
 Similarly, we define the output array $\mathbf{M}_O\in\mathbb{R}^{d_o\times N \times d}$, and output vector $\mathbf{V}_O\in\mathbb{R}^{d_o}$, where $d_o$ is the dimension of the output (generally the same as the inputs). In that case, the output is:
 
 ```math
-c_{\mathrm{out}_i}(t_0,t_1,\dots,t_N)=\sum_{j,k} \mathbf{M}_{O_{i,j,k}}\,c_{j_k}(t_j) + \mathbf{V}_{O_i}.
+c_{\mathrm{out}_i}(t_0,t_1,\dots,t_N)=\sum_{j,k} \mathbf{M}_{O_{i,j,k}}\,c_{j,k}(t_j) + \mathbf{V}_{O_i}.
 ```
 
 ### Solution
@@ -51,13 +51,13 @@ In both cases, given an initial seed point, the solution is computed in the para
 As an example, we consider the constraints
 
 ```math
-\left[c_{0_0}(t_0) - c_{1_0}(t_1) - c_{2_0}(t_2); \, c_{1_1}(t_1) - c_{2_1}(t_2) \right]= \left[0;\,0\right],
+\left[c_{0,0}(t_0) - c_{1,0}(t_1) - c_{2,0}(t_2); \, c_{1,1}(t_1) - c_{2,1}(t_2) \right]= \left[0;\,0\right],
 ```
 
 and output
 
 ```math
-c_\mathrm{out}(t_0,t_1,t_2) = \left[c_{0_0}(t_0);\, c_{0_1}(t_0) + c_{1_1}(t_1)\right].
+c_\mathrm{out}(t_0,t_1,t_2) = \left[c_{0,0}(t_0);\, c_{0,1}(t_0) + c_{1,1}(t_1)\right].
 ```
 
 The continuation algorithm solution process can be seen below.
@@ -336,9 +336,17 @@ We get the different branches from the singular points.
 
 In the case of separable problems, the problem can be inverted to find the input that would generate a given output. For this we need that:
 
-- Each contraint applies to only one dimension of the curves (the same for all curves).
-- The output is of the same dimension as the inputs and each dimension only depends on the corresponding dimension of the inputs.
+- Each contraint applies to only one dimension of the curves (the same for all curves):
+```math
+e_k (t_0, t_1, \dots, t_N) = \sum_i a_{i,k}\, c_{d(i),k}(t_i).
+```
+- The output is of the same dimension as the inputs and each component is a linear combination of the input components:
+```math
+c_{\mathrm{out}_k}(t_0, t_1, \dots, t_N) = \sum_i b_{i,k}\, c_{i,k}(t_i).
+```
+- The system must sufficiently constraint the input to compute. For example, if the direct problem is independent of one component of the curve to compute, then the inverse proble will be undetermined since this component cuold take any value.
 
+Although not all problems are separable, most physical systems arising from interactions satisfy these conditions since. For example, in compliant elements networks, forces are compared to forces and displacements to displacements. 
 
 ```python
 import numpy as np
