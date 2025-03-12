@@ -15,6 +15,9 @@ Curve Coupling is a Python package designed for analyzing and solving curve coup
 - Compute the stability of the elements and the network
 - Visualizing the results.
 
+On [GitHub](https://github.com/Francopb/Curve-coupling)
+On [GitLab](https://gitlab.kuleuven.be/softrobotics/Curve-coupling)
+
 ### Equality problem
 
 In the equality case, the constraint is that some dimension of the input curves must be equal. For example for a match dimension $k$, the constraints are
