@@ -22,9 +22,8 @@ def run():
         ('Start', 'A'),
         ('A', 'End'),
     ]
-    constraint_matrices, output_matrices = generate_circuit_equations(edges, return_in_matrices=True)
-
-    prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
+    eqs = generate_circuit_equations(edges)
+    prob = curveCouplingProblem(curves, eqs.getConstraintMatrices(), eqs.getOutputMatrices())
 
     out_lst, res_lst = solveCurveCoupling_Islands(prob, iter_points=10)
 

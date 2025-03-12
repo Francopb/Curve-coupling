@@ -389,8 +389,9 @@ edges = [
     ('A', 'End'),
 ]
 
-Constr_D, Constr_F, Out_D, Out_F = generate_circuit_equations(edges)
-ConstraintMatrices, OutputMatrices = force_disp_to_matrices(Constr_D, Constr_F, Out_D, Out_F)
+eqs = generate_circuit_equations(edges)
+ConstraintMatrices = eqs.getConstraintMatrices()
+OutputMatrices = eqs.getOutputMatrices()
 ```
 
 In the example, the graph is:
@@ -416,44 +417,44 @@ In the example, the graph is:
 
 The output is:
 ```console
-Constr_D:
- [[ 0.  1.  1.  0. -1.]
- [-1. -1.  0.  1.  0.]]
+eqs.disp_constr:
+ [[ 1.  1.  0. -1.  0.]
+ [ 0. -1. -1.  0.  1.]]
 
-Constr_F:
- [[-1.  1.  0.  0.  1.]
- [ 0. -1.  1. -1.  0.]]
+eqs.force_constr:
+ [[ 0. -1.  1. -1.  0.]
+ [-1.  1.  0.  0.  1.]]
 
-Out_D:
+eqs.disp_out:
  [0. 0. 1. 1. 0.]
 
-Out_F:
+eqs.force_out:
  [1. 0. 0. 1. 0.]
 
- ConstraintMatrices:
- [[[ 0.  0.]
-  [ 1.  0.]
+ConstraintMatrices:
+ [[[ 1.  0.]
   [ 1.  0.]
   [ 0.  0.]
-  [-1.  0.]]
+  [-1.  0.]
+  [ 0.  0.]]
 
- [[-1.  0.]
+ [[ 0.  0.]
+  [-1.  0.]
   [-1.  0.]
   [ 0.  0.]
-  [ 1.  0.]
+  [ 1.  0.]]
+
+ [[ 0.  0.]
+  [ 0. -1.]
+  [ 0.  1.]
+  [ 0. -1.]
   [ 0.  0.]]
 
  [[ 0. -1.]
   [ 0.  1.]
   [ 0.  0.]
   [ 0.  0.]
-  [ 0.  1.]]
-
- [[ 0.  0.]
-  [ 0. -1.]
-  [ 0.  1.]
-  [ 0. -1.]
-  [ 0.  0.]]]
+  [ 0.  1.]]]
 
 OutputMatrices:
  [[[0. 0.]
@@ -468,6 +469,64 @@ OutputMatrices:
   [0. 1.]
   [0. 0.]]]
 ```
+
+### Inverting a network problem
+
+In the case of networks of compliant elements, it is possible to invert the equations to find an element response that would give place to a desired output, given the other elements responses.
+
+```python
+import numpy as np
+from curveCoupling.curveGenerators import *
+from curveCoupling import ndcurve, curveCouplingProblem, solveCurveCoupling
+from curveCoupling.compliantElements import generate_circuit_equations
+
+p0 = np.array([[0.0, 0.0], [0.55, 0.6], [1.1, 0.88], [1.27, 0.72], [1.1, 0.55]])
+p0 = np.concatenate([p0, [2.0, 1.0] - np.flip(p0, axis=0)])
+p1 = np.array([[0.0, 0.0], [0.1, 0.4], [0.25, 0.64], [0.4, 0.6]])
+p1 = np.concatenate([p1, [1.0, 1.0] - np.flip(p1, axis=0)])
+p2 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
+points = [p0, p1, p2]
+data = [generate_curve_CubicSpline(pts, 200) for pts in points]
+
+curves = ndcurve.createList(data)
+
+edges = [
+    ('Start', 'End'),
+    ('Start', 'A'),
+    ('A', 'End'),
+]
+eqs = generate_circuit_equations(edges)
+prob = curveCouplingProblem(curves, eqs.getConstraintMatrices(), eqs.getOutputMatrices())
+out, _ = solveCurveCoupling(prob)
+
+# Solve for curve 1 to get the computed output
+solve_for_idx = 0
+eqs_inverse = eqs.invertProblem(1)
+curves_inverse = curves.copy()
+curves_inverse[solve_for_idx] = ndcurve(out)
+prob_inverse = curveCouplingProblem(curves_inverse, eqs_inverse.getConstraintMatrices(), eqs_inverse.getOutputMatrices())
+out_inverse, res_inverse = solveCurveCoupling(prob_inverse)
+```
+
+The direct problem results:
+<p align="center">
+  <img src="assets/curveCoupling_Direct_Problem.png" alt="Direct problem Element" style="border-radius: 15px;">
+</p>
+
+Then, we invert the problem to compute the necessary curve to get the computed output. For this, we invert he equations and the roles of the output and input curve. This works to recompute any of the desired curves.
+
+<p align="center">
+  <img src="assets/curveCoupling_Inverse_Problem_0.png" alt="Inverse problem Element" style="border-radius: 15px;">
+</p>
+
+<p align="center">
+  <img src="assets/curveCoupling_Inverse_Problem_1.png" alt="Inverse problem Element" style="border-radius: 15px;">
+</p>
+
+<p align="center">
+  <img src="assets/curveCoupling_Inverse_Problem_2.png" alt="Inverse problem Element" style="border-radius: 15px;">
+</p>
+
 
 ### Computing stability of an element
 
@@ -553,9 +612,8 @@ edges = [
     ('Start', 'A'),
     ('A', 'End'),
 ]
-constraint_matrices, output_matrices = generate_circuit_equations(edges, return_in_matrices=True)
-
-prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
+eqs = generate_circuit_equations(edges)
+prob = curveCouplingProblem(curves, eqs.getConstraintMatrices(), eqs.getOutputMatrices())
 
 out_lst, res_lst = solveCurveCoupling_Islands(prob, iter_points=10)
 

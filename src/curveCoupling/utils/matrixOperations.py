@@ -106,6 +106,46 @@ def remove_small_vals(A: np.ndarray, tol: float = 1e-6) -> np.ndarray:
     A[np.isclose(A, 0.0, atol=tol)] = 0.0
     return A
 
+def ref(A: np.ndarray, tol: float = 0.0) -> np.ndarray:
+    """
+    Compute the Row Echelon Form (REF) of matrix A.
+
+    Args:
+        A (np.ndarray): The input matrix.
+        tol (float): Tolerance for considering values as zero.
+
+    Returns:
+        np.ndarray: The REF of the matrix.
+    """
+    A = A.copy().astype(float)
+    rows, cols = A.shape
+    r = 0  # Current row
+
+    for c in range(cols):
+        if r >= rows:
+            break
+
+        # Find pivot row
+        max_row = np.argmax(np.abs(A[r:, c])) + r
+        if np.abs(A[max_row, c]) < tol:
+            continue  # Skip this column if pivot is too small
+        
+        # Swap rows
+        A[[r, max_row]] = A[[max_row, r]]
+
+        # **Normalize pivot row (Make pivot = 1)**
+        pivot = A[r, c]
+        A[r] /= pivot  # Ensure pivot is always 1
+
+        # Eliminate values below the pivot
+        for i in range(r + 1, rows):
+            factor = A[i, c]
+            A[i, c:] -= factor * A[r, c:]
+
+        r += 1  # Move to next row
+
+    return A
+
 def rref(A: np.ndarray, tol: float = 0.0) -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute the Reduced Row Echelon Form (RREF) of matrix A and the transformation matrix P.
@@ -117,7 +157,7 @@ def rref(A: np.ndarray, tol: float = 0.0) -> Tuple[np.ndarray, np.ndarray]:
     Returns:
         Tuple[np.ndarray, np.ndarray]: The RREF of the matrix and the transformation matrix.
     """
-    A = A.copy()
+    A = A.copy().astype(float)
     rows, cols = A.shape
     P = np.eye(rows)
     c = 0
