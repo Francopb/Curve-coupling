@@ -4,9 +4,9 @@ from curveCoupling.utils.matrixOperations import ref
 
 class separableEqs:
     def __init__(self, constraintMatrices_lst: List[np.ndarray], outputVectors_lst: List[np.ndarray]):
-        numCurves = constraintMatrices_lst[0].shape[1]
+        numCurves = outputVectors_lst[0].size
         nDims = len(constraintMatrices_lst)
-        assert all([c.shape[1] == numCurves for c in constraintMatrices_lst]), "All constraintMatrices need to have the same number of columns"
+        assert all([c.size == 0 or c.shape[1] == numCurves for c in constraintMatrices_lst]), "All constraintMatrices need to have the same number of columns"
         assert all([c.size == numCurves for c in outputVectors_lst]), "All outputVectors need to have the same length as columns in constraintMatrices"
         assert len(outputVectors_lst) == nDims, "Required as many outputVectors as dimensions"
         assert sum([c.shape[0] for c in constraintMatrices_lst]) == numCurves-1, "Required N-1 constraints (N is number of curves)"
@@ -32,18 +32,33 @@ class separableEqs:
             total = np.vstack((top, bottom))
             total_swapped = total.copy()
             total_swapped[:, [0, solve_for_idx+1]] = total_swapped [:, [solve_for_idx+1,0]]
+            print("total_swapped\n",total_swapped)
             total_swapped_ref = ref(total_swapped, tol=1e-6)
+            print("total_swapped_ref\n",total_swapped_ref)
 
-            assert total_swapped_ref[0,0] == 1.0, "The equations might not be linearly independent"
-            assert np.all(total_swapped_ref[1:,0] == 0), "Something went wrong in Row Echelon Reduction"
-            return total_swapped_ref[1:,1:], -total_swapped_ref[0,1:]
+            if total_swapped_ref[0,0] != 1.0:
+                raise Exception("Independent variable")
+            if total_swapped_ref.shape[0] > 1 and np.any(total_swapped_ref[1:,0] != 0):
+                raise Exception("Something failed in Row Echelon Form computation")
+            
+            new_constr = total_swapped_ref[1:,1:] if total_swapped_ref.shape[0] > 1 else np.array([])
+            new_out = -total_swapped_ref[0,1:]
+
+            if np.linalg.matrix_rank(new_constr) < new_constr.shape[0]:
+                raise Exception("The new constraint is rank deficicent")
+            
+            return new_constr, -new_out
 
         new_constr_lst = []
         new_out_lst = []
         for i in range(self.nDims):
-            new_constr, new_out = invertCase(self.constraintMatrices_lst[i], self.outputVectors_lst[i])
+            try:
+                new_constr, new_out = invertCase(self.constraintMatrices_lst[i], self.outputVectors_lst[i])
+            except Exception as e:
+                raise Exception(f"At dimension {i}: {e}")
             new_constr_lst.append(new_constr)
             new_out_lst.append(new_out)
+
         return separableEqs(new_constr_lst, new_out_lst)
 
 def _split2joint_constr(constraintMatrices_lst: List[np.ndarray]) -> np.ndarray:
@@ -56,9 +71,16 @@ def _split2joint_constr(constraintMatrices_lst: List[np.ndarray]) -> np.ndarray:
     Returns:
     np.ndarray: Joint ConstraintMatrices.
     """
-    numCurves = constraintMatrices_lst[0].shape[1]
+    numCurves = None
+    for c in constraintMatrices_lst:
+        if c.size > 0:
+            numCurves = c.shape[1]
+            break
+
+    assert numCurves is not None, "At least one constraint matrix must not be empty"
+
     nDims = len(constraintMatrices_lst)
-    assert all([c.shape[1] == numCurves for c in constraintMatrices_lst]), "All constraintMatrices need to have the same number of columns"
+    assert all([(c.size == 0 or c.shape[1] == numCurves) for c in constraintMatrices_lst]), "All constraintMatrices need to have the same number of columns"
     assert sum([c.shape[0] for c in constraintMatrices_lst]) == numCurves-1, "Required N-1 constraints (N is number of curves)"
     
     ConstraintMatrices = np.zeros((numCurves - 1, numCurves, nDims))
@@ -134,7 +156,12 @@ def _joint2split_out(OutputMatrices: np.ndarray) -> List[np.ndarray]:
     outputVectors_lst = []
     for i in range(nDims):
         idx = _findCases(OutputMatrices, i)
-        assert len(idx) == 1, "Only one element in OutputMatrices should represent a each dimension"
+        assert len(idx) == 1, "One element in OutputMatrices should represent a each dimension"
         outputVectors_lst.append(OutputMatrices[idx[0], :, i])
 
     return outputVectors_lst
+
+# Author: Franco N. Pinan Basualdo
+# Project: Curve Coupling
+# URL: https://github.com/Francopb/Curve-coupling
+# Description: This script is part of the Curve Coupling project. Unauthorized use or distribution is prohibited.
