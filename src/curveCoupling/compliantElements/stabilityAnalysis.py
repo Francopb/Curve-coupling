@@ -47,7 +47,8 @@ def findSnapPoints(curve: ndcurve) -> List[snapPoint]:
         List[snapPoint]: List of snap points.
     """
     dim = curve.getNDim()
-    assert dim == 2, "Only possible for 2-dimensional case"
+    if dim != 2:
+        raise Exception("Only possible for 2-dimensional case")
 
     critPoints = []
     for i in range(dim):
@@ -83,8 +84,9 @@ def getValue_sections(
     Returns:
         object: Value in the corresponding section.
     """
-    assert len(input_values) == len(input_sections_limits) + 1, "Section limits should be equal to the values minus one"
-    assert tuple(input_sections_limits) == tuple(sorted(input_sections_limits)), "Section limits should be in increasing order"
+    if len(input_values) != len(input_sections_limits) + 1:
+        raise Exception("Section limits should be equal to the values minus one")
+    input_sections_limits =  tuple(sorted(input_sections_limits))
     idx = np.searchsorted(input_sections_limits, param)
     return input_values[idx]
 
@@ -165,7 +167,8 @@ def getEigenFuncs(
     if res is None:
         funcs = [getEigenFunc(c, init_eigen=init_eigen) for c in curves]
     else:
-        assert len(curves) == res.getNDim(), "Necessary as many curves as Res dimension"
+        if len(curves) != res.getNDim():
+            raise Exception("Necessary as many curves as Res dimension")
         funcs = [getEigenFunc(c, res.extractIndex(i), init_eigen=init_eigen) for i, c in enumerate(curves)]
 
     def func(x: np.ndarray) -> np.ndarray:

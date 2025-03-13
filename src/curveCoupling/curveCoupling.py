@@ -21,11 +21,13 @@ class curveCouplingProblem:
         self.ConstraintConstantVector = ConstraintConstantVector
         self.OutputConstantVector = OutputConstantVector
         self.numCurves = len(curves)
-        assert self.numCurves >= 2, "At least two curves are needed"
+        if self.numCurves < 2:
+            raise Exception("At least two curves are needed")
         self.curves_all = ndcurve_matrix(curves)
 
         self.Ndims = set([c.getNDim() for c in self.curves])
-        assert len(self.Ndims) == 1, "All curves must have the same dimensionality"
+        if len(self.Ndims) > 1:
+            raise Exception("All curves must have the same dimensionality")
         self.Ndims = self.Ndims.pop()
 
         if self.OutputMatrices is None:
@@ -37,22 +39,31 @@ class curveCouplingProblem:
                     self.OutputMatrices[i,:,i] = np.ones(self.numCurves) / self.numCurves
 
         if self.Ndims==0:
-            assert self.ConstraintMatrices.ndim == 2, "For zero dimensional curves (return a float), ConstraintMatrices must be a 2 dimensional array"
-            assert self.OutputMatrices.ndim == 2, "For zero dimensional curves (return a float), OutputMatrices must be a 2 dimensional array"
+            if self.ConstraintMatrices.ndim != 2:
+                raise Exception("For zero dimensional curves (return a float), ConstraintMatrices must be a 2 dimensional array")
+            if self.OutputMatrices.ndim != 2:
+                raise Exception("For zero dimensional curves (return a float), OutputMatrices must be a 2 dimensional array")
         else:
-            assert self.ConstraintMatrices.shape[2] == self.Ndims, "ConstraintMatrices dim 2 must be the number of dimensions"
-            assert self.OutputMatrices.shape[2] == self.Ndims, "OutputMatrices dim 2 must be the number of dimensions"
-        assert self.ConstraintMatrices.shape[1] == self.numCurves, "ConstraintMatrices dim 1 must the the number of curves"
-        assert self.OutputMatrices.shape[1] == self.numCurves, "OutputMatrices dim 1 must the the number of curves"
-        assert self.ConstraintMatrices.shape[0] == self.numCurves-1, "ConstraintMatrices dim 0 must the the number of curves minus 1"
+            if self.ConstraintMatrices.shape[2] != self.Ndims:
+                raise Exception("ConstraintMatrices dim 2 must be the number of dimensions")
+            if self.OutputMatrices.shape[2] != self.Ndims:
+                raise Exception("OutputMatrices dim 2 must be the number of dimensions")
+        if self.ConstraintMatrices.shape[1] != self.numCurves:
+            raise Exception("ConstraintMatrices dim 1 must the the number of curves")
+        if self.OutputMatrices.shape[1] != self.numCurves:
+            raise Exception("OutputMatrices dim 1 must the the number of curves")
+        if self.ConstraintMatrices.shape[0] != self.numCurves-1:
+            raise Exception("ConstraintMatrices dim 0 must the the number of curves minus 1")
 
         if self.ConstraintConstantVector is None:
             self.ConstraintConstantVector = np.zeros(self.ConstraintMatrices.shape[0])
         if self.OutputConstantVector is None:
             self.OutputConstantVector = np.zeros(self.OutputMatrices.shape[0])
 
-        assert self.ConstraintConstantVector.size == self.ConstraintMatrices.shape[0], "ConstraintConstantVector must be as len ConstraintMatrices dim 0"
-        assert self.OutputConstantVector.shape[0] == self.OutputMatrices.shape[0], "OutputConstantVector must be as len OutputMatrices dim 0"
+        if self.ConstraintConstantVector.size != self.ConstraintMatrices.shape[0]:
+            raise Exception("ConstraintConstantVector must be as len ConstraintMatrices dim 0")
+        if self.OutputConstantVector.shape[0] != self.OutputMatrices.shape[0]:
+            raise Exception("OutputConstantVector must be as len OutputMatrices dim 0")
 
     def computeConstraint_from_values(self, vals: np.ndarray) -> np.ndarray:
         if self.Ndims == 0:
@@ -85,14 +96,18 @@ class curveCouplingProblem_Equality:
         self.curves_match_index = [c.extractIndex(match_index) for c in curves]
         self.match_index = match_index
         self.numCurves = len(curves)
-        assert self.numCurves >= 2, "At least two curves are needed"
+        if self.numCurves < 2:
+            raise Exception("At least two curves are needed")
         self.Ndims = set([c.getNDim() for c in self.curves])
-        assert len(self.Ndims) == 1, "All curves must have the same dimensionality"
+        if len(self.Ndims) > 1:
+            raise Exception("All curves must have the same dimensionality")
         self.Ndims = self.Ndims.pop()
         if self.match_index is None:
-            assert self.Ndims == 0, "For no match index, the curves must be zero dimensional (return a float)"
+            if self.Ndims != 0:
+                raise Exception("For no match index, the curves must be zero dimensional (return a float)")
         if self.Ndims == 0:
-            assert self.match_index is None, "For zero dimensional curves (return a float), no possible to use match_index"
+            if self.match_index is not None:
+                raise Exception("For zero dimensional curves (return a float), no possible to use match_index")
         self.curves_all = ndcurve_matrix(curves)
         self.curves_all_match_index = self.curves_all.extractIndex(match_index)
 
@@ -358,10 +373,14 @@ def solveCurveCoupling(
         param_range = np.stack([np.zeros(prb.numCurves, dtype=float),np.ones(prb.numCurves, dtype=float)], axis=0)
 
     
-    assert param_start.size == prb.numCurves, "Initial params must have the same number of values as curves"
-    assert param_range.shape[0] == 2, "Params range must have a minimum and maximum value"
-    assert param_range.shape[1] == prb.numCurves, "Params range must have the same number of values as curves"
-    assert step_min <= step_max, "step_min should be less than or equal to step_max"
+    if param_start.size != prb.numCurves:
+        raise Exception("Initial params must have the same number of values as curves")
+    if param_range.shape[0] != 2:
+        raise Exception("Params range must have a minimum and maximum value")
+    if param_range.shape[1] != prb.numCurves:
+        raise Exception("Params range must have the same number of values as curves")
+    if step_min > step_max:
+        raise Exception("step_min should be less than or equal to step_max")
 
     if param_stop is not None:
         if param_stop.size == 0:
@@ -369,10 +388,12 @@ def solveCurveCoupling(
         else:
             if param_stop.ndim == 1:
                 param_stop = param_stop.reshape((1, -1))
-            assert param_stop.shape[1] == prb.numCurves, "Stop params must have the same number of values as curves"
+            if param_stop.shape[1] != prb.numCurves:
+                raise Exception("Stop params must have the same number of values as curves")
 
     if initial_dir is not None:
-        assert initial_dir.size == prb.numCurves, "Initial_dir must have the same number of values as curves"
+        if initial_dir.size != prb.numCurves:
+            raise Exception("Initial_dir must have the same number of values as curves")
 
     stopped_by_circulation = False
 

@@ -18,11 +18,14 @@ def split2joint_constr(constraintMatrices_lst: List[np.ndarray]) -> np.ndarray:
             numCurves = c.shape[1]
             break
 
-    assert numCurves is not None, "At least one constraint matrix must not be empty"
+    if numCurves is None:
+        raise Exception("At least one constraint matrix must not be empty")
 
     nDims = len(constraintMatrices_lst)
-    assert all([(c.size == 0 or c.shape[1] == numCurves) for c in constraintMatrices_lst]), "All constraintMatrices need to have the same number of columns"
-    assert sum([c.shape[0] for c in constraintMatrices_lst]) == numCurves-1, "Required N-1 constraints (N is number of curves)"
+    if any([(c.size != 0 and c.shape[1] != numCurves) for c in constraintMatrices_lst]):
+        raise Exception("All constraintMatrices need to have the same number of columns")
+    if sum([c.shape[0] for c in constraintMatrices_lst]) != numCurves-1:
+        raise Exception("Required N-1 constraints (N is number of curves)")
     
     ConstraintMatrices = np.zeros((numCurves - 1, numCurves, nDims))
     current_eq = 0
@@ -45,7 +48,8 @@ def split2joint_out(outputVectors_lst: List[np.ndarray]) -> np.ndarray:
     """
     numCurves = outputVectors_lst[0].size
     nDims = len(outputVectors_lst)
-    assert all([c.size == numCurves for c in outputVectors_lst]), "All outputVectors need to have the same length as columns in constraintMatrices"
+    if any([c.size != numCurves for c in outputVectors_lst]):
+        raise Exception("All outputVectors need to have the same length as columns in constraintMatrices")
     OutputMatrices = np.zeros((nDims, numCurves, nDims))
     for i, c in enumerate(outputVectors_lst):
         OutputMatrices[i,:,i] = c
@@ -56,7 +60,8 @@ def _findCases(A: np.ndarray, index: int) -> np.ndarray:
         for i in non_zero_idx:
             mask = np.ones_like(A[i], dtype=bool) 
             mask[:, index] = False
-            assert np.all(A[i][mask] == 0), "Mixed matrix, cannot decompose"
+            if np.any(A[i][mask] != 0):
+                raise Exception("Mixed matrix, cannot decompose")
 
         return non_zero_idx
 
@@ -72,7 +77,8 @@ def joint2split_constr(ConstraintMatrices: np.ndarray) -> List[np.ndarray]:
     """
     numCurves = ConstraintMatrices.shape[1]
     nDims = ConstraintMatrices.shape[2]
-    assert ConstraintMatrices.shape[0] == numCurves-1, "Required N-1 constraints (N is number of curves)"
+    if ConstraintMatrices.shape[0] != numCurves-1:
+        raise Exception("Required N-1 constraints (N is number of curves)")
 
     constraintMatrices_lst = []
     for i in range(nDims):
@@ -92,12 +98,14 @@ def joint2split_out(OutputMatrices: np.ndarray) -> List[np.ndarray]:
     List[np.ndarray]: List of split vectors, where each represents the output for a given dimension.
     """
     nDims = OutputMatrices.shape[2]
-    assert OutputMatrices.shape[0] == nDims, "Required as many outputVectors as dimensions"
+    if OutputMatrices.shape[0] != nDims:
+        raise Exception("Required as many outputVectors as dimensions")
 
     outputVectors_lst = []
     for i in range(nDims):
         idx = _findCases(OutputMatrices, i)
-        assert len(idx) == 1, "One element in OutputMatrices should represent a each dimension"
+        if len(idx) != 1:
+            raise Exception("One element in OutputMatrices should represent each dimension")
         outputVectors_lst.append(OutputMatrices[idx[0], :, i])
 
     return outputVectors_lst
@@ -119,11 +127,16 @@ def invertProblem(constraintMatrices_lst: List[np.ndarray],
         
     numCurves = outputVectors_lst[0].size
     nDims = len(constraintMatrices_lst)
-    assert 0 <= solve_for_idx < numCurves, "Index should be between zero and N-1 (N is number of curves)"
-    assert all([c.size == 0 or c.shape[1] == numCurves for c in constraintMatrices_lst]), "All constraintMatrices need to have the same number of columns"
-    assert all([c.size == numCurves for c in outputVectors_lst]), "All outputVectors need to have the same length as columns in constraintMatrices"
-    assert len(outputVectors_lst) == nDims, "Required as many outputVectors as dimensions"
-    assert sum([c.shape[0] for c in constraintMatrices_lst]) == numCurves-1, "Required N-1 constraints (N is number of curves)"
+    if not (0 <= solve_for_idx < numCurves):
+        raise Exception("Index should be between zero and N-1 (N is number of curves)")
+    if any([c.size != 0 and c.shape[1] != numCurves for c in constraintMatrices_lst]):
+        raise Exception("All constraintMatrices need to have the same number of columns")
+    if any([c.size != numCurves for c in outputVectors_lst]):
+        raise Exception("All outputVectors need to have the same length as columns in constraintMatrices")
+    if len(outputVectors_lst) != nDims:
+        raise Exception("Required as many outputVectors as dimensions")
+    if sum([c.shape[0] for c in constraintMatrices_lst]) != numCurves-1:
+        raise Exception("Required N-1 constraints (N is number of curves)")
     
     def invertCase(constr: np.ndarray, out: np.ndarray):
         top = np.hstack(([-1], out))

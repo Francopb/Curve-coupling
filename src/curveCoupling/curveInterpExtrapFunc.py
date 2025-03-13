@@ -4,7 +4,8 @@ from typing import *
 
 class ndcurve:
     def __init__(self, data: np.ndarray) -> None:
-        assert 1 <= data.ndim <= 2, "Data dimensions should be 1 or 2"
+        if not (1 <= data.ndim <= 2):
+            raise Exception("Data dimensions should be 1 or 2")
         self.function = _InterpExtrapFunc_initialize(data)
 
     def __call__(self, x: float, nu: int = 0) -> np.ndarray:
@@ -27,7 +28,8 @@ class ndcurve:
 
     def extractIndex(self, index: int) -> 'ndcurve':
         if index is None: return self
-        assert 0 <= index < self.getNDim(), "Only possible to extract index between zero and Ndim"
+        if not (0 <= index < self.getNDim()):
+            raise Exception("Only possible to extract index between zero and Ndim")
         newFunction = _InterpExtrapFunc_extractIndex(self.function, index)
         return self.__class__._from_function(newFunction)
 
@@ -46,12 +48,15 @@ class ndcurve:
 class ndcurve_matrix:
     def __init__(self, curves: List[ndcurve]) -> None:
         aux_ndim = curves[0].getNDim()
-        assert all([c.getNDim() == aux_ndim for c in curves[1:]]), "All curves must have the same dimension"
+        if any([c.getNDim() != aux_ndim for c in curves[1:]]):
+            raise Exception("All curves must have the same dimension")
         self.functions = [c.function for c in curves]
 
     def __call__(self, x: np.ndarray, nu: int = 0) -> np.ndarray:
-        assert x.ndim == 1, "Can only be called with a vector"
-        assert x.size == self.getNCurves(), "Need as many parameters as curves"
+        if x.ndim != 1:
+            raise Exception("Can only be called with a vector")
+        if x.size != self.getNCurves():
+            raise Exception("Need as many parameters as curves")
         return np.array([f(x_i, nu=nu) for x_i, f in zip(x, self.functions)])
 
     def getNDim(self) -> int:
@@ -71,7 +76,8 @@ class ndcurve_matrix:
 
     def extractIndex(self, index: int) -> 'ndcurve_matrix':
         if index is None: return self
-        assert 0 <= index < self.getNDim(), "Only possible to extract index between zero and Ndim"
+        if not (0 <= index < self.getNDim()):
+            raise Exception("Only possible to extract index between zero and Ndim")
         new_functions = [_InterpExtrapFunc_extractIndex(f, index) for f in self.functions]
         return ndcurve_matrix([ndcurve._from_function(f) for f in new_functions])
 
@@ -213,9 +219,12 @@ def Integral2D(curves: Union[np.ndarray, List[np.ndarray]], is_axisymmetric_y: b
     if isinstance(curves, list):
         return [Integral2D(c, is_axisymmetric_y, is_axisymmetric_x) for c in curves]
 
-    assert curves.ndim == 2, "Only two-dimensional matrices are allowed"
-    assert curves.shape[1] == 2, "Only 2D curves allowed"
-    assert not (is_axisymmetric_x and is_axisymmetric_y), "Only one revolution possible"
+    if curves.ndim != 2:
+        raise Exception("Only two-dimensional matrices are allowed")
+    if curves.shape[1] != 2:
+        raise Exception("Only 2D curves allowed")
+    if is_axisymmetric_x and is_axisymmetric_y:
+        raise Exception("Only one revolution possible")
     Npoints = curves.shape[0]
     x = curves[:, 0]
     y = curves[:, 1]
