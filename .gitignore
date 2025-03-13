@@ -1,2 +1,24 @@
+# Ignore Python cache files
 __pycache__/
-auxScript.py
+*.py[cod]
+*$py.class
+
+# Ignore egg files
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Ignore other build files
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.DS_Store
+*.coverage
+*.tox
+*.env
+*.venv
+.env/
+.venv/
