@@ -139,9 +139,12 @@ def invertProblem(constraintMatrices_lst: List[np.ndarray],
         raise ValueError("Required N-1 constraints (N is number of curves)")
     
     def invertCase(constr: np.ndarray, out: np.ndarray):
-        top = np.hstack(([-1], out))
-        bottom = np.hstack((np.zeros((constr.shape[0],1)), constr))
-        total = np.vstack((top, bottom))
+        if constr.size > 0:
+            top = np.hstack(([-1], out))
+            bottom = np.hstack((np.zeros((constr.shape[0],1)), constr)) if constr.size > 0 else np.array([])
+            total = np.vstack((top, bottom))
+        else:
+            total = np.hstack(([-1], out)).reshape((1,-1))
         total_swapped = total.copy()
         total_swapped[:, [0, solve_for_idx+1]] = total_swapped [:, [solve_for_idx+1,0]]
         total_swapped_ref = ref(total_swapped, tol=1e-6)
@@ -162,10 +165,10 @@ def invertProblem(constraintMatrices_lst: List[np.ndarray],
     new_constr_lst = []
     new_out_lst = []
     for i in range(nDims):
-        try:
-            new_constr, new_out = invertCase(constraintMatrices_lst[i], outputVectors_lst[i])
-        except Exception as e:
-            raise ValueError(f"At dimension {i}: {e}")
+        # try:
+        new_constr, new_out = invertCase(constraintMatrices_lst[i], outputVectors_lst[i])
+        # except Exception as e:
+            # raise ValueError(f"At dimension {i}: {e}")
         new_constr_lst.append(new_constr)
         new_out_lst.append(new_out)
 

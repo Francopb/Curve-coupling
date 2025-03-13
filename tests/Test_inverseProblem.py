@@ -46,10 +46,40 @@ def run():
         fig = plt.figure()
         plotResults(fig, data_inverse, [out_inverse], [res_inverse])
 
+def test_equality(n: int = 2, dims: int = 1, coupled_dim: int = 0):
+    constr_lst = [np.array([])] * dims
+    constr_lst[coupled_dim] = np.hstack((np.eye(n-1), -np.ones((n-1, 1))))
+    out_lst = [np.ones(n)] * dims
+    out_lst[coupled_dim] = np.array([1.0] + [0.0] * (n - 1))
+    for solve_idx in range(n-1,n):
+        constr_inv_lst, out_inv_lst = invertProblem(constr_lst, out_lst, solve_idx)
+        for i, constr in enumerate(constr_inv_lst):
+            # The constraint should also be equality
+            if i == coupled_dim:
+                vec = np.ones(n)
+                err = np.dot(constr, vec)
+                assert np.sum(err**2) == 0, "This should be a possible displacement variation"
+
+                for i in range(n):
+                    vec = np.zeros(n)
+                    vec[i] = 1.0
+                    err = np.dot(constr, vec)
+                    assert np.sum(err**2) >= 1, "This should not be a possible displacement variation"
+            else:
+                assert constr.size == 0, "Should not produce constraints in uncoupled dimensions"
+
+        for i, out in enumerate(out_inv_lst):
+            # The constraint should also be equality
+            if i == coupled_dim:
+                assert np.sum(out == 1) == 1 and np.all(out[np.where(out != 1)] == 0), "A single out should be one and the rest zero in the coupled dimension"
+            else:
+                assert out[solve_idx] == 1 and np.all(out[np.where(np.arange(out.size) != solve_idx)] == -1), "The output should be the total minus the others"
+
 if __name__ == "__main__":
     run()
     plt.show(block=False)
     input("Press Enter")
+    test_equality(5, 3, 1)
 
 # Author: Franco N. Pinan Basualdo
 # Project: Curve Coupling

@@ -493,21 +493,17 @@ In the example, the graph is:
 
 The output is:
 ```console
-disp_constr:
+>>> disp_constr
  [[-1. -1.  0.  1.  0.]
  [ 0. -1. -1.  0.  1.]]
-
-force_constr:
+>>> force_constr
  [[ 0. -1.  1. -1.  0.]
  [-1.  1.  0.  0.  1.]]
-
-disp_out:
+>>> disp_out
  [0. 0. 1. 1. 0.]
-
-force_out:
+>>> force_out
  [1. 0. 0. 1. 0.]
-
-ConstraintMatrices:
+>>> ConstraintMatrices
  [[[-1.  0.]
   [-1.  0.]
   [ 0.  0.]
@@ -531,8 +527,7 @@ ConstraintMatrices:
   [ 0.  0.]
   [ 0.  0.]
   [ 0.  1.]]]
-
-OutputMatrices:
+>>> OutputMatrices
  [[[0. 0.]
   [0. 0.]
   [1. 0.]

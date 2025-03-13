@@ -71,7 +71,7 @@ def test_parallel(n: int = 2):
     assert np.sum(disp_out == 1) == 1 and np.all(disp_out[np.where(disp_out != 1)] == 0), "A single out disp. should be one and the rest zero"
     
 if __name__ == "__main__":
-    # run()
+    run()
     test_series(5)
     test_parallel(5)
 
