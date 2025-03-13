@@ -2,6 +2,7 @@ import numpy as np
 from scipy import interpolate
 from typing import *
 
+
 class ndcurve:
     def __init__(self, data: np.ndarray) -> None:
         if not (1 <= data.ndim <= 2):
@@ -22,14 +23,16 @@ class ndcurve:
     def antiderivative(self, nu: int = 1) -> 'ndcurve':
         newFunction = self.function.antiderivative(nu=nu)
         return self.__class__._from_function(newFunction)
-    
+
     def roots(self) -> np.ndarray:
         return self.function.roots(extrapolate=False)
 
     def extractIndex(self, index: int) -> 'ndcurve':
-        if index is None: return self
+        if index is None:
+            return self
         if not (0 <= index < self.getNDim()):
-            raise ValueError("Only possible to extract index between zero and Ndim")
+            raise ValueError(
+                "Only possible to extract index between zero and Ndim")
         newFunction = _InterpExtrapFunc_extractIndex(self.function, index)
         return self.__class__._from_function(newFunction)
 
@@ -75,16 +78,20 @@ class ndcurve_matrix:
         return ndcurve_matrix([ndcurve._from_function(f) for f in new_functions])
 
     def extractIndex(self, index: int) -> 'ndcurve_matrix':
-        if index is None: return self
+        if index is None:
+            return self
         if not (0 <= index < self.getNDim()):
-            raise ValueError("Only possible to extract index between zero and Ndim")
-        new_functions = [_InterpExtrapFunc_extractIndex(f, index) for f in self.functions]
+            raise ValueError(
+                "Only possible to extract index between zero and Ndim")
+        new_functions = [_InterpExtrapFunc_extractIndex(
+            f, index) for f in self.functions]
         return ndcurve_matrix([ndcurve._from_function(f) for f in new_functions])
 
     @classmethod
     def _from_data(cls, Ldata: List[np.ndarray]) -> 'ndcurve_matrix':
         return cls(ndcurve.createList(Ldata))
-    
+
+
 def compute_t(curve: ndcurve, x: float, val: float, axis: int, tol: float = 1e-6) -> float:
     curve_match_index = curve.extractIndex(axis)
     Dval = val - curve_match_index(x)
@@ -97,6 +104,7 @@ def compute_t(curve: ndcurve, x: float, val: float, axis: int, tol: float = 1e-6
     if np.abs(step) < tol:
         x += step
     return x
+
 
 def _InterpExtrapFunc_initialize(data: np.ndarray) -> Callable[[float], np.ndarray]:
     """
@@ -117,7 +125,8 @@ def _InterpExtrapFunc_initialize(data: np.ndarray) -> Callable[[float], np.ndarr
     leftslope = spline(leftx, nu=1)
     leftxnext = leftx - 10.0 * np.finfo(np.float64).eps
     leftynext = np.array(lefty + leftslope * (leftxnext - leftx))
-    leftcoeffs = np.stack([[np.zeros(leftslope.shape)], [np.zeros(leftslope.shape)], [leftslope], [leftynext]])
+    leftcoeffs = np.stack([[np.zeros(leftslope.shape)], [
+                          np.zeros(leftslope.shape)], [leftslope], [leftynext]])
     spline.extend(leftcoeffs, np.r_[leftxnext])
 
     # Repeat with additional knots to the right
@@ -126,10 +135,12 @@ def _InterpExtrapFunc_initialize(data: np.ndarray) -> Callable[[float], np.ndarr
     rightslope = spline(rightx, nu=1)
     rightxnext = np.nextafter(rightx, rightx + 1)
     rightynext = righty + rightslope * (rightxnext - rightx)
-    rightcoeffs = np.stack([[np.zeros(rightslope.shape)], [np.zeros(rightslope.shape)], [rightslope], [rightynext]])
+    rightcoeffs = np.stack([[np.zeros(rightslope.shape)], [
+                           np.zeros(rightslope.shape)], [rightslope], [rightynext]])
     spline.extend(rightcoeffs, np.r_[rightxnext])
 
     return spline
+
 
 def _InterpExtrapFunc_extractIndex(f_curve: Union[Callable[[float], np.ndarray], List[Callable[[float], np.ndarray]]], index: Optional[int] = None) -> Union[Callable[[float], np.ndarray], List[Callable[[float], np.ndarray]]]:
     """
@@ -152,6 +163,7 @@ def _InterpExtrapFunc_extractIndex(f_curve: Union[Callable[[float], np.ndarray],
     f_extracted = interpolate.CubicSpline(f_curve.x, f_curve.x)
     f_extracted.c = coeffs_i
     return f_extracted
+
 
 def reparametrizeCurve(c: np.ndarray, coeffs: Optional[np.ndarray] = None, num_samp: int = 0) -> Tuple[np.ndarray, np.ndarray]:
     """
@@ -188,6 +200,7 @@ def reparametrizeCurve(c: np.ndarray, coeffs: Optional[np.ndarray] = None, num_s
     dist_norm = np.sqrt(np.sum(np.square(diff_norm), axis=1))
     return c_norm, dist_norm
 
+
 def normalizeCurves(curves: List[np.ndarray]) -> List[np.ndarray]:
     """
     Normalize the set of curves to the [0,1] range.
@@ -203,6 +216,7 @@ def normalizeCurves(curves: List[np.ndarray]) -> List[np.ndarray]:
     curves_range = curves_max - curves_min
 
     return [(c - curves_min) / curves_range for c in curves]
+
 
 def Integral2D(curves: Union[np.ndarray, List[np.ndarray]], is_axisymmetric_y: bool = False, is_axisymmetric_x: bool = False) -> Union[np.ndarray, List[np.ndarray]]:
     """

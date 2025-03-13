@@ -6,6 +6,7 @@ from curveCoupling.curveCoupling import curveCouplingProblem_Equality, solveCurv
 import itertools
 from curveCoupling.utils.filterSetsOfPoints import remove_repeat_sets
 
+
 class criticalPoint:
     """
     A class to represent a critical point, its value, and the second derivative.
@@ -89,7 +90,8 @@ def findCriticalPoints(
             order += 1
             value = curve_analyse(r, nu=order)
 
-        critPoints.append(criticalPoint(r, curves(r), order, value, analyze_index))
+        critPoints.append(criticalPoint(
+            r, curves(r), order, value, analyze_index))
 
     if add_init_end:
         critPoints.insert(0, criticalPoint(
@@ -239,7 +241,8 @@ def findSingularities_Equality(
         Tuple[np.ndarray, np.ndarray, List[int], List[np.ndarray]]: List of singularities values, their parameters, orders, and directions.
     """
 
-    criticalPoints = findCriticalPoints(prb.curves, analyze_index=prb.match_index)
+    criticalPoints = findCriticalPoints(
+        prb.curves, analyze_index=prb.match_index)
     singularity_res, singularity_idx = __findSingularities_critPoints_mult(
         criticalPoints, tol=tol)
 
@@ -253,7 +256,9 @@ def findSingularities_Equality(
             if isinstance(ind, tuple):
                 search_range = [criticalPoints[i][ind[0]].param,
                                 criticalPoints[i][ind[1]].param]
-                def f_opt(x): return prb.curves_match_index[i](x) - singularity_res
+
+                def f_opt(x): return prb.curves_match_index[i](
+                    x) - singularity_res
                 opt_res = optimize.root_scalar(
                     f_opt, bracket=search_range, method='brentq')
                 param = opt_res.root
@@ -281,16 +286,20 @@ def findSingularities_Equality(
         lcm = np.lcm.reduce(denominators)
         order = lcm / denominators
 
-        aux = np.array([np.prod(np.arange(1, d + 1)) for d in denominators]) / constants
+        aux = np.array([np.prod(np.arange(1, d + 1))
+                       for d in denominators]) / constants
         if len(even_constants) == 0:
-            factors = np.array([np.sign(a) * np.abs(a) ** (1 / d) for a, d in zip(aux, denominators)])
+            factors = np.array([np.sign(a) * np.abs(a) ** (1 / d)
+                               for a, d in zip(aux, denominators)])
             factors /= np.linalg.norm(factors)
             dirs = [factors, -factors]
         else:
             sign_var = np.sign(even_constants[0])
             aux *= sign_var
-            factors = np.array([np.sign(a) * np.abs(a) ** (1 / d) for a, d in zip(aux, denominators)])
-            combinations = itertools.product((-1.0, 1.0), repeat=len(even_constants))
+            factors = np.array([np.sign(a) * np.abs(a) ** (1 / d)
+                               for a, d in zip(aux, denominators)])
+            combinations = itertools.product(
+                (-1.0, 1.0), repeat=len(even_constants))
             dirs = []
             for c in combinations:
                 new_dir = factors.copy()
@@ -313,10 +322,11 @@ def findSingularities_Equality(
 
     return np.array(output_vec), np.array(param_vec), order_vec, dirs_vec
 
+
 def solveCurveCoupling_Singularities_Equality(prb: curveCouplingProblem_Equality,
-    tol: float = 1e-6,
-    d_step: float = 5e-2,
-) -> Tuple[np.ndarray, np.ndarray, List[int], List[np.ndarray]]:
+                                              tol: float = 1e-6,
+                                              d_step: float = 5e-2,
+                                              ) -> Tuple[np.ndarray, np.ndarray, List[int], List[np.ndarray]]:
     """
     Finds the curve coupling considering singularities.
 
@@ -329,17 +339,20 @@ def solveCurveCoupling_Singularities_Equality(prb: curveCouplingProblem_Equality
         Tuple[List[np.ndarray], List[np.ndarray]]: Output curves and results in parametric space.
     """
 
+    sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities_Equality(
+        prb, tol=tol)
 
-    sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities_Equality(prb, tol=tol)
     def computeTangents(orders, dirs):
         leading_order = np.min(orders)
-        tangents = np.array([np.where(orders==leading_order,d, 0.0) for d in dirs])
-        tangents /= np.linalg.norm(tangents,axis=1)[:,np.newaxis]
+        tangents = np.array(
+            [np.where(orders == leading_order, d, 0.0) for d in dirs])
+        tangents /= np.linalg.norm(tangents, axis=1)[:, np.newaxis]
         return tangents
 
-    sing_tangents = [computeTangents(o, d) for o,d in zip (sing_orders, sing_dirs)]
+    sing_tangents = [computeTangents(o, d)
+                     for o, d in zip(sing_orders, sing_dirs)]
 
-    out, res = solveCurveCoupling_Equality(prb, param_stop=sing_seeds) 
+    out, res = solveCurveCoupling_Equality(prb, param_stop=sing_seeds)
     out_lst = [out]
     res_lst = [res]
 
@@ -347,19 +360,21 @@ def solveCurveCoupling_Singularities_Equality(prb: curveCouplingProblem_Equality
         for d, t in zip(dirs, tangents):
             def f_opt(a):
                 return np.linalg.norm((a*d) ** order)-d_step
-            factor = optimize.fsolve(f_opt,1.0)
+            factor = optimize.fsolve(f_opt, 1.0)
             d_res = (factor * d) ** order
             sing_res = d_res + seed
-            out, res = solveCurveCoupling_Equality(prb, param_start=sing_res, param_stop=sing_seeds, initial_dir=t,it_max=5000) 
-            out = np.concatenate([[sing_out], out],axis=0)
-            res = np.concatenate([[seed], res],axis=0)
+            out, res = solveCurveCoupling_Equality(
+                prb, param_start=sing_res, param_stop=sing_seeds, initial_dir=t, it_max=5000)
+            out = np.concatenate([[sing_out], out], axis=0)
+            res = np.concatenate([[seed], res], axis=0)
             out_lst.append(out)
             res_lst.append(res)
-    
-    removed_idx = remove_repeat_sets(res_lst,tol=0.1)
+
+    removed_idx = remove_repeat_sets(res_lst, tol=0.1)
     for idx in removed_idx:
         out_lst.pop(idx)
     return out_lst, res_lst
+
 
 def __findIslands_critPoints_pair(
     critPoints1: List[criticalPoint],
@@ -549,7 +564,8 @@ def findIslands_Equality(
         Tuple[np.ndarray, np.ndarray, np.ndarray]: List of intersection points, their parameters, and initial directions.
     """
 
-    criticalPoints = findCriticalPoints(prb.curves, analyze_index=prb.match_index)
+    criticalPoints = findCriticalPoints(
+        prb.curves, analyze_index=prb.match_index)
     intersections, indices = __findIslands_critPoints_mult(
         criticalPoints, tol=tol)
 
@@ -583,9 +599,10 @@ def findIslands_Equality(
 
     return np.array(output_res), np.array(param_res), np.array(initial_dir)
 
+
 def solveCurveCoupling_Islands_Equality(prb: curveCouplingProblem_Equality,
-    tol: float = -1e-6,
-) -> Tuple[np.ndarray, np.ndarray, List[int], List[np.ndarray]]:
+                                        tol: float = -1e-6,
+                                        ) -> Tuple[np.ndarray, np.ndarray, List[int], List[np.ndarray]]:
     """
     Finds the curve coupling considering islands.
 
@@ -603,7 +620,8 @@ def solveCurveCoupling_Islands_Equality(prb: curveCouplingProblem_Equality,
     out_lst = [out]
 
     for s, d in zip(islands_seeds, islands_dirs):
-        out, res = solveCurveCoupling_Equality(prb, param_start=s, stop_circulation=True, initial_dir=d)
+        out, res = solveCurveCoupling_Equality(
+            prb, param_start=s, stop_circulation=True, initial_dir=d)
         res_lst.append(res)
         out_lst.append(out)
 

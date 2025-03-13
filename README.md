@@ -34,6 +34,7 @@ c_\mathrm{out}(t_0,t_1,\dots,t_N)=\frac{1}{N} \sum_i c_i(t_i).
 ```
 
 ### General problem
+
 In the general case, we define a constraint array $\mathbf{M}_C\in\mathbb{R}^{(N-1)\times N \times d}$, and constraint vector $\mathbf{V}_C\in\mathbb{R}^{(N-1)}$, where $d$ is the dimension of the curves (generally 2, like force-displacement, current-voltage, etc.). In that case, the constraints are:
 
 ```math
@@ -94,7 +95,8 @@ You can generate curves using the built-in functions:
 import numpy as np
 from curveCoupling.curveGenerators import generate_curve_CubicSpline, generate_curve_Pchip, generate_curve_snaps
 
-p0 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
+p0 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [
+                  0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
 data = [
     generate_curve_CubicSpline(p0, 200),
     generate_curve_Pchip(p0, 200),
@@ -117,7 +119,8 @@ import numpy as np
 from curveCoupling.curveGenerators import generate_curve_CubicSpline
 from curveCoupling import ndcurve
 
-p0 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
+p0 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [
+                  0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
 data = generate_curve_CubicSpline(p0, 200)
 
 curve = ndcurve(data)
@@ -238,7 +241,8 @@ p0 = np.array([[0.0, 0.0], [0.55,0.6], [1.1, 0.88], [1.27, 0.72], [1.1,0.55]])
 p0 = np.concatenate([p0, [2.0,1.0]-np.flip(p0,axis=0)])
 p1 = np.array([[0.0, 0.0], [0.1, 0.4], [0.25, 0.64], [0.4, 0.6]])
 p1 = np.concatenate([p1, [1.0,1.0]-np.flip(p1,axis=0)])
-p2 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
+p2 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [
+                  0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
 points = [p0, p1, p2]
 data = [generate_curve_CubicSpline(pts, 200) for pts in points]
 
@@ -271,12 +275,13 @@ Find islands in curve coupling problems efficiently (in case of general constrai
 import numpy as np
 from curveCoupling import ndcurve, curveCouplingProblem, solveCurveCoupling_bruteForce_localSolve
 from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Islands
-    
+
 p0 = np.array([[0.0, 0.0], [0.55,0.6], [1.1, 0.88], [1.27, 0.72], [1.1,0.55]])
 p0 = np.concatenate([p0, [2.0,1.0]-np.flip(p0,axis=0)])
 p1 = np.array([[0.0, 0.0], [0.1, 0.4], [0.25, 0.64], [0.4, 0.6]])
 p1 = np.concatenate([p1, [1.0,1.0]-np.flip(p1,axis=0)])
-p2 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
+p2 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [
+                  0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
 points = [p0, p1, p2]
 data = [generate_curve_CubicSpline(pts, 200) for pts in points]
 
@@ -307,12 +312,14 @@ Deal with singularities in curve coupling problems efficiently (in case of gener
 import numpy as np
 from curveCoupling.curveGenerators import generate_curve_snaps
 from curveCoupling import ndcurve, curveCouplingProblem, solveCurveCoupling_bruteForce_localSolve
-from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Singularities, findSingularities    
+from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Singularities, findSingularities
 
 p0 = np.array([[0.0, 0.0], [0.5,0.6], [1.1, 0.9], [1.35, 0.75], [1.1,0.55]])
 p0 = np.concatenate([p0, [2.0,1.0]-np.flip(p0,axis=0)])
 p1 = np.array([[0.0, 0.0], [0.3, 0.6], [0.7, 0.4], [1.0, 1.0]])
-p2 = np.array([[0.0, 0.0], [0.2, 0.65], [0.35, 0.8], [0.46, 0.75], [0.43, 0.61], [0.38, 0.45], [0.6, 0.4], [0.85, 0.6], [1.0, 1.0]])
+p2 = np.array([[0.0, 0.0], [0.2, 0.65], [0.35, 0.8], [0.46, 0.75], [
+              0.43, 0.61], [0.38, 0.45], [0.6, 0.4], [0.85, 0.6], [1.0, 1.0]])
+
 points = [p0, p1, p2]
 data = [generate_curve_snaps(pts, 200) for pts in points]
 
@@ -341,16 +348,20 @@ We get the different branches from the singular points.
 In the case of separable problems, the problem can be inverted to find the input that would generate a given output. For this we need that:
 
 - Each contraint applies to only one dimension of the curves (the same for all curves):
+
 ```math
 e_k (t_0, t_1, \dots, t_N) = \sum_i a_{i,k}\, c_{d(i),k}(t_i).
 ```
+
 - The output is of the same dimension as the inputs and each component is a linear combination of the input components:
+
 ```math
 c_{\mathrm{out}_k}(t_0, t_1, \dots, t_N) = \sum_i b_{i,k}\, c_{i,k}(t_i).
 ```
+
 - The system must sufficiently constraint the input to compute. For example, if the direct problem is independent of one component of the curve to compute, then the inverse proble will be undetermined since this component cuold take any value.
 
-Although not all problems are separable, most physical systems arising from interactions satisfy these conditions since. For example, in compliant elements networks, forces are compared to forces and displacements to displacements. 
+Although not all problems are separable, most physical systems arising from interactions satisfy these conditions since. For example, in compliant elements networks, forces are compared to forces and displacements to displacements.
 
 ```python
 import numpy as np
@@ -362,7 +373,8 @@ p0 = np.array([[0.0, 0.0], [0.55, 0.6], [1.1, 0.88], [1.27, 0.72], [1.1, 0.55]])
 p0 = np.concatenate([p0, [2.0, 1.0] - np.flip(p0, axis=0)])
 p1 = np.array([[0.0, 0.0], [0.1, 0.4], [0.25, 0.64], [0.4, 0.6]])
 p1 = np.concatenate([p1, [1.0, 1.0] - np.flip(p1, axis=0)])
-p2 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
+p2 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [
+                  0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
 points = [p0, p1, p2]
 data = [generate_curve_CubicSpline(pts, 200) for pts in points]
 curves = ndcurve.createList(data)
@@ -392,6 +404,7 @@ out_inverse, res_inverse = solveCurveCoupling(prob_inverse)
 ```
 
 The direct problem results:
+
 <p align="center">
   <img src="assets/curveCoupling_Direct_Problem.png" alt="Direct problem Element" style="border-radius: 15px;">
 </p>
@@ -431,16 +444,19 @@ for i, d in enumerate(data):
     axs[i].plot(d[:, 0], d[:, 1])
 for res in res_lst:
     axs[-1].plot(res[:, 0], res[:, 1], res[:, 2])
-axs[-1].scatter(res_brute[:, 0], res_brute[:, 1], res_brute[:, 2], color='r', marker ='.',alpha=0.1)
+axs[-1].scatter(res_brute[:, 0], res_brute[:, 1], res_brute[:, 2],
+                color='r', marker ='.',alpha=0.1)
 
 for out in out_lst:
     axs[-2].plot(out[:, 0], out[:, 1])
-axs[-2].scatter(out_brute[:, 0], out_brute[:, 1], color='r', marker ='.',alpha=0.1)
+axs[-2].scatter(out_brute[:, 0], out_brute[:, 1],
+                color='r', marker ='.',alpha=0.1)
 
 plt.show()
 ```
 
 Alternatively, use the provided default plot:
+
 ```python
 from curveCoupling.utils.defaultPlots import plotResults
 
@@ -467,10 +483,12 @@ edges = [
 ]
 
 disp_constr, force_constr, disp_out, force_out = generate_network_equations(edges)
-ConstraintMatrices, OutputMatrices = generate_network_equations(edges, return_in_joint_matrices=True)
+ConstraintMatrices, OutputMatrices = generate_network_equations(
+        edges, return_in_joint_matrices=True)
 ```
 
 In the example, the graph is:
+
 ```text
   Start
     |
@@ -492,6 +510,7 @@ In the example, the graph is:
 ```
 
 The output is:
+
 ```console
 >>> disp_constr
  [[-1. -1.  0.  1.  0.]
@@ -550,7 +569,8 @@ import numpy as np
 from curveCoupling.curveGenerators import generate_curve_CubicSpline
 from curveCoupling.compliantElements import getEigenVals, eigen2stability
 
-p0 =  np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
+p0 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [
+                  0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
 data = generate_curve_CubicSpline(p0, 200)
 eigen = getEigenVals(data)
 stability = eigen2stability(eigen)
@@ -614,7 +634,8 @@ p0 = np.array([[0.0, 0.0], [0.55, 0.6], [1.1, 0.88], [1.27, 0.72], [1.1, 0.55]])
 p0 = np.concatenate([p0, [2.0, 1.0] - np.flip(p0, axis=0)])
 p1 = np.array([[0.0, 0.0], [0.1, 0.4], [0.25, 0.64], [0.4, 0.6]])
 p1 = np.concatenate([p1, [1.0, 1.0] - np.flip(p1, axis=0)])
-p2 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
+p2 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [
+                  0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
 points = [p0, p1, p2]
 data = [generate_curve_CubicSpline(pts, 200) for pts in points]
 
@@ -625,7 +646,8 @@ edges = [
     ('Start', 'A'),
     ('A', 'End'),
 ]
-ConstraintMatrices, OutputMatrices = generate_network_equations(edges, return_in_joint_matrices=True)
+ConstraintMatrices, OutputMatrices = generate_network_equations(
+        edges, return_in_joint_matrices=True)
 prob = curveCouplingProblem(curves, ConstraintMatrices, OutputMatrices)
 
 out_lst, res_lst = solveCurveCoupling_Islands(prob, iter_points=10)
@@ -679,7 +701,8 @@ Alternatively, use the provided default plot for a network:
 from curveCoupling.utils.defaultPlots import plotResults_stability
 
 fig = plt.figure()
-axs = plotResults_stability(fig, data, stability_input_lst, out_lst, res_lst, stability_analytic_lst)
+plotResults_stability(fig, data, stability_input_lst,
+                          out_lst, res_lst, stability_analytic_lst)
 plt.show()
 ```
 
@@ -694,4 +717,3 @@ Contributions are welcome! Feel free to open an issue or submit a pull request o
 ## Contact
 
 For questions or inquiries, please contact [Franco N. Pinan Basualdo](mailto:francopb.20@gmail.com).
-

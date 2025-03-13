@@ -78,8 +78,8 @@ def colored_line(ax, c, x, y, z=None, norm=None, **lc_kwargs):
     lc.set_array(c)  # set the colors of each segment
     if norm is not None:
         lc.set_norm(norm)  # apply the normalization
-    
+
     ax.add_collection(lc)
     ax.autoscale()
-    
+
     return lc

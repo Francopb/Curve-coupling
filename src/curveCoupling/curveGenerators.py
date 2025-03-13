@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import interpolate
 
+
 def generate_curve_CubicSpline(
     points: np.ndarray,
     num_points: int = 100
@@ -24,6 +25,7 @@ def generate_curve_CubicSpline(
     t_new = np.linspace(0.0, 1.0, num_points)
     return spline(t_new)
 
+
 def generate_curve_Pchip(
     points: np.ndarray,
     num_points: int = 100
@@ -46,6 +48,7 @@ def generate_curve_Pchip(
     # Generate evenly spaced x values and interpolate y values
     t_new = np.linspace(0.0, 1.0, num_points)
     return spline(t_new)
+
 
 def generate_curve_peaks(
     points: np.ndarray,
@@ -81,6 +84,7 @@ def generate_curve_peaks(
 
     # Return the list of (x, y) points
     return np.stack([x_new, y_new], axis=1)
+
 
 def generate_curve_snaps(
     points: np.ndarray,

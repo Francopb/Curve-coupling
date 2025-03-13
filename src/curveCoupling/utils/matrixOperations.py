@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Tuple, Union
 
+
 def my_null_space(A: np.ndarray, atol: float = 1e-9) -> np.ndarray:
     """
     Compute the null space of a matrix A.
@@ -18,6 +19,7 @@ def my_null_space(A: np.ndarray, atol: float = 1e-9) -> np.ndarray:
         null_mask = np.append(null_mask, [True] * (Vh.shape[0] - S.size))
     nullspace = Vh[null_mask].T[:, ::-1]
     return nullspace
+
 
 def my_left_null_space(A: np.ndarray, atol: float = 1e-9) -> np.ndarray:
     """
@@ -37,6 +39,7 @@ def my_left_null_space(A: np.ndarray, atol: float = 1e-9) -> np.ndarray:
     left_nullspace = U[:, null_mask].T[::-1]
     return left_nullspace
 
+
 def my_column_space(A: np.ndarray, atol: float = 1e-9) -> np.ndarray:
     """
     Compute the column space of a matrix A.
@@ -52,6 +55,7 @@ def my_column_space(A: np.ndarray, atol: float = 1e-9) -> np.ndarray:
     rank = np.sum(S > atol)
     column_space = U[:, :rank]
     return column_space
+
 
 def my_row_space(A: np.ndarray, atol: float = 1e-9) -> np.ndarray:
     """
@@ -69,6 +73,7 @@ def my_row_space(A: np.ndarray, atol: float = 1e-9) -> np.ndarray:
     row_space = Vh[:rank]
     return row_space
 
+
 def my_matrix_spaces(A: np.ndarray, atol: float = 1e-9) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Compute the column space, row space, null space, and left null space of a matrix A.
@@ -85,11 +90,14 @@ def my_matrix_spaces(A: np.ndarray, atol: float = 1e-9) -> Tuple[np.ndarray, np.
     column_space = U[:, :rank]
     row_space = Vh[:rank]
     null_mask = S <= atol
-    null_mask_ns = np.append(null_mask, [True] * (Vh.shape[0] - S.size)) if S.size < Vh.shape[0] else null_mask.copy()
-    null_mask_lns = np.append(null_mask, [True] * (U.shape[1] - S.size)) if S.size < U.shape[1] else null_mask.copy()
+    null_mask_ns = np.append(null_mask, [
+                             True] * (Vh.shape[0] - S.size)) if S.size < Vh.shape[0] else null_mask.copy()
+    null_mask_lns = np.append(null_mask, [
+                              True] * (U.shape[1] - S.size)) if S.size < U.shape[1] else null_mask.copy()
     nullspace = Vh[null_mask_ns].T[:, ::-1]
     left_nullspace = U[:, null_mask_lns].T[::-1]
     return column_space, row_space, nullspace, left_nullspace
+
 
 def remove_small_vals(A: np.ndarray, tol: float = 1e-9) -> np.ndarray:
     """
@@ -105,6 +113,7 @@ def remove_small_vals(A: np.ndarray, tol: float = 1e-9) -> np.ndarray:
     A = A.copy()
     A[np.isclose(A, 0.0, atol=tol)] = 0.0
     return A
+
 
 def ref(A: np.ndarray, tol: float = 1e-9) -> np.ndarray:
     """
@@ -129,7 +138,7 @@ def ref(A: np.ndarray, tol: float = 1e-9) -> np.ndarray:
         max_row = np.argmax(np.abs(A[r:, c])) + r
         if np.abs(A[max_row, c]) < tol:
             continue  # Skip this column if pivot is too small
-        
+
         # Swap rows
         A[[r, max_row]] = A[[max_row, r]]
 
@@ -145,6 +154,7 @@ def ref(A: np.ndarray, tol: float = 1e-9) -> np.ndarray:
         r += 1  # Move to next row
 
     return A
+
 
 def rref(A: np.ndarray, tol: float = 1e-9,
          column_permutation: bool = False
@@ -174,7 +184,7 @@ def rref(A: np.ndarray, tol: float = 1e-9,
             A[r:, c] = 0.0
             c += 1
             continue  # Skip column if all entries are negligible
-        
+
         # Swap current row with max_row
         A[[r, max_row]] = A[[max_row, r]]
         P[[r, max_row]] = P[[max_row, r]]
@@ -211,6 +221,7 @@ def rref(A: np.ndarray, tol: float = 1e-9,
 
     return A, P, Q
 
+
 def my_PQ_decomp(A: np.ndarray, tol: float = 1e-9) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Compute the PQ decomposition such that P @ A @ Q is [I -1].
@@ -226,11 +237,12 @@ def my_PQ_decomp(A: np.ndarray, tol: float = 1e-9) -> Tuple[np.ndarray, np.ndarr
         raise ValueError("Matrix should have N columns and N-1 rows")
     if np.linalg.matrix_rank(A, tol=tol) < A.shape[0]:
         raise ValueError("Matrix is not full rank")
-    
+
     Arref, P, Q = rref(A, tol=tol, column_permutation=True)
-    
-    Mvec = np.ones_like(Arref[:, -1]) 
-    np.divide(1.0, Arref[:, -1], out = Mvec, where=~np.isclose(Arref[:, -1], 0.0, atol=tol))
+
+    Mvec = np.ones_like(Arref[:, -1])
+    np.divide(1.0, Arref[:, -1], out=Mvec, where=~
+              np.isclose(Arref[:, -1], 0.0, atol=tol))
     M = np.diag(Mvec)
 
     Arref = M @ Arref

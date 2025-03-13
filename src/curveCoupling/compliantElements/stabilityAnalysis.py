@@ -6,6 +6,7 @@ from curveCoupling.utils.matrixOperations import my_null_space
 from curveCoupling.curveCoupling import curveCouplingProblem, curveCouplingProblem_Equality
 from curveCoupling.separableEqs import joint2split_constr, joint2split_out
 
+
 class snapPoint:
     """
     A class to represent a snap point, its value, and curvature.
@@ -36,6 +37,7 @@ class snapPoint:
         elif self.k < 0.0:
             return -1
 
+
 def findSnapPoints(curve: ndcurve) -> List[snapPoint]:
     """
     Find snap points (local maxima and minima in both axes) of a given curve.
@@ -52,7 +54,8 @@ def findSnapPoints(curve: ndcurve) -> List[snapPoint]:
 
     critPoints = []
     for i in range(dim):
-        critPoints += findCriticalPoints(curve, analyze_index=i, add_init_end=False)
+        critPoints += findCriticalPoints(curve,
+                                         analyze_index=i, add_init_end=False)
 
     snapPoints = []
     for cp in critPoints:
@@ -85,8 +88,9 @@ def getValue_sections(
         object: Value in the corresponding section.
     """
     if len(input_values) != len(input_sections_limits) + 1:
-        raise ValueError("Section limits should be equal to the values minus one")
-    input_sections_limits =  tuple(sorted(input_sections_limits))
+        raise ValueError(
+            "Section limits should be equal to the values minus one")
+    input_sections_limits = tuple(sorted(input_sections_limits))
     idx = np.searchsorted(input_sections_limits, param)
     return input_values[idx]
 
@@ -169,12 +173,14 @@ def getEigenFuncs(
     else:
         if len(curves) != res.getNDim():
             raise ValueError("Necessary as many curves as Res dimension")
-        funcs = [getEigenFunc(c, res.extractIndex(i), init_eigen=init_eigen) for i, c in enumerate(curves)]
+        funcs = [getEigenFunc(c, res.extractIndex(
+            i), init_eigen=init_eigen) for i, c in enumerate(curves)]
 
     def func(x: np.ndarray) -> np.ndarray:
         return np.array([f(a) for f, a in zip(funcs, x)])
 
     return func
+
 
 def getEigenVals(
     data: np.ndarray,
@@ -194,8 +200,9 @@ def getEigenVals(
 
     curve = ndcurve(data)
     eigen_func = getEigenFunc(curve, init_eigen=init_eigen)
-    
-    return np.array([eigen_func(t) for t in np.linspace(0.0,1.0,data.shape[0])])
+
+    return np.array([eigen_func(t) for t in np.linspace(0.0, 1.0, data.shape[0])])
+
 
 def getEigen_coupling_analytic(
     prb: curveCouplingProblem,
@@ -232,11 +239,13 @@ def getEigen_coupling_analytic(
         d_curve = prb.curves_all(x, nu=1)
         slopes = d_curve[:, 1] / d_curve[:, 0]
 
-        Total_interactions_disp = Possible_Forc.T @ np.diag(EnergyVector / slopes) @ Possible_Forc
+        Total_interactions_disp = Possible_Forc.T @ np.diag(
+            EnergyVector / slopes) @ Possible_Forc
         Eigen_vals_disp, _ = np.linalg.eig(Total_interactions_disp)
         stabilizing_constraints = np.sum(Eigen_vals_disp < 0.0)
 
-        Total_interactions_forc = Possible_Disp.T @ np.diag(EnergyVector * slopes) @ Possible_Disp
+        Total_interactions_forc = Possible_Disp.T @ np.diag(
+            EnergyVector * slopes) @ Possible_Disp
         Eigen_vals_forc, _ = np.linalg.eig(Total_interactions_forc)
         unstable_interactions = np.sum(Eigen_vals_forc < 0.0)
 
@@ -246,6 +255,7 @@ def getEigen_coupling_analytic(
         return np.array([compute_eigen_analytic(r) for r in res])
     else:
         return compute_eigen_analytic(res)
+
 
 def getEigen_coupling_analytic_Equality(
     prb: curveCouplingProblem_Equality,
@@ -262,23 +272,24 @@ def getEigen_coupling_analytic_Equality(
         np.ndarray: Number of unstable eigenvalues as a function of res.
     """
     input_eigen = getEigenFuncs(prb.curves)
+
     def compute_eigen_analytic(x: np.ndarray) -> int:
         input_eigen_t = np.sum(input_eigen(x))
         d_curve = prb.curves_all(x, nu=1)
         slopes = d_curve[:, 1] / d_curve[:, 0]
-        N_neg = np.sum(slopes<0.0)
-        if N_neg==0:
+        N_neg = np.sum(slopes < 0.0)
+        if N_neg == 0:
             return input_eigen_t
-        
-        if prb.match_index == 0: # Displacement constraint case
+
+        if prb.match_index == 0:  # Displacement constraint case
             N_red = N_neg - (np.sum(slopes) < 0)
             return input_eigen_t - N_red
-        elif prb.match_index == 1: # Force constraint case
+        elif prb.match_index == 1:  # Force constraint case
             N_add = N_neg - (np.sum(1/slopes) < 0)
             return input_eigen_t + N_add
         else:
-            raise ValueError("Only acceptable if match_index is 0 (displacement) or 1 (force)")
-
+            raise ValueError(
+                "Only acceptable if match_index is 0 (displacement) or 1 (force)")
 
     if res.ndim > 1:
         return np.array([compute_eigen_analytic(r) for r in res])

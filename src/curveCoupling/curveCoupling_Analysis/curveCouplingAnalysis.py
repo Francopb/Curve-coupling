@@ -7,6 +7,7 @@ from fractions import Fraction
 import itertools
 from typing import *
 
+
 def _reorder_equations(prb: curveCouplingProblem,
                        param: np.ndarray,
                        tol: float = 1e-2) -> Tuple[np.ndarray, np.ndarray]:
@@ -67,7 +68,8 @@ def _find_exponents(M_exp: np.ndarray) -> np.ndarray:
         np.ndarray: Parameters exponents.
     """
     num_curves = M_exp.shape[1]
-    candidates = [np.where(np.arange(num_curves) == i, Fraction(1, 1), Fraction(0, 1)) for i in range(num_curves)]
+    candidates = [np.where(np.arange(num_curves) == i, Fraction(
+        1, 1), Fraction(0, 1)) for i in range(num_curves)]
     explored_equations = [[]] * len(candidates)
 
     def validate_candidate(candidate, explored_equations):
@@ -75,7 +77,8 @@ def _find_exponents(M_exp: np.ndarray) -> np.ndarray:
             eq_exponent = M_exp[eq_index]
             eq_candidate_exp = eq_exponent * candidate
             eq_candidate_exp = eq_candidate_exp[eq_candidate_exp > 0]
-            unique_exp, unique_exp_counts = np.unique(eq_candidate_exp, return_counts=True)
+            unique_exp, unique_exp_counts = np.unique(
+                eq_candidate_exp, return_counts=True)
             matched_exp = unique_exp[unique_exp_counts > 1]
             unmatched_exp = unique_exp[unique_exp_counts <= 1]
             if len(unmatched_exp) == 0:
@@ -155,17 +158,21 @@ def _find_constant(M_exp: np.ndarray, Jn: np.ndarray, exponents: np.ndarray) -> 
         np.ndarray: Parameters constants.
     """
     num_curves = M_exp.shape[1]
-    M_exp_candidate = np.where(M_exp > 0, M_exp * exponents[np.newaxis, :], np.inf)
+    M_exp_candidate = np.where(
+        M_exp > 0, M_exp * exponents[np.newaxis, :], np.inf)
     leading_order = np.min(M_exp_candidate, axis=1)
-    M_exp_leading_order = np.where(M_exp_candidate == leading_order[:, np.newaxis], M_exp, 0)
+    M_exp_leading_order = np.where(
+        M_exp_candidate == leading_order[:, np.newaxis], M_exp, 0)
 
     constants_mat = np.zeros((num_curves - 1, num_curves))
     for i in range(np.max(M_exp_leading_order)):
-        new_mat = np.where(M_exp_leading_order == i + 1, Jn[i], 0.0) / np.prod(np.arange(1, i + 2))
+        new_mat = np.where(M_exp_leading_order == i + 1,
+                           Jn[i], 0.0) / np.prod(np.arange(1, i + 2))
         constants_mat += new_mat
 
     def evaluate_constant(u):
-        u_mat = np.where(M_exp_leading_order > 0, u[np.newaxis, :] ** M_exp_leading_order, 0.0)
+        u_mat = np.where(M_exp_leading_order > 0,
+                         u[np.newaxis, :] ** M_exp_leading_order, 0.0)
         return np.sum(constants_mat * u_mat, axis=1)
 
     def f_opt(u):
@@ -232,7 +239,7 @@ def findSingularities(prb: curveCouplingProblem,
     for comb in combinations:
         param0 = np.array([array_params[i] for i in reversed(comb)])
         res = optimize.root(f_opt, param0, method='hybr', tol=1e-6, jac=False)
-        if res.success and np.all(res.x >= 0.0) and np.all(res.x <= 1.0) and np.linalg.norm(prb.computeConstraint(res.x))<tol:
+        if res.success and np.all(res.x >= 0.0) and np.all(res.x <= 1.0) and np.linalg.norm(prb.computeConstraint(res.x)) < tol:
             singularities.append(res.x)
 
     singularities = removeRepeats(np.array(singularities))
@@ -241,10 +248,11 @@ def findSingularities(prb: curveCouplingProblem,
     sing_orders, sing_dirs = zip(*sing_solutions)
     return out_singularities, singularities, sing_orders, sing_dirs
 
+
 def solveCurveCoupling_Singularities(prb: curveCouplingProblem,
-                           iter_points = 10,
-                           tol: float = 1e-2,
-                           d_step: float = 5e-2) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+                                     iter_points=10,
+                                     tol: float = 1e-2,
+                                     d_step: float = 5e-2) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """
     Finds the curve coupling considering singularities.
 
@@ -258,17 +266,20 @@ def solveCurveCoupling_Singularities(prb: curveCouplingProblem,
         Tuple[List[np.ndarray], List[np.ndarray]]: Output curves and results in parametric space.
     """
 
-    sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities(prb, iter_points=iter_points, tol=tol)
+    sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities(
+        prb, iter_points=iter_points, tol=tol)
 
     def computeTangents(orders, dirs):
-        if len(dirs)==0:
+        if len(dirs) == 0:
             return np.array([])
         leading_order = np.min(orders)
-        tangents = np.array([np.where(orders == leading_order, d, 0.0) for d in dirs])
+        tangents = np.array(
+            [np.where(orders == leading_order, d, 0.0) for d in dirs])
         tangents /= np.linalg.norm(tangents, axis=1)[:, np.newaxis]
         return tangents
 
-    sing_tangents = [computeTangents(o, d) for o, d in zip(sing_orders, sing_dirs)]
+    sing_tangents = [computeTangents(o, d)
+                     for o, d in zip(sing_orders, sing_dirs)]
 
     out, res = solveCurveCoupling(prb, param_stop=sing_seeds)
     out_lst = [out]
@@ -281,7 +292,8 @@ def solveCurveCoupling_Singularities(prb: curveCouplingProblem,
             factor = optimize.fsolve(f_opt, 1.0)
             d_res = (factor * d) ** order
             sing_res = d_res + seed
-            out, res = solveCurveCoupling(prb, param_start=sing_res, param_stop=sing_seeds, initial_dir=t, it_max=5000)
+            out, res = solveCurveCoupling(
+                prb, param_start=sing_res, param_stop=sing_seeds, initial_dir=t, it_max=5000)
             out = np.concatenate([[sing_out], out], axis=0)
             res = np.concatenate([[seed], res], axis=0)
             out_lst.append(out)
@@ -294,8 +306,8 @@ def solveCurveCoupling_Singularities(prb: curveCouplingProblem,
 
 
 def solveCurveCoupling_Islands(prb: curveCouplingProblem,
-                    iter_points = 10,
-) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+                               iter_points=10,
+                               ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """
     Finds the curve coupling considering islands.
 
@@ -315,10 +327,12 @@ def solveCurveCoupling_Islands(prb: curveCouplingProblem,
         dists = [min_dist_point_to_set(x, r) for r in res_lst]
         return min(dists)
 
-    _, res_brute = solveCurveCoupling_bruteForce_localSolve(prb, iter_points=iter_points)
+    _, res_brute = solveCurveCoupling_bruteForce_localSolve(
+        prb, iter_points=iter_points)
     for r in res_brute:
         if minDist(r) > 0.01:
-            out, res = solveCurveCoupling(prb, param_start=r, stop_circulation=True)
+            out, res = solveCurveCoupling(
+                prb, param_start=r, stop_circulation=True)
             out_lst.append(out)
             res_lst.append(res)
 
