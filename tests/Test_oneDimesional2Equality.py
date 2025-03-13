@@ -1,19 +1,25 @@
 import numpy as np
-from curveCoupling.utils.matrixOperations import my_PQ_decomp, rref
+from curveCoupling.utils.matrixOperations import my_PQ_decomp
 
-def run():
+def run(n: int = 5, its: int = 1000, tol: float = 1e-6):
     n = 4
-    A = np.random.randint(-5,5,(n-1,n))
-    
-    try:
-        Ar, P, Q, zeroed_values, zeroed_eq_pivot = my_PQ_decomp(A)
-        zeroed_eq = zeroed_eq_pivot @ A
-        print(A)
-        print(Ar)
-        print(zeroed_values)
-        print(zeroed_eq)
-    except ValueError as e:
-        print(e)
+    for i in range(its):
+        A = np.random.randint(-5,5,(n-1,n))
+        b = np.random.randint(-5,5,(n-1,))
+        
+        if np.linalg.matrix_rank(A, tol=tol) < n-1:
+            continue
+
+        try:
+            Ar, P, Q = my_PQ_decomp(A)
+            assert np.allclose(Ar, (P @ A @ Q), atol=tol), "Decomposition failed"
+
+            br = np.dot(P, b)
+            xr = np.concatenate([br, [0.0]])
+            x = np.dot(Q, xr)
+            assert np.allclose(np.dot(A, x), b, atol=tol), "Solution failed"
+        except ValueError as e:
+            print(e)
 
 if __name__ == "__main__":
     run()

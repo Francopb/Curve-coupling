@@ -206,7 +206,10 @@ def rref(A: np.ndarray, tol: float = 1e-9,
     cols_permutation = np.concatenate([basic_columns, free_columns])
     A = A[:, cols_permutation]
 
-    return A, P, cols_permutation
+    Q = np.eye(cols_permutation.size)
+    Q = Q[:, cols_permutation]
+
+    return A, P, Q
 
 def my_PQ_decomp(A: np.ndarray, tol: float = 1e-9) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
@@ -224,23 +227,18 @@ def my_PQ_decomp(A: np.ndarray, tol: float = 1e-9) -> Tuple[np.ndarray, np.ndarr
     if np.linalg.matrix_rank(A, tol=tol) < A.shape[0]:
         raise ValueError("Matrix is not full rank")
     
-    Arref, P, cols_permutation = rref(A, tol=tol, column_permutation=True)
-    Q = np.eye(cols_permutation.size)
-    Q = Q[:, cols_permutation]
+    Arref, P, Q = rref(A, tol=tol, column_permutation=True)
     
-    zeros_last_column = np.isclose(Arref[:, -1], 0.0, atol=tol)
-    zeros_last_column_extendend = np.concatenate([zeros_last_column, [False]])
-    Ared = Arref[np.ix_(~zeros_last_column, ~zeros_last_column_extendend)]
-    Pred = P[~zeros_last_column, :]
-    Qred = Q[:, ~zeros_last_column_extendend]
+    Mvec = np.ones_like(Arref[:, -1]) 
+    np.divide(1.0, Arref[:, -1], out = Mvec, where=~np.isclose(Arref[:, -1], 0.0, atol=tol))
+    M = np.diag(Mvec)
 
-    M = np.diag(1 / Ared[:, -1])
-    Ared = M @ Ared
-    Pred = M @ Pred
-    Qnew = np.diag(np.append(1.0 / np.diagonal(Ared), -1.0))
-    Ared = Ared @ Qnew
-    Ared = remove_small_vals(Ared, tol=tol)
-    return Ared, Pred, Qred @ Qnew, cols_permutation[zeros_last_column_extendend], P[zeros_last_column]
+    Arref = M @ Arref
+    P = M @ P
+    Qnew = np.diag(np.append(1.0 / np.diagonal(Arref), -1.0))
+    Arref = Arref @ Qnew
+    Arref = remove_small_vals(Arref, tol=tol)
+    return Arref, P, Q @ Qnew
 
 # Author: Franco N. Pinan Basualdo
 # Project: Curve Coupling
