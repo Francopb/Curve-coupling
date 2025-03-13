@@ -3,7 +3,6 @@ from curveCoupling.curveGenerators import *
 from curveCoupling import ndcurve, curveCouplingProblem
 from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Islands
 from curveCoupling.compliantElements import getEigenVals, getEigen_coupling_analytic, eigen2stability, generate_network_equations
-from curveCoupling.separableEqs import separableEqs
 from curveCoupling.utils.defaultPlots import plotResults_stability
 from matplotlib import pyplot as plt
 
