@@ -48,7 +48,7 @@ def findSnapPoints(curve: ndcurve) -> List[snapPoint]:
     """
     dim = curve.getNDim()
     if dim != 2:
-        raise Exception("Only possible for 2-dimensional case")
+        raise ValueError("Only possible for 2-dimensional case")
 
     critPoints = []
     for i in range(dim):
@@ -85,7 +85,7 @@ def getValue_sections(
         object: Value in the corresponding section.
     """
     if len(input_values) != len(input_sections_limits) + 1:
-        raise Exception("Section limits should be equal to the values minus one")
+        raise ValueError("Section limits should be equal to the values minus one")
     input_sections_limits =  tuple(sorted(input_sections_limits))
     idx = np.searchsorted(input_sections_limits, param)
     return input_values[idx]
@@ -168,7 +168,7 @@ def getEigenFuncs(
         funcs = [getEigenFunc(c, init_eigen=init_eigen) for c in curves]
     else:
         if len(curves) != res.getNDim():
-            raise Exception("Necessary as many curves as Res dimension")
+            raise ValueError("Necessary as many curves as Res dimension")
         funcs = [getEigenFunc(c, res.extractIndex(i), init_eigen=init_eigen) for i, c in enumerate(curves)]
 
     def func(x: np.ndarray) -> np.ndarray:
@@ -277,7 +277,7 @@ def getEigen_coupling_analytic_Equality(
             N_add = N_neg - (np.sum(1/slopes) < 0)
             return input_eigen_t + N_add
         else:
-            raise Exception("Only acceptable if match_index is 0 (displacement) or 1 (force)")
+            raise ValueError("Only acceptable if match_index is 0 (displacement) or 1 (force)")
 
 
     if res.ndim > 1:

@@ -22,12 +22,12 @@ class curveCouplingProblem:
         self.OutputConstantVector = OutputConstantVector
         self.numCurves = len(curves)
         if self.numCurves < 2:
-            raise Exception("At least two curves are needed")
+            raise ValueError("At least two curves are needed")
         self.curves_all = ndcurve_matrix(curves)
 
         self.Ndims = set([c.getNDim() for c in self.curves])
         if len(self.Ndims) > 1:
-            raise Exception("All curves must have the same dimensionality")
+            raise ValueError("All curves must have the same dimensionality")
         self.Ndims = self.Ndims.pop()
 
         if self.OutputMatrices is None:
@@ -40,20 +40,20 @@ class curveCouplingProblem:
 
         if self.Ndims==0:
             if self.ConstraintMatrices.ndim != 2:
-                raise Exception("For zero dimensional curves (return a float), ConstraintMatrices must be a 2 dimensional array")
+                raise ValueError("For zero dimensional curves (return a float), ConstraintMatrices must be a 2 dimensional array")
             if self.OutputMatrices.ndim != 2:
-                raise Exception("For zero dimensional curves (return a float), OutputMatrices must be a 2 dimensional array")
+                raise ValueError("For zero dimensional curves (return a float), OutputMatrices must be a 2 dimensional array")
         else:
             if self.ConstraintMatrices.shape[2] != self.Ndims:
-                raise Exception("ConstraintMatrices dim 2 must be the number of dimensions")
+                raise ValueError("ConstraintMatrices dim 2 must be the number of dimensions")
             if self.OutputMatrices.shape[2] != self.Ndims:
-                raise Exception("OutputMatrices dim 2 must be the number of dimensions")
+                raise ValueError("OutputMatrices dim 2 must be the number of dimensions")
         if self.ConstraintMatrices.shape[1] != self.numCurves:
-            raise Exception("ConstraintMatrices dim 1 must the the number of curves")
+            raise ValueError("ConstraintMatrices dim 1 must the the number of curves")
         if self.OutputMatrices.shape[1] != self.numCurves:
-            raise Exception("OutputMatrices dim 1 must the the number of curves")
+            raise ValueError("OutputMatrices dim 1 must the the number of curves")
         if self.ConstraintMatrices.shape[0] != self.numCurves-1:
-            raise Exception("ConstraintMatrices dim 0 must the the number of curves minus 1")
+            raise ValueError("ConstraintMatrices dim 0 must the the number of curves minus 1")
 
         if self.ConstraintConstantVector is None:
             self.ConstraintConstantVector = np.zeros(self.ConstraintMatrices.shape[0])
@@ -61,9 +61,9 @@ class curveCouplingProblem:
             self.OutputConstantVector = np.zeros(self.OutputMatrices.shape[0])
 
         if self.ConstraintConstantVector.size != self.ConstraintMatrices.shape[0]:
-            raise Exception("ConstraintConstantVector must be as len ConstraintMatrices dim 0")
+            raise ValueError("ConstraintConstantVector must be as len ConstraintMatrices dim 0")
         if self.OutputConstantVector.shape[0] != self.OutputMatrices.shape[0]:
-            raise Exception("OutputConstantVector must be as len OutputMatrices dim 0")
+            raise ValueError("OutputConstantVector must be as len OutputMatrices dim 0")
 
     def computeConstraint_from_values(self, vals: np.ndarray) -> np.ndarray:
         if self.Ndims == 0:
@@ -97,17 +97,17 @@ class curveCouplingProblem_Equality:
         self.match_index = match_index
         self.numCurves = len(curves)
         if self.numCurves < 2:
-            raise Exception("At least two curves are needed")
+            raise ValueError("At least two curves are needed")
         self.Ndims = set([c.getNDim() for c in self.curves])
         if len(self.Ndims) > 1:
-            raise Exception("All curves must have the same dimensionality")
+            raise ValueError("All curves must have the same dimensionality")
         self.Ndims = self.Ndims.pop()
         if self.match_index is None:
             if self.Ndims != 0:
-                raise Exception("For no match index, the curves must be zero dimensional (return a float)")
+                raise ValueError("For no match index, the curves must be zero dimensional (return a float)")
         if self.Ndims == 0:
             if self.match_index is not None:
-                raise Exception("For zero dimensional curves (return a float), no possible to use match_index")
+                raise ValueError("For zero dimensional curves (return a float), no possible to use match_index")
         self.curves_all = ndcurve_matrix(curves)
         self.curves_all_match_index = self.curves_all.extractIndex(match_index)
 
@@ -320,7 +320,7 @@ def solveCurveCoupling_Equality(
     elif solve_init == "off":
         param_0 = param_start
     else:
-        raise Exception("Unknown initial solver")
+        raise ValueError("Unknown initial solver")
 
     return solveCurveCoupling(prb, param_start=param_0, tolerance=tolerance, solve_init="off", **kwargs)
 
@@ -374,13 +374,13 @@ def solveCurveCoupling(
 
     
     if param_start.size != prb.numCurves:
-        raise Exception("Initial params must have the same number of values as curves")
+        raise ValueError("Initial params must have the same number of values as curves")
     if param_range.shape[0] != 2:
-        raise Exception("Params range must have a minimum and maximum value")
+        raise ValueError("Params range must have a minimum and maximum value")
     if param_range.shape[1] != prb.numCurves:
-        raise Exception("Params range must have the same number of values as curves")
+        raise ValueError("Params range must have the same number of values as curves")
     if step_min > step_max:
-        raise Exception("step_min should be less than or equal to step_max")
+        raise ValueError("step_min should be less than or equal to step_max")
 
     if param_stop is not None:
         if param_stop.size == 0:
@@ -389,11 +389,11 @@ def solveCurveCoupling(
             if param_stop.ndim == 1:
                 param_stop = param_stop.reshape((1, -1))
             if param_stop.shape[1] != prb.numCurves:
-                raise Exception("Stop params must have the same number of values as curves")
+                raise ValueError("Stop params must have the same number of values as curves")
 
     if initial_dir is not None:
         if initial_dir.size != prb.numCurves:
-            raise Exception("Initial_dir must have the same number of values as curves")
+            raise ValueError("Initial_dir must have the same number of values as curves")
 
     stopped_by_circulation = False
 
@@ -456,7 +456,7 @@ def solveCurveCoupling(
     elif solve_init == "off":
         param_prev = param_start
     else:
-        raise Exception("Unknown initial solver")
+        raise ValueError("Unknown initial solver")
 
     if stop_circulation:
         if param_stop is None:
@@ -509,7 +509,7 @@ def solveCurveCoupling(
             if flag_stop:
                 break
         except Exception as e:
-            print(f"Exception: {e}")
+            print(f"Stopped by error: {e}")
             break
 
     

@@ -17,7 +17,7 @@ class criticalPoint:
         self.order = order
         if order is not None:
             if higher_order_val == 0.0:
-                raise Exception("the higher order value cannot be zero")
+                raise ValueError("the higher order value cannot be zero")
             self.higher_order_val = higher_order_val
         else:
             self.higher_order_val = None
@@ -179,7 +179,7 @@ def __findSingularities_critPoints_mult(
         Tuple[List[float], List[Tuple[int, ...]]]: List of singularities values and their indices.
     """
     if len(critPoints_lst) <= 1:
-        raise Exception("At least two curves necessary")
+        raise ValueError("At least two curves necessary")
     if len(critPoints_lst) == 2:
         return __findSingularities_critPoints_pair(critPoints_lst[0], critPoints_lst[1], tol)
 
@@ -483,7 +483,7 @@ def __findIslands_critPoints_mult(
         Tuple[List[Tuple[float, float]], List[Tuple[Tuple[int, int], Tuple[int, int]]]]: List of intersections and their indices.
     """
     if len(critPoints_lst) <= 1:
-        raise Exception("At least two curves necessary")
+        raise ValueError("At least two curves necessary")
     if len(critPoints_lst) == 2:
         return __findIslands_critPoints_pair(critPoints_lst[0], critPoints_lst[1], tol)
 
