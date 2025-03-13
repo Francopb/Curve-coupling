@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Tuple
+from typing import Tuple, Union
 
 def my_null_space(A: np.ndarray, atol: float = 1e-9) -> np.ndarray:
     """
@@ -91,7 +91,7 @@ def my_matrix_spaces(A: np.ndarray, atol: float = 1e-9) -> Tuple[np.ndarray, np.
     left_nullspace = U[:, null_mask_lns].T[::-1]
     return column_space, row_space, nullspace, left_nullspace
 
-def remove_small_vals(A: np.ndarray, tol: float = 1e-6) -> np.ndarray:
+def remove_small_vals(A: np.ndarray, tol: float = 1e-9) -> np.ndarray:
     """
     Remove small values from a matrix A by setting them to zero.
 
@@ -106,7 +106,7 @@ def remove_small_vals(A: np.ndarray, tol: float = 1e-6) -> np.ndarray:
     A[np.isclose(A, 0.0, atol=tol)] = 0.0
     return A
 
-def ref(A: np.ndarray, tol: float = 0.0) -> np.ndarray:
+def ref(A: np.ndarray, tol: float = 1e-9) -> np.ndarray:
     """
     Compute the Row Echelon Form (REF) of matrix A.
 
@@ -146,22 +146,26 @@ def ref(A: np.ndarray, tol: float = 0.0) -> np.ndarray:
 
     return A
 
-def rref(A: np.ndarray, tol: float = 0.0) -> Tuple[np.ndarray, np.ndarray]:
+def rref(A: np.ndarray, tol: float = 1e-9,
+         column_permutation: bool = False
+         ) -> Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
     """
     Compute the Reduced Row Echelon Form (RREF) of matrix A and the transformation matrix P.
 
     Args:
         A (np.ndarray): The input matrix.
         tol (float): Tolerance for considering values as zero.
-
+        column_permutation (bool): Whether to allow column permutations to move all basic columns to the left.
     Returns:
-        Tuple[np.ndarray, np.ndarray]: The RREF of the matrix and the transformation matrix.
+        Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]: 
+        The RREF of the matrix and the transformation matrix P. If column_permutation is True, also returns the column permutation matrix Q.
     """
     A = A.copy().astype(float)
     rows, cols = A.shape
     P = np.eye(rows)
     c = 0
     r = 0
+    pivot_columns = []
 
     while r < rows and c < cols:
         # Find the row with the maximum absolute value in column c
@@ -187,12 +191,24 @@ def rref(A: np.ndarray, tol: float = 0.0) -> Tuple[np.ndarray, np.ndarray]:
                 A[i] -= factor * A[r]
                 P[i] -= factor * P[r]
 
-        r += 1  # Move to the next row
+        pivot_columns.append(c)
+        r += 1
         c += 1
 
-    return A, P
+    if not column_permutation:
+        return A, P
 
-def PQ_decomp(A: np.ndarray, tol: float = 1e-6) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    # Identify basic and free columns
+    basic_columns = np.array(pivot_columns)
+    free_columns = np.setdiff1d(np.arange(cols), basic_columns)
+
+    # Permute columns to move all basic columns to the left
+    cols_permutation = np.concatenate([basic_columns, free_columns])
+    A = A[:, cols_permutation]
+
+    return A, P, cols_permutation
+
+def my_PQ_decomp(A: np.ndarray, tol: float = 1e-9) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Compute the PQ decomposition such that P @ A @ Q is [I -1].
 
@@ -203,16 +219,28 @@ def PQ_decomp(A: np.ndarray, tol: float = 1e-6) -> Tuple[np.ndarray, np.ndarray,
     Returns:
         Tuple[np.ndarray, np.ndarray, np.ndarray]: The decomposed matrices A, P, and Q.
     """
-    Ar, P = rref(A)
-    if np.any(np.isclose(Ar[:, -1], 0.0, atol=tol)):
-        raise Exception("Undefined equality, some variable is forced to be zero")
-    M = np.diag(1 / Ar[:, -1])
-    Ar = M @ Ar
-    P = M @ P
-    Q = np.diag(np.append(1.0 / np.diagonal(Ar), -1.0))
-    Ar = Ar @ Q
-    Ar = remove_small_vals(Ar, tol=tol)
-    return Ar, P, Q
+    if A.shape[0] != A.shape[1]-1:
+        raise ValueError("Matrix should have N columns and N-1 rows")
+    if np.linalg.matrix_rank(A, tol=tol) < A.shape[0]:
+        raise ValueError("Matrix is not full rank")
+    
+    Arref, P, cols_permutation = rref(A, tol=tol, column_permutation=True)
+    Q = np.eye(cols_permutation.size)
+    Q = Q[:, cols_permutation]
+    
+    zeros_last_column = np.isclose(Arref[:, -1], 0.0, atol=tol)
+    zeros_last_column_extendend = np.concatenate([zeros_last_column, [False]])
+    Ared = Arref[np.ix_(~zeros_last_column, ~zeros_last_column_extendend)]
+    Pred = P[~zeros_last_column, :]
+    Qred = Q[:, ~zeros_last_column_extendend]
+
+    M = np.diag(1 / Ared[:, -1])
+    Ared = M @ Ared
+    Pred = M @ Pred
+    Qnew = np.diag(np.append(1.0 / np.diagonal(Ared), -1.0))
+    Ared = Ared @ Qnew
+    Ared = remove_small_vals(Ared, tol=tol)
+    return Ared, Pred, Qred @ Qnew, cols_permutation[zeros_last_column_extendend], P[zeros_last_column]
 
 # Author: Franco N. Pinan Basualdo
 # Project: Curve Coupling
