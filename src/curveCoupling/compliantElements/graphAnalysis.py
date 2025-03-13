@@ -1,7 +1,7 @@
 import networkx as nx
 import numpy as np
 from typing import List, Tuple, Union
-from curveCoupling.separableEqs import _split2joint_constr, _split2joint_out
+from curveCoupling.separableEqs import split2joint_constr, split2joint_out
 
 def generate_network_equations(edges: List[Tuple[str, str]],
                                return_in_joint_matrices: bool = False
@@ -112,7 +112,7 @@ def generate_network_equations(edges: List[Tuple[str, str]],
     force_constr = np.array(force_constr)
     
     if return_in_joint_matrices:
-        return _split2joint_constr([disp_constr, force_constr]), _split2joint_out([disp_out, force_out])
+        return split2joint_constr([disp_constr, force_constr]), split2joint_out([disp_out, force_out])
     else:
         return disp_constr, force_constr, disp_out, force_out
 

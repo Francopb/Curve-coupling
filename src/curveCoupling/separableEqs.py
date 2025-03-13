@@ -1,65 +1,8 @@
 import numpy as np
-from typing import List
 from curveCoupling.utils.matrixOperations import ref
+from typing import List, Tuple
 
-class separableEqs:
-    def __init__(self, constraintMatrices_lst: List[np.ndarray], outputVectors_lst: List[np.ndarray]):
-        numCurves = outputVectors_lst[0].size
-        nDims = len(constraintMatrices_lst)
-        assert all([c.size == 0 or c.shape[1] == numCurves for c in constraintMatrices_lst]), "All constraintMatrices need to have the same number of columns"
-        assert all([c.size == numCurves for c in outputVectors_lst]), "All outputVectors need to have the same length as columns in constraintMatrices"
-        assert len(outputVectors_lst) == nDims, "Required as many outputVectors as dimensions"
-        assert sum([c.shape[0] for c in constraintMatrices_lst]) == numCurves-1, "Required N-1 constraints (N is number of curves)"
-        self.constraintMatrices_lst = constraintMatrices_lst
-        self.outputVectors_lst = outputVectors_lst
-        self.numCurves = numCurves
-        self.nDims = nDims
-    
-    @classmethod
-    def from_jointMatrices(cls, ConstraintMatrices: np.ndarray, OutputMatrices: np.ndarray) -> 'separableEqs':
-        return separableEqs(_joint2split_constr(ConstraintMatrices), _joint2split_out(OutputMatrices))
-
-    def getConstraintMatrices(self):
-        return _split2joint_constr(self.constraintMatrices_lst)
-    
-    def getOutputMatrices(self):
-        return _split2joint_out(self.outputVectors_lst)
-        
-    def invertProblem(self, solve_for_idx) -> 'separableEqs':
-        def invertCase(constr: np.ndarray, out: np.ndarray):
-            top = np.hstack(([-1], out))
-            bottom = np.hstack((np.zeros((constr.shape[0],1)), constr))
-            total = np.vstack((top, bottom))
-            total_swapped = total.copy()
-            total_swapped[:, [0, solve_for_idx+1]] = total_swapped [:, [solve_for_idx+1,0]]
-            total_swapped_ref = ref(total_swapped, tol=1e-6)
-
-            if total_swapped_ref[0,0] != 1.0:
-                raise Exception("Independent variable")
-            if total_swapped_ref.shape[0] > 1 and np.any(total_swapped_ref[1:,0] != 0):
-                raise Exception("Something failed in Row Echelon Form computation")
-            
-            new_constr = total_swapped_ref[1:,1:] if total_swapped_ref.shape[0] > 1 else np.array([])
-            new_out = -total_swapped_ref[0,1:]
-
-            if np.linalg.matrix_rank(new_constr) < new_constr.shape[0]:
-                raise Exception("The new constraint is rank deficicent")
-            
-            return new_constr, -new_out
-
-        new_constr_lst = []
-        new_out_lst = []
-        for i in range(self.nDims):
-            try:
-                new_constr, new_out = invertCase(self.constraintMatrices_lst[i], self.outputVectors_lst[i])
-            except Exception as e:
-                raise Exception(f"At dimension {i}: {e}")
-            new_constr_lst.append(new_constr)
-            new_out_lst.append(new_out)
-
-        return separableEqs(new_constr_lst, new_out_lst)
-
-def _split2joint_constr(constraintMatrices_lst: List[np.ndarray]) -> np.ndarray:
+def split2joint_constr(constraintMatrices_lst: List[np.ndarray]) -> np.ndarray:
     """
     Generate joint ConstraintMatrices from split constraints.
     
@@ -90,7 +33,7 @@ def _split2joint_constr(constraintMatrices_lst: List[np.ndarray]) -> np.ndarray:
             current_eq += numConstr
     return ConstraintMatrices
 
-def _split2joint_out(outputVectors_lst: List[np.ndarray]) -> np.ndarray:
+def split2joint_out(outputVectors_lst: List[np.ndarray]) -> np.ndarray:
     """
     Generate joint OutputMatrices from split outputs.
     
@@ -117,7 +60,7 @@ def _findCases(A: np.ndarray, index: int) -> np.ndarray:
 
         return non_zero_idx
 
-def _joint2split_constr(ConstraintMatrices: np.ndarray) -> List[np.ndarray]:
+def joint2split_constr(ConstraintMatrices: np.ndarray) -> List[np.ndarray]:
     """
     Generate separated constrait matrices from joint ConstraintMatrices.
     
@@ -138,7 +81,7 @@ def _joint2split_constr(ConstraintMatrices: np.ndarray) -> List[np.ndarray]:
 
     return constraintMatrices_lst
 
-def _joint2split_out(OutputMatrices: np.ndarray) -> List[np.ndarray]:
+def joint2split_out(OutputMatrices: np.ndarray) -> List[np.ndarray]:
     """
     Generate separated output vectors from joint OutputMatrices..
     
@@ -158,6 +101,62 @@ def _joint2split_out(OutputMatrices: np.ndarray) -> List[np.ndarray]:
         outputVectors_lst.append(OutputMatrices[idx[0], :, i])
 
     return outputVectors_lst
+
+def invertProblem(constraintMatrices_lst: List[np.ndarray],
+                   outputVectors_lst: List[np.ndarray],
+                   solve_for_idx: int) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+    """
+    Inver a split problem.
+    
+    Parameters:
+    - constraintMatrices_lst (List[np.ndarray]): List of split matrices, where each represents the constraints for a given dimension.
+    - outputVectors_lst (List[np.ndarray]): List of split vectors, where each represents the output for a given dimension.
+    - solve_for_idx (int): The index to solve for. 
+    
+    Returns:
+    Tuple[List[np.ndarray], List[np.ndarray]]: Inverted constraintMatrices_lst and outputVectors_lst.
+    """
+        
+    numCurves = outputVectors_lst[0].size
+    nDims = len(constraintMatrices_lst)
+    assert 0 <= solve_for_idx < numCurves, "Index should be between zero and N-1 (N is number of curves)"
+    assert all([c.size == 0 or c.shape[1] == numCurves for c in constraintMatrices_lst]), "All constraintMatrices need to have the same number of columns"
+    assert all([c.size == numCurves for c in outputVectors_lst]), "All outputVectors need to have the same length as columns in constraintMatrices"
+    assert len(outputVectors_lst) == nDims, "Required as many outputVectors as dimensions"
+    assert sum([c.shape[0] for c in constraintMatrices_lst]) == numCurves-1, "Required N-1 constraints (N is number of curves)"
+    
+    def invertCase(constr: np.ndarray, out: np.ndarray):
+        top = np.hstack(([-1], out))
+        bottom = np.hstack((np.zeros((constr.shape[0],1)), constr))
+        total = np.vstack((top, bottom))
+        total_swapped = total.copy()
+        total_swapped[:, [0, solve_for_idx+1]] = total_swapped [:, [solve_for_idx+1,0]]
+        total_swapped_ref = ref(total_swapped, tol=1e-6)
+
+        if total_swapped_ref[0,0] != 1.0:
+            raise Exception("Independent variable")
+        if total_swapped_ref.shape[0] > 1 and np.any(total_swapped_ref[1:,0] != 0):
+            raise Exception("Something failed in Row Echelon Form computation")
+        
+        new_constr = total_swapped_ref[1:,1:] if total_swapped_ref.shape[0] > 1 else np.array([])
+        new_out = -total_swapped_ref[0,1:]
+
+        if np.linalg.matrix_rank(new_constr) < new_constr.shape[0]:
+            raise Exception("The new constraint is rank deficicent")
+        
+        return new_constr, new_out
+
+    new_constr_lst = []
+    new_out_lst = []
+    for i in range(nDims):
+        try:
+            new_constr, new_out = invertCase(constraintMatrices_lst[i], outputVectors_lst[i])
+        except Exception as e:
+            raise Exception(f"At dimension {i}: {e}")
+        new_constr_lst.append(new_constr)
+        new_out_lst.append(new_out)
+
+    return new_constr_lst, new_out_lst
 
 # Author: Franco N. Pinan Basualdo
 # Project: Curve Coupling
