@@ -97,7 +97,7 @@ from curveCoupling.curveGenerators import generate_curve_CubicSpline, generate_c
 
 p0 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [
                   0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
-data = [
+data_lst = [
     generate_curve_CubicSpline(p0, 200),
     generate_curve_Pchip(p0, 200),
     generate_curve_snaps(p0, 200)
@@ -116,12 +116,7 @@ Generate a function that interpolates and extrapolates data points as a parametr
 
 ```python
 import numpy as np
-from curveCoupling.curveGenerators import generate_curve_CubicSpline
 from curveCoupling import ndcurve
-
-p0 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [
-                  0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
-data = generate_curve_CubicSpline(p0, 200)
 
 curve = ndcurve(data)
 t = np.linspace(0.0,1.0,200)
@@ -140,19 +135,10 @@ Resulting values:
 Solve curve coupling problems efficiently (in case of equality constraints):
 
 ```python
-import numpy as np
-from curveCoupling.curveGenerators import generate_curve_peaks
 from curveCoupling import ndcurve, curveCouplingProblem_Equality, solveCurveCoupling_Equality, solveCurveCoupling_bruteForce_localSolve
 
-p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
-p1 = np.array([[0.0, 0.0], [0.2, 0.5], [0.6, 0.2], [1.0, 1.0]])
-p2 = np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.1],
-                [0.7, 0.4], [0.8, 0.35], [1.0, 1.0]])
-points = [p0, p1, p2]
-data = [generate_curve_peaks(pts, 200) for pts in points]
-
+curves = ndcurve.createList(data_lst)
 match_index = 1
-curves = ndcurve.createList(data)
 prob_eq = curveCouplingProblem_Equality(curves, match_index)
 
 out, res = solveCurveCoupling_Equality(prob_eq)
@@ -170,22 +156,7 @@ Comparison with brute force results, we are missing the islands.
 Find islands in curve coupling problems efficiently (in case of equality constraints):
 
 ```python
-import numpy as np
-from curveCoupling.curveGenerators import generate_curve_peaks
-from curveCoupling import ndcurve, curveCouplingProblem_Equality, solveCurveCoupling_bruteForce_localSolve
 from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Islands_Equality
-
-
-p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
-p1 = np.array([[0.0, 0.0], [0.2, 0.5], [0.6, 0.2], [1.0, 1.0]])
-p2 = np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.1],
-                [0.7, 0.4], [0.8, 0.35], [1.0, 1.0]])
-points = [p0, p1, p2]
-data = [generate_curve_peaks(pts, 200) for pts in points]
-match_index = 1
-
-curves = ndcurve.createList(data)
-prob = curveCouplingProblem_Equality(curves, match_index)
 
 out_lst, res_lst = solveCurveCoupling_Islands_Equality(prob)
 ```
@@ -201,22 +172,7 @@ We now get the islands.
 Deal with singularities in curve coupling problems efficiently (in case of equality constraints):
 
 ```python
-import numpy as np
-from curveCoupling.curveGenerators import generate_curve_peaks
-from curveCoupling import ndcurve, curveCouplingProblem_Equality, solveCurveCoupling_bruteForce_localSolve
 from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Singularities_Equality, findSingularities_Equality
-
-p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
-p1 = np.array([[0.0, 0.0], [0.2, 0.6], [0.6, 0.3], [1.0, 1.0]])
-p2 = np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.3],
-                [0.7, 0.5], [0.8, 0.4], [1.0, 1.0]])
-
-points = [p0, p1, p2]
-data = [generate_curve_peaks(pts, 200) for pts in points]
-match_index = 1
-
-curves = ndcurve.createList(data)
-prob = curveCouplingProblem_Equality(curves, match_index)
 
 sing_out, sing_seeds, sing_orders, sing_dirs = findSingularities_Equality(prob, tol=1e-3)
 out_lst, res_lst = solveCurveCoupling_Singularities_Equality(prob, tol=1e-3)
@@ -233,22 +189,11 @@ We get the different branches from the singular points.
 Solve curve coupling problems efficiently (in case of general constraints):
 
 ```python
-import numpy as np
-from curveCoupling.curveGenerators import generate_curve_CubicSpline
 from curveCoupling import ndcurve, curveCouplingProblem, solveCurveCoupling, solveCurveCoupling_bruteForce_localSolve
 
-p0 = np.array([[0.0, 0.0], [0.55,0.6], [1.1, 0.88], [1.27, 0.72], [1.1,0.55]])
-p0 = np.concatenate([p0, [2.0,1.0]-np.flip(p0,axis=0)])
-p1 = np.array([[0.0, 0.0], [0.1, 0.4], [0.25, 0.64], [0.4, 0.6]])
-p1 = np.concatenate([p1, [1.0,1.0]-np.flip(p1,axis=0)])
-p2 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [
-                  0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
-points = [p0, p1, p2]
-data = [generate_curve_CubicSpline(pts, 200) for pts in points]
-
-curves = ndcurve.createList(data)
-constraint_matrices = np.zeros((len(data)-1, len(data), data[0].shape[1]))
-output_matrices = np.zeros((data[0].shape[1], len(data), data[0].shape[1]))
+curves = ndcurve.createList(data_lst)
+constraint_matrices = np.zeros((len(data_lst)-1, len(data_lst), data_lst[0].shape[1]))
+output_matrices = np.zeros((data_lst[0].shape[1], len(data_lst), data_lst[0].shape[1]))
 
 constraint_matrices[0,:,0] = np.array([1.0,-1.0,-1.0])
 constraint_matrices[1,:,1] = np.array([0.0,1.0,-1.0])
@@ -272,29 +217,8 @@ Comparison with brute force results, we are missing the islands.
 Find islands in curve coupling problems efficiently (in case of general constraints):
 
 ```python
-import numpy as np
-from curveCoupling import ndcurve, curveCouplingProblem, solveCurveCoupling_bruteForce_localSolve
 from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Islands
 
-p0 = np.array([[0.0, 0.0], [0.55,0.6], [1.1, 0.88], [1.27, 0.72], [1.1,0.55]])
-p0 = np.concatenate([p0, [2.0,1.0]-np.flip(p0,axis=0)])
-p1 = np.array([[0.0, 0.0], [0.1, 0.4], [0.25, 0.64], [0.4, 0.6]])
-p1 = np.concatenate([p1, [1.0,1.0]-np.flip(p1,axis=0)])
-p2 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [
-                  0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
-points = [p0, p1, p2]
-data = [generate_curve_CubicSpline(pts, 200) for pts in points]
-
-curves = ndcurve.createList(data)
-constraint_matrices = np.zeros((len(data)-1, len(data), data[0].shape[1]))
-output_matrices = np.zeros((data[0].shape[1], len(data), data[0].shape[1]))
-
-constraint_matrices[0,:,0] = np.array([1.0,-1.0,-1.0])
-constraint_matrices[1,:,1] = np.array([0.0,1.0,-1.0])
-output_matrices[0,:,0] = np.array([1.0,0.0,0.0])
-output_matrices[1,:,1] = np.array([1.0,1.0,0.0])
-
-prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
 out_lst, res_lst = solveCurveCoupling_Islands(prob)
 ```
 
@@ -309,29 +233,7 @@ We now get the islands.
 Deal with singularities in curve coupling problems efficiently (in case of general constraints):
 
 ```python
-import numpy as np
-from curveCoupling.curveGenerators import generate_curve_snaps
-from curveCoupling import ndcurve, curveCouplingProblem, solveCurveCoupling_bruteForce_localSolve
 from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Singularities, findSingularities
-
-p0 = np.array([[0.0, 0.0], [0.5,0.6], [1.1, 0.9], [1.35, 0.75], [1.1,0.55]])
-p0 = np.concatenate([p0, [2.0,1.0]-np.flip(p0,axis=0)])
-p1 = np.array([[0.0, 0.0], [0.3, 0.6], [0.7, 0.4], [1.0, 1.0]])
-p2 = np.array([[0.0, 0.0], [0.2, 0.65], [0.35, 0.8], [0.46, 0.75], [
-              0.43, 0.61], [0.38, 0.45], [0.6, 0.4], [0.85, 0.6], [1.0, 1.0]])
-
-points = [p0, p1, p2]
-data = [generate_curve_snaps(pts, 200) for pts in points]
-
-curves = ndcurve.createList(data)
-constraint_matrices = np.zeros((len(data)-1, len(data), data[0].shape[1]))
-output_matrices = np.zeros((data[0].shape[1], len(data), data[0].shape[1]))
-
-constraint_matrices[0,:,0] = np.array([1.0,-1.0,-1.0])
-constraint_matrices[1,:,1] = np.array([0.0,1.0,-1.0])
-output_matrices[0,:,0] = np.array([1.0,0.0,0.0])
-output_matrices[1,:,1] = np.array([1.0,1.0,0.0])
-prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
 
 sing_outs, sing_seeds, sing_orders, sing_dirs = findSingularities(prob, 10, tol=1e-3)
 out_lst, res_lst = solveCurveCoupling_Singularities(prob, tol=1e-3)
@@ -364,29 +266,8 @@ c_{\mathrm{out}_k}(t_0, t_1, \dots, t_N) = \sum_i b_{i,k}\, c_{i,k}(t_i).
 Although not all problems are separable, most physical systems arising from interactions satisfy these conditions since. For example, in compliant elements networks, forces are compared to forces and displacements to displacements.
 
 ```python
-import numpy as np
-from curveCoupling.curveGenerators import *
-from curveCoupling import ndcurve, curveCouplingProblem, solveCurveCoupling
-from curveCoupling.separableEqs import joint2split_constr, joint2split_out, split2joint_constr, split2joint_out, invertProblem
+from curveCoupling import ndcurve, curveCouplingProblem_Split
 
-p0 = np.array([[0.0, 0.0], [0.55, 0.6], [1.1, 0.88], [1.27, 0.72], [1.1, 0.55]])
-p0 = np.concatenate([p0, [2.0, 1.0] - np.flip(p0, axis=0)])
-p1 = np.array([[0.0, 0.0], [0.1, 0.4], [0.25, 0.64], [0.4, 0.6]])
-p1 = np.concatenate([p1, [1.0, 1.0] - np.flip(p1, axis=0)])
-p2 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [
-                  0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
-points = [p0, p1, p2]
-data = [generate_curve_CubicSpline(pts, 200) for pts in points]
-curves = ndcurve.createList(data)
-
-constraint_matrices = np.zeros((len(data)-1, len(data), data[0].shape[1]))
-output_matrices = np.zeros((data[0].shape[1], len(data), data[0].shape[1]))
-constraint_matrices[0,:,0] = np.array([1.0,-1.0,-1.0])
-constraint_matrices[1,:,1] = np.array([0.0,1.0,-1.0])
-output_matrices[0,:,0] = np.array([1.0,0.0,0.0])
-output_matrices[1,:,1] = np.array([1.0,1.0,0.0])
-
-prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
 # Transfrom in split problem
 prob_split = prob.to_Split()
 # Solve direct problem
@@ -428,15 +309,15 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
 fig = plt.figure()
-gs = gridspec.GridSpec(2, 2 * len(data))
+gs = gridspec.GridSpec(2, 2 * len(data_lst))
 axs = []
 
-for i in range(0, len(data)):
+for i in range(0, len(data_lst)):
     axs.append(fig.add_subplot(gs[0, 2 * i:2 * (i + 1)]))
-axs.append(fig.add_subplot(gs[1, len(data):]))
-axs.append(fig.add_subplot(gs[1, :len(data)], projection='3d'))
+axs.append(fig.add_subplot(gs[1, len(data_lst):]))
+axs.append(fig.add_subplot(gs[1, :len(data_lst)], projection='3d'))
 
-for i, d in enumerate(data):
+for i, d in enumerate(data_lst):
     axs[i].plot(d[:, 0], d[:, 1])
 for res in res_lst:
     axs[-1].plot(res[:, 0], res[:, 1], res[:, 2])
@@ -457,7 +338,7 @@ Alternatively, use the provided default plot:
 from curveCoupling.utils.defaultPlots import plotResults
 
 fig = plt.figure()
-axs = plotResults(fig, data, out_lst, res_lst, out_brute, res_brute)
+axs = plotResults(fig, data_lst, out_lst, res_lst, out_brute, res_brute)
 plt.show(block=False)
 ```
 
@@ -562,12 +443,8 @@ Compute stability of an element from its force-displacement curve:
 
 ```python
 import numpy as np
-from curveCoupling.curveGenerators import generate_curve_CubicSpline
 from curveCoupling.compliantElements import getEigenVals, eigen2stability
 
-p0 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [
-                  0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
-data = generate_curve_CubicSpline(p0, 200)
 eigen = getEigenVals(data)
 stability = eigen2stability(eigen)
 ```
@@ -583,28 +460,10 @@ We get the input stability evolution along the curve, assuming the initial point
 Compute stability of a network from components (in case of equality constraints):
 
 ```python
-import numpy as np
-from curveCoupling.curveGenerators import generate_curve_peaks
-from curveCoupling import ndcurve, curveCouplingProblem_Equality
-from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Islands_Equality
 from curveCoupling.compliantElements import getEigenVals, getEigen_coupling_analytic_Equality, eigen2stability
 
-
-p0 = np.array([[0.0, 0.0], [0.3, 0.9], [0.7, 0.3], [1.0, 1.0]])
-p1 = np.array([[0.0, 0.0], [0.2, 0.5], [0.6, 0.2], [1.0, 1.0]])
-p2 = np.array([[0.0, 0.0], [0.2, 0.7], [0.6, 0.1],
-                [0.7, 0.4], [0.8, 0.35], [1.0, 1.0]])
-points = [p0, p1, p2]
-data = [generate_curve_peaks(pts, 200) for pts in points]
-match_index = 1
-
-curves = ndcurve.createList(data)
-prob = curveCouplingProblem_Equality(curves,match_index)
-
-out_lst, res_lst = solveCurveCoupling_Islands_Equality(prob)
-
-eigen_input_lst = [getEigenVals(d) for d in data]
-stability_input_lst = [eigen2stability(e) for e in eigen_input_lst]
+eigen_input_lst = [getEigenVals(d) for d in data_lst]
+stability_input_lst = [eigen2stability(e) for e in eigen_input_lst]]
 eigen_analytic_lst = [getEigen_coupling_analytic_Equality(prob, r) for r in res_lst]
 stability_analytic_lst = [eigen2stability(e) for e in eigen_analytic_lst]
 ```
@@ -620,35 +479,9 @@ We get the input and output stabilities, including islands.
 Compute stability of a network from components (in case of general constraints):
 
 ```python
-import numpy as np
-from curveCoupling.curveGenerators import generate_curve_CubicSpline
-from curveCoupling import ndcurve, curveCouplingProblem
-from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Islands
-from curveCoupling.compliantElements import getEigenVals, getEigen_coupling_analytic, eigen2stability, generate_circuit_equations
+from curveCoupling.compliantElements import getEigenVals, getEigen_coupling_analytic, eigen2stability
 
-p0 = np.array([[0.0, 0.0], [0.55, 0.6], [1.1, 0.88], [1.27, 0.72], [1.1, 0.55]])
-p0 = np.concatenate([p0, [2.0, 1.0] - np.flip(p0, axis=0)])
-p1 = np.array([[0.0, 0.0], [0.1, 0.4], [0.25, 0.64], [0.4, 0.6]])
-p1 = np.concatenate([p1, [1.0, 1.0] - np.flip(p1, axis=0)])
-p2 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [
-                  0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
-points = [p0, p1, p2]
-data = [generate_curve_CubicSpline(pts, 200) for pts in points]
-
-curves = ndcurve.createList(data)
-
-edges = [
-    ('Start', 'End'),
-    ('Start', 'A'),
-    ('A', 'End'),
-]
-ConstraintMatrices, OutputMatrices = generate_network_equations(
-        edges, return_in_joint_matrices=True)
-prob = curveCouplingProblem(curves, ConstraintMatrices, OutputMatrices)
-
-out_lst, res_lst = solveCurveCoupling_Islands(prob, iter_points=10)
-
-eigen_input_lst = [getEigenVals(d) for d in data]
+eigen_input_lst = [getEigenVals(d) for d in data_lst]
 stability_input_lst = [eigen2stability(e) for e in eigen_input_lst]
 eigen_analytic_lst = [getEigen_coupling_analytic(prob, r) for r in res_lst]
 stability_analytic_lst = [eigen2stability(e) for e in eigen_analytic_lst]
@@ -670,16 +503,16 @@ from matplotlib import gridspec
 from curveCoupling.utils.defaultPlots import plot_stability
 
 fig = plt.figure()
-gs = gridspec.GridSpec(2, 2 * len(data))
+gs = gridspec.GridSpec(2, 2 * len(data_lst))
 axs = []
 
-for i in range(0, len(data)):
+for i in range(0, len(data_lst)):
     axs.append(fig.add_subplot(gs[0, 2 * i:2 * (i + 1)]))
-axs.append(fig.add_subplot(gs[1, len(data):]))
-axs.append(fig.add_subplot(gs[1, :len(data)], projection='3d'))
+axs.append(fig.add_subplot(gs[1, len(data_lst):]))
+axs.append(fig.add_subplot(gs[1, :len(data_lst)], projection='3d'))
 
 
-for i, (d, s) in enumerate(zip(data, stability_input_lst)):
+for i, (d, s) in enumerate(zip(data_lst, stability_input_lst)):
     plot_stability(axs[i], s, d[:, 0], d[:, 1])
 
 for res, s in zip(res_lst, stability_analytic_lst):
@@ -697,7 +530,7 @@ Alternatively, use the provided default plot for a network:
 from curveCoupling.utils.defaultPlots import plotResults_stability
 
 fig = plt.figure()
-plotResults_stability(fig, data, stability_input_lst,
+plotResults_stability(fig, data_lst, stability_input_lst,
                           out_lst, res_lst, stability_analytic_lst)
 plt.show()
 ```
