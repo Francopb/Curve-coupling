@@ -393,6 +393,7 @@ prob_split = prob.to_Split()
 out, res = solveCurveCoupling(prob_split)
 
 # Invert problem for curve 0
+solve_for_idx = 0
 prob_inverse = prob_split.invert(solve_for_idx, ndcurve(out))
 # Solve inverse problem
 out_inverse, res_inverse = solveCurveCoupling(prob_inverse)
