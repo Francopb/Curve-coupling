@@ -1,8 +1,9 @@
 import numpy as np
-from scipy import optimize
 from curveCoupling.curveInterpExtrapFunc import ndcurve, ndcurve_matrix
-import itertools
 from curveCoupling.utils.matrixOperations import my_null_space
+from curveCoupling.separableEqs import split2joint_constr, split2joint_out, joint2split_constr, joint2split_out, invertCase, invertProblem
+from scipy import optimize
+import itertools
 from typing import *
 
 _INITIAL_OPT = Literal["fix_largest", "min_dist", "off"]
@@ -34,13 +35,12 @@ class curveCouplingProblem:
         if self.OutputMatrices is None:
             if self.Ndims == 0:
                 self.OutputMatrices = np.full(
-                    (1, self.numCurves), np.ones(self.numCurves) / self.numCurves)
+                    (1, self.numCurves), 1.0 / self.numCurves)
             else:
                 self.OutputMatrices = np.zeros(
                     (self.Ndims, self.numCurves, self.Ndims))
                 for i in range(self.Ndims):
-                    self.OutputMatrices[i, :, i] = np.ones(
-                        self.numCurves) / self.numCurves
+                    self.OutputMatrices[i, :, i] = 1.0 / self.numCurves
 
         if self.Ndims == 0:
             if self.ConstraintMatrices.ndim != 2:
@@ -104,6 +104,214 @@ class curveCouplingProblem:
     def computeOutput(self, params: np.ndarray) -> np.ndarray:
         return self.computeOutput_from_values(self.curves_all(params))
 
+    def to_Split(self) -> 'curveCouplingProblem_Split':
+        constraintMatrices_lst = joint2split_constr(self.ConstraintMatrices)
+        outputVectors_lst = joint2split_out(self.OutputMatrices)
+        constraintConstant_lst = []
+        curr_idx = 0
+        for c in constraintMatrices_lst:
+            if c.size == 0:
+                constraintConstant_lst.append(np.array([]))
+            else:
+                next_idx = curr_idx + c.shape[0]
+                constraintConstant_lst.append(
+                    self.ConstraintConstantVector[curr_idx: next_idx])
+                curr_idx = next_idx
+        outputConstant_lst = list(self.OutputConstantVector)
+        return curveCouplingProblem_Split(self.curves,
+                                          constraintMatrices_lst,
+                                          outputVectors_lst,
+                                          constraintConstant_lst,
+                                          outputConstant_lst)
+
+
+class curveCouplingProblem_Split:
+    def __init__(self, curves: List[ndcurve],
+                 constraintMatrices_lst: Union[np.ndarray, List[np.ndarray]],
+                 outputVectors_lst: Optional[Union[np.ndarray,
+                                                   List[np.ndarray]]] = None,
+                 constraintConstant_lst: Optional[Union[np.ndarray,
+                                                        List[np.ndarray]]] = None,
+                 outputConstant_lst: Optional[Union[float,
+                                                    List[float]]] = None):
+        self.curves = curves
+        self.constraintMatrices_lst = constraintMatrices_lst
+        self.outputVectors_lst = outputVectors_lst
+        self.constraintConstant_lst = constraintConstant_lst
+        self.outputConstant_lst = outputConstant_lst
+        self.numCurves = len(curves)
+        if self.numCurves < 2:
+            raise ValueError("At least two curves are needed")
+        self.curves_all = ndcurve_matrix(curves)
+
+        self.Ndims = set([c.getNDim() for c in self.curves])
+        if len(self.Ndims) > 1:
+            raise ValueError("All curves must have the same dimensionality")
+        self.Ndims = self.Ndims.pop()
+
+        if self.outputVectors_lst is None:
+            if self.Ndims == 0:
+                self.outputVectors_lst = np.full(
+                    self.numCurves, 1.0 / self.numCurves)
+            else:
+                self.outputVectors_lst = []
+                for _ in range(self.Ndims):
+                    self.outputVectors_lst.append(
+                        np.full(self.numCurves, 1.0 / self.numCurves))
+
+        if self.Ndims == 0:
+            if (not isinstance(self.constraintMatrices_lst, np.ndarray)) or self.constraintMatrices_lst.ndim != 2:
+                raise ValueError(
+                    "For zero dimensional curves (return a float), constraintMatrices_lst must be a 2 dimensional array")
+
+            if self.constraintMatrices_lst.shape[1] != self.numCurves:
+                raise ValueError(
+                    "constraintMatrices dim 1 must the the number of curves")
+
+            if self.constraintMatrices_lst.shape[0] != self.numCurves-1:
+                raise ValueError(
+                    "constraintMatrices dim 0 must the the number of curves minus 1")
+
+            if (not isinstance(self.outputVectors_lst, np.ndarray)) or self.outputVectors_lst.ndim != 1:
+                raise ValueError(
+                    "For zero dimensional curves (return a float), outputVectors_lst must be a 1 dimensional array")
+
+            if self.outputVectors_lst.shape[0] != self.numCurves:
+                raise ValueError(
+                    "outputVectors dim 0 must the the number of curves")
+        else:
+            if (not isinstance(self.constraintMatrices_lst, list)) or len(self.constraintMatrices_lst) != self.Ndims:
+                raise ValueError(
+                    "ConstraintMatrices must be a list of length equal to the number of dimensions")
+            if (not isinstance(self.outputVectors_lst, list)) or len(self.outputVectors_lst) != self.Ndims:
+                raise ValueError(
+                    "ConstraintMatrices must be a list of length equal to the number of dimensions")
+
+            for c in self.constraintMatrices_lst:
+                if c.size == 0:
+                    continue
+                if c.ndim != 2:
+                    raise ValueError(
+                        "For zero dimensional curves (return a float), constraintMatrices must be a 2 dimensional array")
+                if c.shape[1] != self.numCurves:
+                    raise ValueError(
+                        "constraintMatrices dim 1 must the the number of curves")
+            if sum([c.shape[0] for c in self.constraintMatrices_lst]) != self.numCurves - 1:
+                raise ValueError(
+                    "Total number of constraints must the the number of curves minus 1")
+            for c in self.outputVectors_lst:
+                if c.ndim != 1:
+                    raise ValueError(
+                        "For zero dimensional curves (return a float), outputVectors must be a 1 dimensional array")
+                if c.shape[0] != self.numCurves:
+                    raise ValueError(
+                        "outputVectors dim 0 must the the number of curves")
+
+        if self.constraintConstant_lst is None:
+            if self.Ndims == 0:
+                self.constraintConstant_lst = np.zeros(
+                    self.numCurves - 1)
+            else:
+                self.constraintConstant_lst = []
+                for c in self.constraintMatrices_lst:
+                    if c.size == 0:
+                        self.constraintConstant_lst.append(np.array([]))
+                    else:
+                        self.constraintConstant_lst.append(
+                            np.zeros(c.shape[0]))
+
+        if self.outputConstant_lst is None:
+            if self.Ndims == 0:
+                self.outputConstant_lst = 0.0
+            else:
+                self.outputConstant_lst = [0.0] * self.Ndims
+
+        if self.Ndims == 0:
+            if self.constraintConstant_lst.size != self.constraintMatrices_lst.shape[0]:
+                raise ValueError(
+                    "Each constraintConstant must have the length of the corresponding constraintMatrix")
+        else:
+            for c, cv in zip(self.constraintMatrices_lst, self.constraintConstant_lst):
+                if c.size == 0:
+                    if cv.size != 0:
+                        raise ValueError(
+                            "Empty contraints must have empty constraintConstant")
+                else:
+                    if cv.size != c.shape[0]:
+                        raise ValueError(
+                            "Each constraintConstant must have the length of the corresponding constraintMatrix")
+
+        if self.Ndims > 0:
+            if len(self.outputConstant_lst) != self.Ndims:
+                raise ValueError(
+                    "outputConstant_lst must have a length equal to the number of dimensions")
+
+    def computeConstraint_from_values(self, vals: np.ndarray) -> np.ndarray:
+        if self.Ndims == 0:
+            return np.einsum('ij,j->i', self.constraintMatrices_lst, vals)+self.constraintConstant_lst
+        else:
+            constraints = []
+            for i, (c, cv) in enumerate(zip(self.constraintMatrices_lst, self.constraintConstant_lst)):
+                if c.size == 0:
+                    continue
+                constraints.append(np.einsum('ij,j->i', c, vals[:, i]) + cv)
+            return np.concatenate(constraints)
+
+    def computeConstraint(self, params: np.ndarray) -> np.ndarray:
+        return self.computeConstraint_from_values(self.curves_all(params))
+
+    def computeConstraintJac(self, params: np.ndarray, nu: int = 1) -> np.ndarray:
+        vals = self.curves_all(params, nu=nu)
+        if self.Ndims == 0:
+            return np.einsum('ij,j->ij', self.constraintMatrices_lst, vals)
+        else:
+            jacs = []
+            for i, c in enumerate(self.constraintMatrices_lst):
+                if c.size == 0:
+                    continue
+                jacs.append(np.einsum('ij,j->ij', c, vals[:, i]))
+            return np.vstack(jacs)
+
+    def computeOutput_from_values(self, vals: np.ndarray) -> np.ndarray:
+        if self.Ndims == 0:
+            return np.einsum('i,i->i', self.outputVectors_lst, vals)+self.outputConstant_lst
+        else:
+            out = []
+            for i, (c, cv) in enumerate(zip(self.outputVectors_lst, self.outputConstant_lst)):
+                out.append(
+                    np.einsum('i,i', c, vals[:, i]) + cv)
+            return np.array(out)
+
+    def computeOutput(self, params: np.ndarray) -> np.ndarray:
+        return self.computeOutput_from_values(self.curves_all(params))
+
+    def invert(self, solve_for_idx: int, new_curve: ndcurve) -> 'curveCouplingProblem_Split':
+        curves_inverse = self.curves.copy()
+        curves_inverse[solve_for_idx] = new_curve
+
+        if self.Ndims == 0:
+            constr_inv_lst, out_inv_lst, constr_cte_inv_lst, out_cte_inv_lst = invertCase(solve_for_idx,
+                                                                                          self.constraintMatrices_lst, self.outputVectors_lst, self.constraintConstant_lst, self.outputConstant_lst)
+        else:
+            constr_inv_lst, out_inv_lst, constr_cte_inv_lst, out_cte_inv_lst = invertProblem(solve_for_idx,
+                                                                                             self.constraintMatrices_lst, self.outputVectors_lst, self.constraintConstant_lst, self.outputConstant_lst)
+        return curveCouplingProblem_Split(curves_inverse,
+                                          constr_inv_lst,
+                                          out_inv_lst,
+                                          constr_cte_inv_lst,
+                                          out_cte_inv_lst)
+
+    def to_General(self) -> curveCouplingProblem:
+        constr_vec = np.concatenate(
+            [cv for cv in self.constraintConstant_lst if cv.size > 0])
+        out_vec = np.array(self.outputConstant_lst)
+        return curveCouplingProblem(self.curves,
+                                    split2joint_constr(
+                                        self.constraintMatrices_lst),
+                                    split2joint_out(self.outputVectors_lst),
+                                    constr_vec,
+                                    out_vec)
+
 
 class curveCouplingProblem_Equality:
     def __init__(self, curves: List[ndcurve], match_index: Optional[int] = None):
@@ -160,35 +368,29 @@ class curveCouplingProblem_Equality:
     def computeOutput(self, params: np.ndarray) -> np.ndarray:
         return self.computeOutput_from_values(self.curves_all(params))
 
-    def to_General(self, fixed_index: Optional[int] = None):
-        if self.match_index is None:
-            ConstraintMatrices = np.zeros((self.numCurves-1, self.numCurves))
-            if fixed_index is None:
-                ConstraintMatrices[np.arange(
-                    self.numCurves-1), np.arange(self.numCurves-1)] = 1.0
-                ConstraintMatrices[np.arange(
-                    self.numCurves-1), np.arange(1, self.numCurves)] = -1.0
-            else:
-                other_indices = np.delete(
-                    np.arange(self.numCurves), fixed_index)
-                ConstraintMatrices[np.arange(
-                    self.numCurves-1), other_indices] = 1.0
-                ConstraintMatrices[:, fixed_index] = -1.0
+    def to_Split(self, fixed_index: Optional[int] = None) -> curveCouplingProblem_Split:
+        ConstraintMatrix = np.zeros((self.numCurves-1, self.numCurves))
+        if fixed_index is None:
+            ConstraintMatrix[np.arange(
+                self.numCurves-1), np.arange(self.numCurves-1)] = 1.0
+            ConstraintMatrix[np.arange(
+                self.numCurves-1), np.arange(1, self.numCurves)] = -1.0
         else:
-            ConstraintMatrices = np.zeros(
-                (self.numCurves-1, self.numCurves, self.Ndims))
-            if fixed_index is None:
-                ConstraintMatrices[np.arange(
-                    self.numCurves-1), np.arange(self.numCurves-1), self.match_index] = 1.0
-                ConstraintMatrices[np.arange(
-                    self.numCurves-1), np.arange(1, self.numCurves), self.match_index] = -1.0
-            else:
-                other_indices = np.delete(
-                    np.arange(self.numCurves), fixed_index)
-                ConstraintMatrices[np.arange(
-                    self.numCurves-1), other_indices, self.match_index] = 1.0
-                ConstraintMatrices[:, fixed_index, self.match_index] = -1.0
-        return curveCouplingProblem(self.curves, ConstraintMatrices)
+            other_indices = np.delete(
+                np.arange(self.numCurves), fixed_index)
+            ConstraintMatrix[np.arange(
+                self.numCurves-1), other_indices] = 1.0
+            ConstraintMatrix[:, fixed_index] = -1.0
+
+        if self.match_index is None:
+            return curveCouplingProblem_Split(self.curves, ConstraintMatrix)
+
+        constraintMatrices_lst = [np.array([])] * self.Ndims
+        constraintMatrices_lst[self.match_index] = ConstraintMatrix
+        return curveCouplingProblem_Split(self.curves, constraintMatrices_lst)
+
+    def to_General(self, fixed_index: Optional[int] = None) -> curveCouplingProblem:
+        return self.to_Split(fixed_index).to_General()
 
 
 def solveCurveCoupling_bruteForce(

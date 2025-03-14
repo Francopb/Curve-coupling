@@ -387,18 +387,13 @@ output_matrices[0,:,0] = np.array([1.0,0.0,0.0])
 output_matrices[1,:,1] = np.array([1.0,1.0,0.0])
 
 prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
+# Transfrom in split problem
+prob_split = prob.to_Split()
 # Solve direct problem
-out, res = solveCurveCoupling(prob)
-
-# Split problem by dimensions
-constr_lst, out_lst = joint2split_constr(constraint_matrices), joint2split_out(output_matrices)
+out, res = solveCurveCoupling(prob_split)
 
 # Invert problem for curve 0
-constr_inv_lst, out_inv_lst = invertProblem(constr_lst, out_lst, solve_for_idx=0)
-curves_inverse = curves.copy()
-curves_inverse[solve_for_idx] = ndcurve(out)
-# Rejoin the matrices to define problem
-prob_inverse = curveCouplingProblem(curves_inverse, split2joint_constr(constr_inv_lst), split2joint_out(out_inv_lst))
+prob_inverse = prob_split.invert(solve_for_idx, ndcurve(out))
 # Solve inverse problem
 out_inverse, res_inverse = solveCurveCoupling(prob_inverse)
 ```

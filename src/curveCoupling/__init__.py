@@ -1,5 +1,6 @@
 from curveCoupling.curveCoupling import (curveCouplingProblem,
                                          curveCouplingProblem_Equality,
+                                         curveCouplingProblem_Split,
                                          solveCurveCoupling,
                                          solveCurveCoupling_Equality,
                                          solveCurveCoupling_bruteForce_matrix,

@@ -1,7 +1,7 @@
 import numpy as np
 from curveCoupling.curveGenerators import *
 from curveCoupling import ndcurve, curveCouplingProblem, solveCurveCoupling
-from curveCoupling.separableEqs import joint2split_constr, joint2split_out, split2joint_constr, split2joint_out, invertProblem
+from curveCoupling.separableEqs import invertProblem
 from curveCoupling.utils.defaultPlots import plotResults
 from matplotlib import pyplot as plt
 
@@ -26,29 +26,27 @@ def run():
     constraint_matrices[1, :, 1] = np.array([0.0, 1.0, -1.0])
     output_matrices[0, :, 0] = np.array([1.0, 0.0, 0.0])
     output_matrices[1, :, 1] = np.array([1.0, 1.0, 0.0])
+    costr_cte = np.array([0.05, 0.05])*0.0
+    out_cte = np.array([0.1, 0.15])
 
-    prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
-    # Split problem by dimensions
-    constr_lst, out_lst = joint2split_constr(
-        constraint_matrices), joint2split_out(output_matrices)
+    prob = curveCouplingProblem(curves, constraint_matrices, output_matrices,
+                                ConstraintConstantVector=costr_cte, OutputConstantVector=out_cte)
+    prob_split = prob.to_Split()
 
-    out, res = solveCurveCoupling(prob)
+    param_range = np.vstack(
+        [np.full(len(curves), -0.5), np.full(len(curves), 1.)])
+    out, res = solveCurveCoupling(prob_split, param_range=param_range)
     fig = plt.figure()
     plotResults(fig, data, [out], [res])
 
     for solve_for_idx in range(len(curves)):
-        # Invert problem
-        constr_inv_lst, out_inv_lst = invertProblem(
-            constr_lst, out_lst, solve_for_idx)
         data_inverse = data.copy()
         data_inverse[solve_for_idx] = out
-        curves_inverse = curves.copy()
-        curves_inverse[solve_for_idx] = ndcurve(out)
-
-        # Rejoint the matrices
-        prob_inverse = curveCouplingProblem(curves_inverse, split2joint_constr(
-            constr_inv_lst), split2joint_out(out_inv_lst))
-        out_inverse, res_inverse = solveCurveCoupling(prob_inverse)
+        prob_inverse = prob_split.invert(solve_for_idx, ndcurve(out))
+        print(prob_inverse.constraintConstant_lst)
+        print(prob_inverse.outputConstant_lst)
+        out_inverse, res_inverse = solveCurveCoupling(
+            prob_inverse, param_range=param_range)
         fig = plt.figure()
         plotResults(fig, data_inverse, [out_inverse], [res_inverse])
 
@@ -92,7 +90,7 @@ if __name__ == "__main__":
     run()
     plt.show(block=False)
     input("Press Enter")
-    test_equality(5, 3, 1)
+    # test_equality(5, 3, 1)
 
 # Author: Franco N. Pinan Basualdo
 # Project: Curve Coupling
