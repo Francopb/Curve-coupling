@@ -43,8 +43,6 @@ def run():
         data_inverse = data.copy()
         data_inverse[solve_for_idx] = out
         prob_inverse = prob_split.invert(solve_for_idx, ndcurve(out))
-        print(prob_inverse.constraintConstant_lst)
-        print(prob_inverse.outputConstant_lst)
         out_inverse, res_inverse = solveCurveCoupling(
             prob_inverse, param_range=param_range)
         fig = plt.figure()

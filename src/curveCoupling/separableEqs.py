@@ -1,5 +1,5 @@
 import numpy as np
-from curveCoupling.utils.matrixOperations import ref
+from curveCoupling.utils.matrixOperations import make_unit_column
 from typing import *
 
 
@@ -156,43 +156,42 @@ def invertCase(solve_for_idx: int,
             raise ValueError(
                 "Either both constants are provided or none")
 
-    top = np.hstack(([-1], out, [out_cte])
-                    ) if provided_ctes else np.hstack(([-1], out))
+    top = np.hstack(([1], -out))
     if constr.size > 0:
-        bottom = np.hstack((np.zeros((constr.shape[0], 1)), constr, constr_cte.reshape(
-            -1, 1))) if provided_ctes else np.hstack((np.zeros((constr.shape[0], 1)), constr))
+        bottom = np.hstack((np.zeros((constr.shape[0], 1)), constr))
         total = np.vstack((top, bottom))
     else:
         total = top.reshape((1, -1))
     total_swapped = total.copy()
     total_swapped[:, [0, solve_for_idx+1]
                   ] = total_swapped[:, [solve_for_idx+1, 0]]
-    total_swapped_ref = ref(total_swapped, tol=1e-6)
-
-    if total_swapped_ref[0, 0] != 1.0:
+    total_solved, P = make_unit_column(total_swapped, col=0, tol=1e-6)
+    if total_solved[0, 0] != 1.0:
         raise ValueError("Independent variable")
-    if total_swapped_ref.shape[0] > 1 and np.any(total_swapped_ref[1:, 0] != 0):
+    if total_solved.shape[0] > 1 and np.any(total_solved[1:, 0] != 0):
         raise ValueError(
             "Something failed in Row Echelon Form computation")
 
     if constr.size > 0:
-        new_constr = total_swapped_ref[1:, 1:-
-                                       1] if provided_ctes else total_swapped_ref[1:, 1:]
-        new_constr_cte = total_swapped_ref[1:, -
-                                           1] if provided_ctes else np.array([])
+        new_constr = total_solved[1:, 1:]
     else:
         new_constr = np.array([])
-        new_constr_cte = np.array([])
-    new_out = -total_swapped_ref[0, 1:-
-                                 1] if provided_ctes else -total_swapped_ref[0, 1:]
+    new_out = -total_solved[0, 1:]
 
     if np.linalg.matrix_rank(new_constr) < new_constr.shape[0]:
         raise ValueError("The new constraint is rank deficicent")
 
     if provided_ctes:
-        new_constr_cte = total_swapped_ref[1:, -
-                                           1] if constr.size > 0 else np.array([])
-        new_out_cte = -total_swapped_ref[0, -1]
+        top_cte = -np.array([out_cte])
+        if constr.size > 0:
+            total_cte = np.concatenate((top_cte, constr_cte))
+            total_cte_solved = np.dot(P, total_cte)
+            new_out_cte = -total_cte_solved[0]
+            new_constr_cte = total_cte_solved[1:]
+        else:
+            total_cte = top_cte.reshape((1, 1))
+            new_out_cte = -np.dot(P, top_cte)
+            new_constr_cte = np.array([])
         return new_constr, new_out, new_constr_cte, new_out_cte
 
     return new_constr, new_out

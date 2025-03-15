@@ -114,21 +114,61 @@ def remove_small_vals(A: np.ndarray, tol: float = 1e-9) -> np.ndarray:
     A[np.isclose(A, 0.0, atol=tol)] = 0.0
     return A
 
+def make_unit_column(A: np.ndarray, col: int, tol: float = 1e-9) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Make the first element in the column one and the rest zero
 
-def ref(A: np.ndarray, tol: float = 1e-9) -> np.ndarray:
+    Args:
+        A (np.ndarray): The input matrix.
+        col (int): Column to make unit.
+        tol (float): Tolerance for considering values as zero.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: The result matrix and the transformation matrix P.
+    """
+    A = A.copy().astype(float)
+    P = np.eye(A.shape[0])    
+    max_row = np.argmax(np.abs(A[:, col]))
+    if np.abs(A[max_row, col]) < tol:
+        raise ValueError("Empty column")  
+
+    # Swap rows
+    A[[0, max_row]] = A[[max_row, 0]]
+    P[[0, max_row]] = P[[max_row, 0]]
+
+    # **Normalize pivot row (Make pivot = 1)**
+    pivot = A[0, col]
+    A[0] /= pivot  # Ensure pivot is always 1
+    P[0] /= pivot
+
+    # Eliminate values below the pivot
+    for i in range(1,A.shape[0]):
+        factor = A[i, col]
+        A[i] -= factor * A[0]
+        P[i] -= factor * P[0]
+
+    return A, P
+
+
+def ref(A: np.ndarray, tol: float = 1e-9,
+        column_permutation: bool = False) -> Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
     """
     Compute the Row Echelon Form (REF) of matrix A.
 
     Args:
         A (np.ndarray): The input matrix.
         tol (float): Tolerance for considering values as zero.
+        column_permutation (bool): Whether to allow column permutations to move all basic columns to the left.
 
     Returns:
-        np.ndarray: The REF of the matrix.
+        Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]: 
+        The RREF of the matrix and the transformation matrix P. If column_permutation is True, also returns the column permutation matrix Q.
     """
     A = A.copy().astype(float)
     rows, cols = A.shape
+    P = np.eye(rows)
     r = 0  # Current row
+    pivot_columns = []
 
     for c in range(cols):
         if r >= rows:
@@ -141,19 +181,37 @@ def ref(A: np.ndarray, tol: float = 1e-9) -> np.ndarray:
 
         # Swap rows
         A[[r, max_row]] = A[[max_row, r]]
+        P[[r, max_row]] = P[[max_row, r]]
 
         # **Normalize pivot row (Make pivot = 1)**
         pivot = A[r, c]
         A[r] /= pivot  # Ensure pivot is always 1
+        P[r] /= pivot
 
         # Eliminate values below the pivot
         for i in range(r + 1, rows):
             factor = A[i, c]
             A[i, c:] -= factor * A[r, c:]
+            P[i, c:] -= factor * P[r, c:]
 
+        pivot_columns.append(c)
         r += 1  # Move to next row
 
-    return A
+    if not column_permutation:
+        return A, P
+
+    # Identify basic and free columns
+    basic_columns = np.array(pivot_columns)
+    free_columns = np.setdiff1d(np.arange(cols), basic_columns)
+
+    # Permute columns to move all basic columns to the left
+    cols_permutation = np.concatenate([basic_columns, free_columns])
+    A = A[:, cols_permutation]
+
+    Q = np.eye(cols_permutation.size)
+    Q = Q[:, cols_permutation]
+
+    return A, P, Q
 
 
 def rref(A: np.ndarray, tol: float = 1e-9,
