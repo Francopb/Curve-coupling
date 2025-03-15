@@ -39,13 +39,46 @@ class ndcurve:
     @classmethod
     def _from_function(cls, function: Callable[[float], np.ndarray]) -> 'ndcurve':
         newCurve = cls.__new__(cls)
-        newCurve.ndim = np.size(function(0.0))
         newCurve.function = function
         return newCurve
 
     @classmethod
     def createList(cls, Ldata: List[np.ndarray]) -> List['ndcurve']:
         return [ndcurve(d) for d in Ldata]
+
+    def scale(self, factor: float, dim: Optional[int] = None) -> 'ndcurve':
+        new_function = interpolate.CubicSpline.construct_fast(self.function.c.copy(
+        ), self.function.x.copy(), extrapolate=self.function.extrapolate)
+        if dim is None:
+            if self.getNDim() == 0:
+                new_function.c *= factor
+            else:
+                raise ValueError(
+                    "Must specify dimension of curve with dimensions")
+        else:
+            if self.getNDim() == 0:
+                raise ValueError(
+                    "Cannot specify dimension of curve with dimension zero")
+            else:
+                new_function.c[:, :, dim] *= factor
+        return ndcurve._from_function(new_function)
+
+    def add_cte(self, factor: float, dim: Optional[int] = None) -> 'ndcurve':
+        new_function = interpolate.CubicSpline.construct_fast(self.function.c.copy(
+        ), self.function.x.copy(), extrapolate=self.function.extrapolate)
+        if dim is None:
+            if self.getNDim() == 0:
+                new_function.c[-1, :] += factor
+            else:
+                raise ValueError(
+                    "Must specify dimension of curve with dimensions")
+        else:
+            if self.getNDim() == 0:
+                raise ValueError(
+                    "Cannot specify dimension of curve with dimension zero")
+            else:
+                new_function.c[-1, :, dim] += factor
+        return ndcurve._from_function(new_function)
 
 
 class ndcurve_matrix:
