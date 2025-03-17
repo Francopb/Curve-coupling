@@ -56,7 +56,7 @@ def test_equality(n: int = 2, dims: int = 1, coupled_dim: int = 0):
     out_lst[coupled_dim] = np.array([1.0] + [0.0] * (n - 1))
     for solve_idx in range(n-1, n):
         constr_inv_lst, out_inv_lst = invertProblem(
-            constr_lst, out_lst, solve_idx)
+            solve_idx, constr_lst, out_lst)
         for i, constr in enumerate(constr_inv_lst):
             # The constraint should also be equality
             if i == coupled_dim:
@@ -85,10 +85,10 @@ def test_equality(n: int = 2, dims: int = 1, coupled_dim: int = 0):
 
 
 if __name__ == "__main__":
+    test_equality(5, 3, 1)
     run()
     plt.show(block=False)
     input("Press Enter")
-    # test_equality(5, 3, 1)
 
 # Author: Franco N. Pinan Basualdo
 # Project: Curve Coupling

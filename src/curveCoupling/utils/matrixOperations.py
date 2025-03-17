@@ -114,55 +114,67 @@ def remove_small_vals(A: np.ndarray, tol: float = 1e-9) -> np.ndarray:
     A[np.isclose(A, 0.0, atol=tol)] = 0.0
     return A
 
-def make_unit_column(A: np.ndarray, col: int, tol: float = 1e-9) -> Tuple[np.ndarray, np.ndarray]:
+
+def make_unit_column(A: np.ndarray,
+                     P: np.ndarray,
+                     col: int,
+                     row: int = 0,
+                     clean_above: bool = False,
+                     tol: float = 1e-9
+                     ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Make the first element in the column one and the rest zero
 
     Args:
         A (np.ndarray): The input matrix.
+        P (np.ndarray): The permutation matrix.
         col (int): Column to make unit.
+        row (int): From row to analyze make unit.
+        clean_above (bool): Whether to also clean above.
         tol (float): Tolerance for considering values as zero.
 
     Returns:
         Tuple[np.ndarray, np.ndarray]: The result matrix and the transformation matrix P.
     """
-    A = A.copy().astype(float)
-    P = np.eye(A.shape[0])    
-    max_row = np.argmax(np.abs(A[:, col]))
+    max_row = np.argmax(np.abs(A[row:, col])) + row
     if np.abs(A[max_row, col]) < tol:
-        raise ValueError("Empty column")  
+        A[row:, col] = 0.0
+        return False
 
     # Swap rows
-    A[[0, max_row]] = A[[max_row, 0]]
-    P[[0, max_row]] = P[[max_row, 0]]
+    A[[row, max_row]] = A[[max_row, row]]
+    P[[row, max_row]] = P[[max_row, row]]
 
     # **Normalize pivot row (Make pivot = 1)**
-    pivot = A[0, col]
-    A[0] /= pivot  # Ensure pivot is always 1
-    P[0] /= pivot
+    pivot = A[row, col]
+    A[row] /= pivot  # Ensure pivot is always 1
+    P[row] /= pivot
 
     # Eliminate values below the pivot
-    for i in range(1,A.shape[0]):
+    r_range = range(A.shape[0]) if clean_above else range(row, A.shape[0])
+    for i in r_range:
+        if i == row:
+            continue
         factor = A[i, col]
-        A[i] -= factor * A[0]
-        P[i] -= factor * P[0]
+        A[i] -= factor * A[row]
+        P[i] -= factor * P[row]
 
-    return A, P
+    return True
 
 
 def ref(A: np.ndarray, tol: float = 1e-9,
-        column_permutation: bool = False) -> Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+        get_pivot_columns: bool = False,) -> Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
     """
     Compute the Row Echelon Form (REF) of matrix A.
 
     Args:
         A (np.ndarray): The input matrix.
         tol (float): Tolerance for considering values as zero.
-        column_permutation (bool): Whether to allow column permutations to move all basic columns to the left.
+        get_pivot_columns (bool): Whether to get the pivto columns to the left.
 
     Returns:
         Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]: 
-        The RREF of the matrix and the transformation matrix P. If column_permutation is True, also returns the column permutation matrix Q.
+        The RREF of the matrix and the transformation matrix P. If get_pivot_columns is True, also returns the list of pvot columns.
     """
     A = A.copy().astype(float)
     rows, cols = A.shape
@@ -174,48 +186,18 @@ def ref(A: np.ndarray, tol: float = 1e-9,
         if r >= rows:
             break
 
-        # Find pivot row
-        max_row = np.argmax(np.abs(A[r:, c])) + r
-        if np.abs(A[max_row, c]) < tol:
-            continue  # Skip this column if pivot is too small
+        if make_unit_column(A, P, c, r, tol=tol):
+            pivot_columns.append(c)
+            r += 1
 
-        # Swap rows
-        A[[r, max_row]] = A[[max_row, r]]
-        P[[r, max_row]] = P[[max_row, r]]
-
-        # **Normalize pivot row (Make pivot = 1)**
-        pivot = A[r, c]
-        A[r] /= pivot  # Ensure pivot is always 1
-        P[r] /= pivot
-
-        # Eliminate values below the pivot
-        for i in range(r + 1, rows):
-            factor = A[i, c]
-            A[i, c:] -= factor * A[r, c:]
-            P[i, c:] -= factor * P[r, c:]
-
-        pivot_columns.append(c)
-        r += 1  # Move to next row
-
-    if not column_permutation:
+    if not get_pivot_columns:
         return A, P
 
-    # Identify basic and free columns
-    basic_columns = np.array(pivot_columns)
-    free_columns = np.setdiff1d(np.arange(cols), basic_columns)
-
-    # Permute columns to move all basic columns to the left
-    cols_permutation = np.concatenate([basic_columns, free_columns])
-    A = A[:, cols_permutation]
-
-    Q = np.eye(cols_permutation.size)
-    Q = Q[:, cols_permutation]
-
-    return A, P, Q
+    return A, P, np.array(pivot_columns)
 
 
 def rref(A: np.ndarray, tol: float = 1e-9,
-         column_permutation: bool = False
+         get_pivot_columns: bool = False
          ) -> Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
     """
     Compute the Reduced Row Echelon Form (RREF) of matrix A and the transformation matrix P.
@@ -223,10 +205,10 @@ def rref(A: np.ndarray, tol: float = 1e-9,
     Args:
         A (np.ndarray): The input matrix.
         tol (float): Tolerance for considering values as zero.
-        column_permutation (bool): Whether to allow column permutations to move all basic columns to the left.
+        get_pivot_columns (bool): Whether to get the pivto columns to the left.
     Returns:
         Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]: 
-        The RREF of the matrix and the transformation matrix P. If column_permutation is True, also returns the column permutation matrix Q.
+        The RREF of the matrix and the transformation matrix P. If get_pivot_columns is True, also returns the list of pvot columns
     """
     A = A.copy().astype(float)
     rows, cols = A.shape
@@ -235,49 +217,17 @@ def rref(A: np.ndarray, tol: float = 1e-9,
     r = 0
     pivot_columns = []
 
-    while r < rows and c < cols:
-        # Find the row with the maximum absolute value in column c
-        max_row = np.argmax(np.abs(A[r:rows, c])) + r
-        if np.abs(A[max_row, c]) <= tol:
-            A[r:, c] = 0.0
-            c += 1
-            continue  # Skip column if all entries are negligible
+    for c in range(cols):
+        if r >= rows:
+            break
+        if make_unit_column(A, P, c, r, clean_above=True, tol=tol):
+            pivot_columns.append(c)
+            r += 1
 
-        # Swap current row with max_row
-        A[[r, max_row]] = A[[max_row, r]]
-        P[[r, max_row]] = P[[max_row, r]]
-
-        # Normalize the pivot row
-        pivot = A[r, c]
-        A[r] = A[r] / pivot
-        P[r] = P[r] / pivot
-
-        # Eliminate all other entries in column c
-        for i in range(rows):
-            if i != r:
-                factor = A[i, c]
-                A[i] -= factor * A[r]
-                P[i] -= factor * P[r]
-
-        pivot_columns.append(c)
-        r += 1
-        c += 1
-
-    if not column_permutation:
+    if not get_pivot_columns:
         return A, P
 
-    # Identify basic and free columns
-    basic_columns = np.array(pivot_columns)
-    free_columns = np.setdiff1d(np.arange(cols), basic_columns)
-
-    # Permute columns to move all basic columns to the left
-    cols_permutation = np.concatenate([basic_columns, free_columns])
-    A = A[:, cols_permutation]
-
-    Q = np.eye(cols_permutation.size)
-    Q = Q[:, cols_permutation]
-
-    return A, P, Q
+    return A, P, np.array(pivot_columns)
 
 
 def my_PQ_decomp(A: np.ndarray, tol: float = 1e-9) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -289,26 +239,33 @@ def my_PQ_decomp(A: np.ndarray, tol: float = 1e-9) -> Tuple[np.ndarray, np.ndarr
         tol (float): Tolerance for considering values as zero.
 
     Returns:
-        Tuple[np.ndarray, np.ndarray, np.ndarray]: The decomposed matrices A, P, and Q.
+        Tuple[np.ndarray, np.ndarray, np.ndarray]: The decomposed matrices A, P, and column rescaling.
     """
     if A.shape[0] != A.shape[1]-1:
         raise ValueError("Matrix should have N columns and N-1 rows")
     if np.linalg.matrix_rank(A, tol=tol) < A.shape[0]:
         raise ValueError("Matrix is not full rank")
 
-    Arref, P, Q = rref(A, tol=tol, column_permutation=True)
+    Arref, P, pivot_columns = rref(A, tol=tol, get_pivot_columns=True)
+    free_column = np.setdiff1d(np.arange(A.shape[1]), pivot_columns)
+    if free_column.size > 1:
+        raise ValueError("More than one free column")
+    free_column = free_column[0]
 
-    Mvec = np.ones_like(Arref[:, -1])
-    np.divide(1.0, Arref[:, -1], out=Mvec, where=~
-              np.isclose(Arref[:, -1], 0.0, atol=tol))
+    Mvec = np.ones_like(Arref[:, free_column])
+    np.divide(1.0, Arref[:, free_column], out=Mvec, where=~
+              np.isclose(Arref[:, free_column], 0.0, atol=tol))
     M = np.diag(Mvec)
 
     Arref = M @ Arref
     P = M @ P
-    Qnew = np.diag(np.append(1.0 / np.diagonal(Arref), -1.0))
-    Arref = Arref @ Qnew
+    col_rescaling = np.ones_like(Arref[0])
+    col_rescaling[pivot_columns] = 1.0 / \
+        Arref[np.arange(pivot_columns.size), pivot_columns]
+    col_rescaling[free_column] = -1
+    Arref = Arref * col_rescaling[np.newaxis, :]
     Arref = remove_small_vals(Arref, tol=tol)
-    return Arref, P, Q @ Qnew
+    return Arref, P, col_rescaling, pivot_columns
 
 # Author: Franco N. Pinan Basualdo
 # Project: Curve Coupling

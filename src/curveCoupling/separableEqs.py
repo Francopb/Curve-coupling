@@ -145,7 +145,7 @@ def invertCase(solve_for_idx: int,
     if not (0 <= solve_for_idx < numCurves):
         raise ValueError(
             "Index should be between zero and N-1 (N is number of curves)")
-    if constr.shape[1] != numCurves:
+    if constr.size > 0 and constr.shape[1] != numCurves:
         raise ValueError(
             "constraintMatrix need to have the same number of columns as length of outputVectors")
 
@@ -165,12 +165,10 @@ def invertCase(solve_for_idx: int,
     total_swapped = total.copy()
     total_swapped[:, [0, solve_for_idx+1]
                   ] = total_swapped[:, [solve_for_idx+1, 0]]
-    total_solved, P = make_unit_column(total_swapped, col=0, tol=1e-6)
-    if total_solved[0, 0] != 1.0:
+    P = np.eye(total_swapped.shape[0])
+    total_solved = total_swapped.copy()
+    if not make_unit_column(total_solved, P, col=0, tol=1e-6):
         raise ValueError("Independent variable")
-    if total_solved.shape[0] > 1 and np.any(total_solved[1:, 0] != 0):
-        raise ValueError(
-            "Something failed in Row Echelon Form computation")
 
     if constr.size > 0:
         new_constr = total_solved[1:, 1:]
@@ -218,14 +216,13 @@ def invertProblem(solve_for_idx: int,
     - Inverted constraintMatrices_lst and outputVectors_lst if not constants were given.
     - Inverted constraintMatrices_lst, outputVectors_lst, constraintConstant_lst and outputConstant_lst
     """
-
     numCurves = outputVectors_lst[0].size
     nDims = len(constraintMatrices_lst)
 
     if not (0 <= solve_for_idx < numCurves):
         raise ValueError(
             "Index should be between zero and N-1 (N is number of curves)")
-    if any([c.size != 0 and c.shape[1] != numCurves for c in constraintMatrices_lst]):
+    if any([c.size > 0 and c.shape[1] != numCurves for c in constraintMatrices_lst]):
         raise ValueError(
             "All constraintMatrices need to have the same number of columns as length of outputVectors")
     if any([c.size != numCurves for c in outputVectors_lst]):
@@ -268,21 +265,21 @@ def invertProblem(solve_for_idx: int,
         new_constr_cte_lst = []
         new_out_cte_lst = []
     for i in range(nDims):
-        try:
-            if provided_ctes:
-                new_constr, new_out, new_constr_cte, new_out_cte = invertCase(solve_for_idx,
-                                                                              constraintMatrices_lst[i], outputVectors_lst[i], constraintConstant_lst[i], outputConstant_lst[i])
-                new_constr_lst.append(new_constr)
-                new_out_lst.append(new_out)
-                new_constr_cte_lst.append(new_constr_cte)
-                new_out_cte_lst.append(new_out_cte)
-            else:
-                new_constr, new_out = invertCase(solve_for_idx,
-                                                 constraintMatrices_lst[i], outputVectors_lst[i])
-                new_constr_lst.append(new_constr)
-                new_out_lst.append(new_out)
-        except Exception as e:
-            raise ValueError(f"At dimension {i}: {e}")
+        # try:
+        if provided_ctes:
+            new_constr, new_out, new_constr_cte, new_out_cte = invertCase(solve_for_idx,
+                                                                          constraintMatrices_lst[i], outputVectors_lst[i], constraintConstant_lst[i], outputConstant_lst[i])
+            new_constr_lst.append(new_constr)
+            new_out_lst.append(new_out)
+            new_constr_cte_lst.append(new_constr_cte)
+            new_out_cte_lst.append(new_out_cte)
+        else:
+            new_constr, new_out = invertCase(solve_for_idx,
+                                             constraintMatrices_lst[i], outputVectors_lst[i])
+            new_constr_lst.append(new_constr)
+            new_out_lst.append(new_out)
+        # except Exception as e:
+        #     raise ValueError(f"At dimension {i}: {e}")
 
     if provided_ctes:
         return new_constr_lst, new_out_lst, new_constr_cte_lst, new_out_cte_lst
