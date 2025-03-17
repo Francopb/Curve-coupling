@@ -45,13 +45,16 @@ class ndcurve:
     @classmethod
     def createList(cls, Ldata: List[np.ndarray]) -> List['ndcurve']:
         return [ndcurve(d) for d in Ldata]
-
-    def scale(self, factor: float, dim: Optional[int] = None) -> 'ndcurve':
+    
+    def copy(self) -> 'ndcurve':
         new_function = interpolate.CubicSpline.construct_fast(self.function.c.copy(
         ), self.function.x.copy(), extrapolate=self.function.extrapolate)
+        return ndcurve._from_function(new_function)
+
+    def scale(self, factor: float, dim: Optional[int] = None):
         if dim is None:
             if self.getNDim() == 0:
-                new_function.c *= factor
+                self.function.c *= factor
             else:
                 raise ValueError(
                     "Must specify dimension of curve with dimensions")
@@ -60,15 +63,13 @@ class ndcurve:
                 raise ValueError(
                     "Cannot specify dimension of curve with dimension zero")
             else:
-                new_function.c[:, :, dim] *= factor
-        return ndcurve._from_function(new_function)
+                self.function.c[:, :, dim] *= factor
+        return self
 
-    def add_cte(self, factor: float, dim: Optional[int] = None) -> 'ndcurve':
-        new_function = interpolate.CubicSpline.construct_fast(self.function.c.copy(
-        ), self.function.x.copy(), extrapolate=self.function.extrapolate)
+    def add_cte(self, factor: float, dim: Optional[int] = None):
         if dim is None:
             if self.getNDim() == 0:
-                new_function.c[-1, :] += factor
+                self.function.c[-1, :] += factor
             else:
                 raise ValueError(
                     "Must specify dimension of curve with dimensions")
@@ -77,9 +78,8 @@ class ndcurve:
                 raise ValueError(
                     "Cannot specify dimension of curve with dimension zero")
             else:
-                new_function.c[-1, :, dim] += factor
-        return ndcurve._from_function(new_function)
-
+                self.function.c[-1, :, dim] += factor
+        return self
 
 class ndcurve_matrix:
     def __init__(self, curves: List[ndcurve]) -> None:
