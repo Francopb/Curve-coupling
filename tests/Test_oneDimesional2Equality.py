@@ -23,8 +23,6 @@ def run():
     Constr_new, P, col_rescaling, pivot_cols = my_PQ_decomp(Constr)
     Constr_cte_new = np.dot(P, Constr_cte)
 
-    print(Constr_new)
-
     col_disp = np.zeros_like(Constr[0])
     col_disp[pivot_cols] = Constr_cte_new
     curves_new = [c.copy().scale(1.0/a).add_cte(b)
@@ -39,6 +37,12 @@ def run():
     prob = curveCouplingProblem(curves, Constr, Out, Constr_cte, Out_cte)
     prob_new = curveCouplingProblem(
         curves_new, Constr_new, Out_new, None, Out_cte_new)
+    
+    for _ in range(100):
+        param = np.random.uniform(0.0,1.0,len(curves))
+        assert np.allclose(np.dot(P,prob.computeConstraint(param)), prob_new.computeConstraint(param)), "Failed constraint comparison."
+        assert np.allclose(prob.computeOutput(param), prob_new.computeOutput(param)), "Failed output comparison."
+    
     out, res = solveCurveCoupling(prob, param_range=param_range)
     out_new, res_new = solveCurveCoupling(prob_new, param_range=param_range)
     fig = plt.figure()
