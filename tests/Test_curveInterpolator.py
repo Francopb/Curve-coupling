@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib import ticker
 from curveCoupling.curveGenerators import *
 from curveCoupling import ndcurve
 
@@ -30,8 +31,12 @@ def run():
 
     axs[0, 1].set_xlabel("$t$")
     axs[0, 1].set_ylabel("$\dot{c}_0$")
+    axs[0, 1].yaxis.set_major_locator(ticker.MaxNLocator(
+        integer=True, nbins='auto', steps=[1, 2, 2.5, 5, 10]))
     axs[1, 1].set_xlabel("$t$")
     axs[1, 1].set_ylabel("$\dot{c}_1$")
+    axs[1, 1].yaxis.set_major_locator(ticker.MaxNLocator(
+        integer=True, nbins='auto', steps=[1, 2, 2.5, 5, 10]))
 
 
 if __name__ == "__main__":
