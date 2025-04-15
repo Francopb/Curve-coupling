@@ -57,6 +57,8 @@ def draw(n):
     axs[-1].set_xlim([0.0, 1.0])
     axs[-1].set_ylim([0.0, 1.0])
     axs[-1].set_zlim([0.0, 1.0])
+    axs[-1].set_aspect('equal')
+
 
     axs[-2].scatter(out[n, 0], out[n, 1], color='r')
     axs[-2].set_xlim([0.0, 2.0])

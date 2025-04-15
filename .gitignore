@@ -22,3 +22,6 @@ build/
 *.venv
 .env/
 .venv/
+
+# Ignore other use scripts
+user_scripts/

@@ -69,6 +69,7 @@ def plotResults(fig: Figure,
     axs[-1].yaxis.set_major_locator(ticker.LinearLocator(3))
     axs[-1].set_xlabel(r"$t_0$")
     axs[-1].set_ylabel(r"$t_1$")
+    axs[-1].set_aspect('equal')
 
     for out in out_lst:
         axs[-2].plot(out[:, 0], out[:, 1])
@@ -147,6 +148,7 @@ def plotResults_stability(fig: Figure,
     axs[-1].yaxis.set_major_locator(ticker.LinearLocator(3))
     axs[-1].set_xlabel(r"$t_0$")
     axs[-1].set_ylabel(r"$t_1$")
+    axs[-1].set_aspect('equal')
 
     for out, s in zip(out_lst, out_stability_lst):
         plot_stability(axs[-2], s, out[:, 0], out[:, 1])
