@@ -38,12 +38,13 @@ class snapPoint:
             return -1
 
 
-def findSnapPoints(curve: ndcurve) -> List[snapPoint]:
+def findSnapPoints(curve: ndcurve, add_init_end: bool = True,) -> List[snapPoint]:
     """
     Find snap points (local maxima and minima in both axes) of a given curve.
 
     Args:
         curve (ndcurve): The input curve.
+        add_init_end (bool): Whether to add the initial and final points.
 
     Returns:
         List[snapPoint]: List of snap points.
@@ -64,8 +65,9 @@ def findSnapPoints(curve: ndcurve) -> List[snapPoint]:
         k = (xd * ydd - yd * xdd) / (xd ** 2 + yd ** 2) ** (3.0 / 2.0)
         snapPoints.append(snapPoint(cp.param, cp.val, k))
 
-    snapPoints.insert(0, snapPoint(0.0, curve(0.0)))
-    snapPoints.append(snapPoint(1.0, curve(1.0)))
+    if add_init_end:
+        snapPoints.insert(0, snapPoint(0.0, curve(0.0)))
+        snapPoints.append(snapPoint(1.0, curve(1.0)))
 
     snapPoints.sort(key=lambda x: x.param)
     return snapPoints

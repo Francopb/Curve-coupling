@@ -57,7 +57,7 @@ class criticalPoint:
 
 
 def findCriticalPoints(
-    curves: Union[ndcurve, List[ndcurve]],
+    curves: ndcurve,
     analyze_index: Optional[int] = None,
     do_filter: bool = True,
     add_init_end: bool = True,
@@ -66,7 +66,7 @@ def findCriticalPoints(
     Find critical points (local maxima and minima) of a given curve.
 
     Args:
-        curves (Union[ndcurve, List[ndcurve]]): The input curve(s).
+        curves (ndcurve): The input curve.
         analyze_index (Optional[int]): Index to find critical points. If None, a scalar function is assumed.
         do_filter (bool): Whether to filter consecutive critical points of same sign.
         add_init_end (bool): Whether to add the initial and final points.
@@ -74,8 +74,6 @@ def findCriticalPoints(
     Returns:
         List[criticalPoint]: List of critical points, their values, and their second derivative.
     """
-    if isinstance(curves, list):
-        return [findCriticalPoints(c, analyze_index=analyze_index) for c in curves]
 
     curve_analyse = curves.extractIndex(analyze_index)
     fd_analyse = curve_analyse.function.derivative(nu=1)
@@ -241,8 +239,7 @@ def findSingularities_Equality(
         Tuple[np.ndarray, np.ndarray, List[int], List[np.ndarray]]: List of singularities values, their parameters, orders, and directions.
     """
 
-    criticalPoints = findCriticalPoints(
-        prb.curves, analyze_index=prb.match_index)
+    criticalPoints = [findCriticalPoints(c, analyze_index=prb.match_index) for c in prb.curves]
     singularity_res, singularity_idx = __findSingularities_critPoints_mult(
         criticalPoints, tol=tol)
 
@@ -564,8 +561,7 @@ def findIslands_Equality(
         Tuple[np.ndarray, np.ndarray, np.ndarray]: List of intersection points, their parameters, and initial directions.
     """
 
-    criticalPoints = findCriticalPoints(
-        prb.curves, analyze_index=prb.match_index)
+    criticalPoints = [findCriticalPoints(c, analyze_index=prb.match_index) for c in prb.curves]
     intersections, indices = __findIslands_critPoints_mult(
         criticalPoints, tol=tol)
 

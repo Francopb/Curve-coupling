@@ -1,5 +1,6 @@
 from curveCoupling.compliantElements.graphAnalysis import generate_network_equations
-from curveCoupling.compliantElements.stabilityAnalysis import (getEigenFunc,
+from curveCoupling.compliantElements.stabilityAnalysis import (findSnapPoints,
+                                                               getEigenFunc,
                                                                getEigenVals,
                                                                getEigen_coupling_analytic,
                                                                getEigen_coupling_analytic_Equality,
