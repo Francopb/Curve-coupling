@@ -323,6 +323,7 @@ def findSingularities_Equality(
 def solveCurveCoupling_Singularities_Equality(prb: curveCouplingProblem_Equality,
                                               tol: float = 1e-6,
                                               d_step: float = 5e-2,
+                                              **kwargs
                                               ) -> Tuple[np.ndarray, np.ndarray, List[int], List[np.ndarray]]:
     """
     Finds the curve coupling considering singularities.
@@ -349,7 +350,7 @@ def solveCurveCoupling_Singularities_Equality(prb: curveCouplingProblem_Equality
     sing_tangents = [computeTangents(o, d)
                      for o, d in zip(sing_orders, sing_dirs)]
 
-    out, res = solveCurveCoupling_Equality(prb, param_stop=sing_seeds)
+    out, res = solveCurveCoupling_Equality(prb, param_stop=sing_seeds, **kwargs)
     out_lst = [out]
     res_lst = [res]
 
@@ -361,7 +362,7 @@ def solveCurveCoupling_Singularities_Equality(prb: curveCouplingProblem_Equality
             d_res = (factor * d) ** order
             sing_res = d_res + seed
             out, res = solveCurveCoupling_Equality(
-                prb, param_start=sing_res, param_stop=sing_seeds, initial_dir=t, it_max=5000)
+                prb, param_start=sing_res, param_stop=sing_seeds, initial_dir=t, it_max=5000, **kwargs)
             out = np.concatenate([[sing_out], out], axis=0)
             res = np.concatenate([[seed], res], axis=0)
             out_lst.append(out)
@@ -598,6 +599,7 @@ def findIslands_Equality(
 
 def solveCurveCoupling_Islands_Equality(prb: curveCouplingProblem_Equality,
                                         tol: float = -1e-6,
+                                        **kwargs
                                         ) -> Tuple[np.ndarray, np.ndarray, List[int], List[np.ndarray]]:
     """
     Finds the curve coupling considering islands.
@@ -611,13 +613,13 @@ def solveCurveCoupling_Islands_Equality(prb: curveCouplingProblem_Equality,
     """
     _, islands_seeds, islands_dirs = findIslands_Equality(prb, tol=tol)
 
-    out, res = solveCurveCoupling_Equality(prb)
+    out, res = solveCurveCoupling_Equality(prb, **kwargs)
     res_lst = [res]
     out_lst = [out]
 
     for s, d in zip(islands_seeds, islands_dirs):
         out, res = solveCurveCoupling_Equality(
-            prb, param_start=s, stop_circulation=True, initial_dir=d)
+            prb, param_start=s, stop_circulation=True, initial_dir=d, **kwargs)
         res_lst.append(res)
         out_lst.append(out)
 

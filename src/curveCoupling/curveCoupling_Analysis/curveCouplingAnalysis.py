@@ -252,7 +252,8 @@ def findSingularities(prb: curveCouplingProblem,
 def solveCurveCoupling_Singularities(prb: curveCouplingProblem,
                                      iter_points=10,
                                      tol: float = 1e-2,
-                                     d_step: float = 5e-2) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+                                     d_step: float = 5e-2,
+                                     **kwargs) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """
     Finds the curve coupling considering singularities.
 
@@ -281,7 +282,7 @@ def solveCurveCoupling_Singularities(prb: curveCouplingProblem,
     sing_tangents = [computeTangents(o, d)
                      for o, d in zip(sing_orders, sing_dirs)]
 
-    out, res = solveCurveCoupling(prb, param_stop=sing_seeds)
+    out, res = solveCurveCoupling(prb, param_stop=sing_seeds, **kwargs)
     out_lst = [out]
     res_lst = [res]
 
@@ -293,7 +294,7 @@ def solveCurveCoupling_Singularities(prb: curveCouplingProblem,
             d_res = (factor * d) ** order
             sing_res = d_res + seed
             out, res = solveCurveCoupling(
-                prb, param_start=sing_res, param_stop=sing_seeds, initial_dir=t, it_max=5000)
+                prb, param_start=sing_res, param_stop=sing_seeds, initial_dir=t, it_max=5000, **kwargs)
             out = np.concatenate([[sing_out], out], axis=0)
             res = np.concatenate([[seed], res], axis=0)
             out_lst.append(out)
@@ -307,6 +308,7 @@ def solveCurveCoupling_Singularities(prb: curveCouplingProblem,
 
 def solveCurveCoupling_Islands(prb: curveCouplingProblem,
                                iter_points=10,
+                               **kwargs
                                ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """
     Finds the curve coupling considering islands.
@@ -319,7 +321,7 @@ def solveCurveCoupling_Islands(prb: curveCouplingProblem,
         Tuple[List[np.ndarray], List[np.ndarray]]: Output curves and results in parametric space.
     """
 
-    out, res = solveCurveCoupling(prb)
+    out, res = solveCurveCoupling(prb, **kwargs)
     out_lst = [out]
     res_lst = [res]
 
@@ -332,7 +334,7 @@ def solveCurveCoupling_Islands(prb: curveCouplingProblem,
     for r in res_brute:
         if minDist(r) > 0.01:
             out, res = solveCurveCoupling(
-                prb, param_start=r, stop_circulation=True)
+                prb, param_start=r, stop_circulation=True, **kwargs)
             out_lst.append(out)
             res_lst.append(res)
 
