@@ -192,7 +192,7 @@ class curveCouplingProblem_Split:
                     continue
                 if c.ndim != 2:
                     raise ValueError(
-                        "For zero dimensional curves (return a float), constraintMatrices must be a 2 dimensional array")
+                        "For dimensional curves, constraintMatrices must be a 2 dimensional array")
                 if c.shape[1] != self.numCurves:
                     raise ValueError(
                         "constraintMatrices dim 1 must the the number of curves")
@@ -202,7 +202,7 @@ class curveCouplingProblem_Split:
             for c in self.outputVectors_lst:
                 if c.ndim != 1:
                     raise ValueError(
-                        "For zero dimensional curves (return a float), outputVectors must be a 1 dimensional array")
+                        "For dimensional curves (return a float), outputVectors must be a 1 dimensional array")
                 if c.shape[0] != self.numCurves:
                     raise ValueError(
                         "outputVectors dim 0 must the the number of curves")
