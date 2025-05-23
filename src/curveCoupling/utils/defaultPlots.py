@@ -167,15 +167,15 @@ def plotResults_stability(fig: Figure,
     return axs
 
 
-def plot_stability(ax, stability, x, y, z=None):
+def plot_stability(ax, stability, x, y, z=None, **lc_kwargs):
     custom_cmap = mcolors.LinearSegmentedColormap.from_list(
         "custom_cmap", ["tab:red", "tab:olive", "tab:green"])
     # You can adjust vmin and vmax as needed
     norm = mcolors.Normalize(vmin=-1, vmax=1)
     if z is None == 2:
-        colored_line(ax, stability, x, y, norm=norm, cmap=custom_cmap)
+        colored_line(ax, stability, x, y, norm=norm, cmap=custom_cmap, **lc_kwargs)
     else:
-        colored_line(ax, stability, x, y, z, norm=norm, cmap=custom_cmap)
+        colored_line(ax, stability, x, y, z, norm=norm, cmap=custom_cmap, **lc_kwargs)
 
 # Author: Franco N. Pinan Basualdo
 # Project: Curve Coupling
