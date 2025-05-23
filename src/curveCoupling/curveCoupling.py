@@ -716,7 +716,7 @@ def solveCurveCoupling(
     flag_stop = False
     it = 0
 
-    while it < it_max and np.all(param_prev <= param_range[1]) and np.all(param_prev >= param_range[0]):
+    while it < it_max and np.any(param_prev <= param_range[1]) and np.any(param_prev >= param_range[0]):
         try:
             it += 1
             param = solveMult(param_guess, param_prev, step)
