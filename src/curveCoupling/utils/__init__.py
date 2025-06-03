@@ -1,4 +1,4 @@
-from curveCoupling.utils.coloredLines import colored_line
+from curveCoupling.utils.defaultPlots import *
 
 # Author: Franco N. Pinan Basualdo
 # Project: Curve Coupling

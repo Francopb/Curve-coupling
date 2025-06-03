@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import (gridspec, ticker, colors as mcolors)
 from matplotlib.figure import Figure
 from typing import List, Optional
-from curveCoupling.utils import colored_line
+from curveCoupling.utils.coloredLines import *
 
 
 def plotResults(fig: Figure,
@@ -173,9 +173,9 @@ def plot_stability(ax, stability, x, y, z=None, **lc_kwargs):
     # You can adjust vmin and vmax as needed
     norm = mcolors.Normalize(vmin=-1, vmax=1)
     if z is None == 2:
-        colored_line(ax, stability, x, y, norm=norm, cmap=custom_cmap, **lc_kwargs)
+        colored_line_merged(ax, stability, x, y, norm=norm, cmap=custom_cmap, **lc_kwargs)
     else:
-        colored_line(ax, stability, x, y, z, norm=norm, cmap=custom_cmap, **lc_kwargs)
+        colored_line_merged(ax, stability, x, y, z, norm=norm, cmap=custom_cmap, **lc_kwargs)
 
 # Author: Franco N. Pinan Basualdo
 # Project: Curve Coupling
