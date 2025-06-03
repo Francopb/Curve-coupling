@@ -130,11 +130,11 @@ def plotResults_stability(fig: Figure,
     range_res = np.round(np.stack((min_res, max_res), axis=1), decimals=1)
 
     if numCurves == 2:
-        for res, s in zip(res_lst, out_stability_lst):
-            plot_stability(axs[-1], s, res[:, 0], res[:, 1])
+        for i, (res, s) in enumerate(zip(res_lst, out_stability_lst)):
+            plot_stability(axs[-1], s, res[:, 0], res[:, 1], is_closed=i>0)
     elif numCurves == 3:
-        for res, s in zip(res_lst, out_stability_lst):
-            plot_stability(axs[-1], s, res[:, 0], res[:, 1], res[:, 2])
+        for i, (res, s) in enumerate(zip(res_lst, out_stability_lst)):
+            plot_stability(axs[-1], s, res[:, 0], res[:, 1], res[:, 2], is_closed=i>0)
 
     if numCurves == 3:
         axs[-1].set_zlim(range_res[2])
@@ -150,8 +150,8 @@ def plotResults_stability(fig: Figure,
     axs[-1].set_ylabel(r"$t_1$")
     axs[-1].set_aspect('equal')
 
-    for out, s in zip(out_lst, out_stability_lst):
-        plot_stability(axs[-2], s, out[:, 0], out[:, 1])
+    for i, (out, s) in enumerate(zip(out_lst, out_stability_lst)):
+        plot_stability(axs[-2], s, out[:, 0], out[:, 1], is_closed=i>0)
 
     min_out = np.min([np.min(out, axis=0) for out in out_lst], axis=0)
     max_out = np.max([np.max(out, axis=0) for out in out_lst], axis=0)
@@ -167,15 +167,15 @@ def plotResults_stability(fig: Figure,
     return axs
 
 
-def plot_stability(ax, stability, x, y, z=None, **lc_kwargs):
+def plot_stability(ax, stability, x, y, z=None, is_closed=False, **lc_kwargs):
     custom_cmap = mcolors.LinearSegmentedColormap.from_list(
         "custom_cmap", ["tab:red", "tab:olive", "tab:green"])
     # You can adjust vmin and vmax as needed
     norm = mcolors.Normalize(vmin=-1, vmax=1)
     if z is None == 2:
-        colored_line_merged(ax, stability, x, y, norm=norm, cmap=custom_cmap, **lc_kwargs)
+        colored_line_merged(ax, stability, x, y, is_closed=is_closed, norm=norm, cmap=custom_cmap, **lc_kwargs)
     else:
-        colored_line_merged(ax, stability, x, y, z, norm=norm, cmap=custom_cmap, **lc_kwargs)
+        colored_line_merged(ax, stability, x, y, z, is_closed=is_closed, norm=norm, cmap=custom_cmap, **lc_kwargs)
 
 # Author: Franco N. Pinan Basualdo
 # Project: Curve Coupling
