@@ -225,16 +225,24 @@ def getEigen_coupling_analytic(
     input_eigen = getEigenFuncs(prb.curves)
 
     constr_lst = joint2split_constr(prb.ConstraintMatrices)
-    out_lst = joint2split_out(prb.OutputMatrices)
 
-    Total_constr_Disp = np.vstack([out_lst[0], constr_lst[0]])
-    Total_constr_Forc = np.vstack([out_lst[1], constr_lst[1]])
+    # out_lst = joint2split_out(prb.OutputMatrices)
+
+    # Total_constr_Disp = np.vstack([out_lst[0], constr_lst[0]])
+    # Total_constr_Forc = np.vstack([out_lst[1], constr_lst[1]])
+
+    # Possible_Disp = my_null_space(Total_constr_Disp)
+    # Possible_Forc = my_null_space(Total_constr_Forc)
+
+    Disp_constr = constr_lst[0]
+    Force_constr = constr_lst[1]
+
+    Possible_Disp = Force_constr.T
+    Possible_Forc = Disp_constr.T
 
     if EnergyVector is None:
         EnergyVector = np.ones(prb.numCurves)
 
-    Possible_Disp = my_null_space(Total_constr_Disp)
-    Possible_Forc = my_null_space(Total_constr_Forc)
 
     def compute_eigen_analytic(x: np.ndarray) -> int:
         input_eigen_t = np.sum(input_eigen(x))
