@@ -50,9 +50,9 @@ def _reorder_equations(prb: curveCouplingProblem,
         Modified_Jn.append(Permutation @ Jn[-1])
         aux_Jn = np.array(Modified_Jn)
 
-    M_exp = np.zeros(Jn[0].shape, dtype=int)
+    M_exp = np.full(Jn[0].shape, -1, dtype=int)
     for i, J in enumerate(Modified_Jn):
-        M_exp[np.logical_and(np.abs(J) > tol, M_exp == 0)] = i + 1
+        M_exp[np.logical_and(np.abs(J) > tol, M_exp < 0)] = i + 1
 
     return aux_Jn, M_exp
 
@@ -89,29 +89,42 @@ def _find_exponents(M_exp: np.ndarray) -> np.ndarray:
                 return False
         return True
 
-    def remove_prop(candidates):
+    def fractional_to_integer(candidate):
+        """
+        Convert a candidate with fractional values to integer values.
+        """
+        numerators = [a.numerator for a in candidate]
+        denominators = [a.denominator for a in candidate]
+        lcm = np.lcm.reduce(denominators)
+        return np.array([n * lcm // d for n, d in zip(numerators, denominators)])
+
+    def remove_equal(candidates):
         N_cand = len(candidates)
         if N_cand <= 1:
             return
         for i in reversed(range(N_cand)):
             for j in range(i):
-                comp = candidates[j] * candidates[i][0] / candidates[j][0]
-                if np.all(candidates[i] == comp):
+                if np.all(candidates[i] == candidates[j]):
                     candidates.pop(i)
-                break
+                    break
+        return candidates
 
     def extend_candidate(candidate, explored_equations):
         success = False
+        current_test = None
         for eq_index in range(num_curves - 1):
             if eq_index in explored_equations:
                 continue
+            current_test = eq_index
             eq_exponent = M_exp[eq_index]
             eq_candidate_exp = eq_exponent * candidate
             if np.any(eq_candidate_exp > 0):
                 success = True
                 break
         if not success:
-            return [], None
+            if current_test is None:
+                print("No more equations to explore")
+            return [candidate.copy()], current_test
         known_exp = np.min(eq_candidate_exp[eq_candidate_exp > 0])
         new_candidates = []
         for i in range(num_curves):
@@ -132,17 +145,12 @@ def _find_exponents(M_exp: np.ndarray) -> np.ndarray:
                     candidates.append(new_cand)
                     explored_equations.append(new_expl_eq)
 
+    candidates = remove_equal([fractional_to_integer(c) for c in candidates])
     if len(candidates) == 0:
         print("No candidate")
-    remove_prop(candidates)
     if len(candidates) > 1:
         print("More than one candidate!!!")
-    exponents = candidates[0]
-    numerators = [a.numerator for a in exponents]
-    denominators = [a.denominator for a in exponents]
-
-    lcm = np.lcm.reduce(denominators)
-    return np.array([n * lcm // d for n, d in zip(numerators, denominators)])
+    return candidates[0]
 
 
 def _find_constant(M_exp: np.ndarray, Jn: np.ndarray, exponents: np.ndarray) -> np.ndarray:
@@ -157,12 +165,18 @@ def _find_constant(M_exp: np.ndarray, Jn: np.ndarray, exponents: np.ndarray) -> 
     Returns:
         np.ndarray: Parameters constants.
     """
+
     num_curves = M_exp.shape[1]
     M_exp_candidate = np.where(
-        M_exp > 0, M_exp * exponents[np.newaxis, :], np.inf)
-    leading_order = np.min(M_exp_candidate, axis=1)
+        M_exp >= 0, M_exp * exponents[np.newaxis, :], -1)
+    M_exp_candidate_non_zero = np.where(
+        M_exp_candidate > 0, M_exp_candidate, np.inf)
+    leading_order = np.min(M_exp_candidate_non_zero, axis=1)
     M_exp_leading_order = np.where(
-        M_exp_candidate == leading_order[:, np.newaxis], M_exp, 0)
+        M_exp_candidate == leading_order[:, np.newaxis], M_exp, -1)
+    M_exp_leading_order[np.isinf(leading_order),
+                        :] = M_exp[np.isinf(leading_order), :]
+    safe_exponents = np.where(M_exp_leading_order >= 0, M_exp_leading_order, 0)
 
     constants_mat = np.zeros((num_curves - 1, num_curves))
     for i in range(np.max(M_exp_leading_order)):
@@ -171,8 +185,9 @@ def _find_constant(M_exp: np.ndarray, Jn: np.ndarray, exponents: np.ndarray) -> 
         constants_mat += new_mat
 
     def evaluate_constant(u):
-        u_mat = np.where(M_exp_leading_order > 0,
-                         u[np.newaxis, :] ** M_exp_leading_order, 0.0)
+        
+        u_mat = np.where(M_exp_leading_order >= 0,
+                         u[np.newaxis, :] ** safe_exponents, 0.0)
         return np.sum(constants_mat * u_mat, axis=1)
 
     def f_opt(u):
@@ -342,6 +357,7 @@ def solveCurveCoupling_Islands(prb: curveCouplingProblem,
     for idx in removed_idx:
         out_lst.pop(idx)
     return out_lst, res_lst
+
 
 # Author: Franco N. Pinan Basualdo
 # Project: Curve Coupling
