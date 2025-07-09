@@ -110,7 +110,7 @@ Comparison of generated curves:
   <img src="assets/curveGenerator.png" alt="Generated curves" style="border-radius: 15px;">
 </p>
 
-### Interpolating and extrpolating Curves
+### Interpolating and extrapolating Curves
 
 Generate a function that interpolates and extrapolates data points as a parametric curve using the class `ndcurves`:
 
