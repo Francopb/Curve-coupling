@@ -2,9 +2,8 @@ import numpy as np
 from typing import *
 from curveCoupling.curveInterpExtrapFunc import ndcurve
 from curveCoupling.curveCoupling_Analysis.curveCouplingAnalysis_Equality import findCriticalPoints
-from curveCoupling.utils.matrixOperations import my_null_space
 from curveCoupling.curveCoupling import curveCouplingProblem, curveCouplingProblem_Equality
-from curveCoupling.separableEqs import joint2split_constr, joint2split_out
+from curveCoupling.separableEqs import joint2split_constr
 
 
 class snapPoint:
@@ -12,22 +11,23 @@ class snapPoint:
     A class to represent a snap point, its value, and curvature.
     """
 
-    def __init__(self, param: float, val: np.ndarray, curv: float = 0.0):
+    def __init__(self, param: float, val: np.ndarray, dim: Optional[int] = None, curv: float = 0.0):
         self.param = param
         self.val = val
         self.k = curv
+        self.dim = dim
 
     def __str__(self):
-        return f"Snap point (at {self.param}, value {self.val}, curvature {self.k})"
+        return f"Snap point (at {self.param}, value {self.val}, curvature {self.k}, dimension {self.dim})"
 
     def __repr__(self) -> str:
         return self.__str__()
 
     def sameType(self, other: 'snapPoint') -> bool:
-        return self.getType() * other.getType() > 0.0
+        return self.getType() * other.getType() > 0
 
     def opositeType(self, other: 'snapPoint') -> bool:
-        return self.getType() * other.getType() < 0.0
+        return self.getType() * other.getType() < 0
 
     def getType(self) -> int:
         if self.k == 0:
@@ -53,17 +53,17 @@ def findSnapPoints(curve: ndcurve, add_init_end: bool = True,) -> List[snapPoint
     if dim != 2:
         raise ValueError("Only possible for 2-dimensional case")
 
-    critPoints = []
+    snapPoints = []
+
     for i in range(dim):
-        critPoints += findCriticalPoints(curve,
+        critPoints = findCriticalPoints(curve,
                                          analyze_index=i, add_init_end=False)
 
-    snapPoints = []
-    for cp in critPoints:
-        xd, yd = curve(cp.param, nu=1)
-        xdd, ydd = curve(cp.param, nu=2)
-        k = (xd * ydd - yd * xdd) / (xd ** 2 + yd ** 2) ** (3.0 / 2.0)
-        snapPoints.append(snapPoint(cp.param, cp.val, k))
+        for cp in critPoints:
+            xd, yd = curve(cp.param, nu=1)
+            xdd, ydd = curve(cp.param, nu=2)
+            k = (xd * ydd - yd * xdd) / (xd ** 2 + yd ** 2) ** (3.0 / 2.0)
+            snapPoints.append(snapPoint(cp.param, cp.val, i, k))
 
     if add_init_end:
         snapPoints.insert(0, snapPoint(0.0, curve(0.0)))
@@ -225,14 +225,6 @@ def getEigen_coupling_analytic(
     input_eigen = getEigenFuncs(prb.curves)
 
     constr_lst = joint2split_constr(prb.ConstraintMatrices)
-
-    # out_lst = joint2split_out(prb.OutputMatrices)
-
-    # Total_constr_Disp = np.vstack([out_lst[0], constr_lst[0]])
-    # Total_constr_Forc = np.vstack([out_lst[1], constr_lst[1]])
-
-    # Possible_Disp = my_null_space(Total_constr_Disp)
-    # Possible_Forc = my_null_space(Total_constr_Forc)
 
     Disp_constr = constr_lst[0]
     Force_constr = constr_lst[1]

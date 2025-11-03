@@ -1,6 +1,65 @@
 import numpy as np
-from typing import Tuple, Union
+from typing import *
 
+def is_maxrank(
+        A: np.ndarray,
+        axis: Optional[int] = None
+) -> bool:
+    """
+    Check if a matrix is max rank.
+
+    Args:
+        A: a 2 dimensional array.
+        axis: axis to compute max rank, None for overall maximum.
+        
+    Returns:
+        True if the matrix is max rank, False if not.
+    """
+    if A.ndim!=2:
+        raise ValueError("The input array must be two dimensional")
+    
+    if axis is None:    
+        max_rank = np.min(A.shape)
+    else:
+        max_rank = A.shape[axis]
+
+    if max_rank == 0:
+        return True
+    
+    if A.size == 0:
+        return False
+    
+    rank = np.linalg.matrix_rank(A)
+
+    return rank == max_rank
+
+def my_matrix_spaces(A: np.ndarray, atol: float = 1e-9) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Compute the column space, row space, null space, and left null space of a matrix A.
+
+    Args:
+        A (np.ndarray): The input matrix.
+        atol (float): Absolute tolerance for singular values to be considered zero.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: The column space, row space, null space, and left null space of the matrix.
+    """
+    U, S, Vh = np.linalg.svd(A, full_matrices=True)
+    rank = np.sum(S > atol)
+
+    # Column space basis: the first r columns of U
+    col_space = U[:, :rank]  # shape: (m, r)
+
+    # Row space basis: the first r rows of Vh
+    row_space = Vh[:rank, :]  # shape: (r, n)
+
+    # Null space basis: rows of Vh with zero singular values, transpose for basis vectors as columns
+    null_space = Vh[rank:, :].T  # shape: (n, n-r)
+
+    # Left null space basis: columns of U with zero singular values, returned as rows
+    left_null_space = U[:, rank:].T  # shape: (m-r, m)
+
+    return col_space, row_space, null_space, left_null_space
 
 def my_null_space(A: np.ndarray, atol: float = 1e-9) -> np.ndarray:
     """
@@ -13,12 +72,8 @@ def my_null_space(A: np.ndarray, atol: float = 1e-9) -> np.ndarray:
     Returns:
         np.ndarray: The null space of the matrix.
     """
-    _, S, Vh = np.linalg.svd(A)
-    null_mask = S <= atol
-    if S.size < Vh.shape[0]:
-        null_mask = np.append(null_mask, [True] * (Vh.shape[0] - S.size))
-    nullspace = Vh[null_mask].T[:, ::-1]
-    return nullspace
+    col_space, row_space, null_space, left_null_space = my_matrix_spaces(A)
+    return null_space
 
 
 def my_left_null_space(A: np.ndarray, atol: float = 1e-9) -> np.ndarray:
@@ -32,12 +87,8 @@ def my_left_null_space(A: np.ndarray, atol: float = 1e-9) -> np.ndarray:
     Returns:
         np.ndarray: The left null space of the matrix.
     """
-    U, S, _ = np.linalg.svd(A)
-    null_mask = S <= atol
-    if S.size < U.shape[1]:
-        null_mask = np.append(null_mask, [True] * (U.shape[1] - S.size))
-    left_nullspace = U[:, null_mask].T[::-1]
-    return left_nullspace
+    col_space, row_space, null_space, left_null_space = my_matrix_spaces(A)
+    return left_null_space
 
 
 def my_column_space(A: np.ndarray, atol: float = 1e-9) -> np.ndarray:
@@ -51,10 +102,8 @@ def my_column_space(A: np.ndarray, atol: float = 1e-9) -> np.ndarray:
     Returns:
         np.ndarray: The column space of the matrix.
     """
-    U, S, _ = np.linalg.svd(A)
-    rank = np.sum(S > atol)
-    column_space = U[:, :rank]
-    return column_space
+    col_space, row_space, null_space, left_null_space = my_matrix_spaces(A)
+    return col_space
 
 
 def my_row_space(A: np.ndarray, atol: float = 1e-9) -> np.ndarray:
@@ -68,35 +117,8 @@ def my_row_space(A: np.ndarray, atol: float = 1e-9) -> np.ndarray:
     Returns:
         np.ndarray: The row space of the matrix.
     """
-    _, S, Vh = np.linalg.svd(A)
-    rank = np.sum(S > atol)
-    row_space = Vh[:rank]
+    col_space, row_space, null_space, left_null_space = my_matrix_spaces(A)
     return row_space
-
-
-def my_matrix_spaces(A: np.ndarray, atol: float = 1e-9) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Compute the column space, row space, null space, and left null space of a matrix A.
-
-    Args:
-        A (np.ndarray): The input matrix.
-        atol (float): Absolute tolerance for singular values to be considered zero.
-
-    Returns:
-        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: The column space, row space, null space, and left null space of the matrix.
-    """
-    U, S, Vh = np.linalg.svd(A)
-    rank = np.sum(S > atol)
-    column_space = U[:, :rank]
-    row_space = Vh[:rank]
-    null_mask = S <= atol
-    null_mask_ns = np.append(null_mask, [
-                             True] * (Vh.shape[0] - S.size)) if S.size < Vh.shape[0] else null_mask.copy()
-    null_mask_lns = np.append(null_mask, [
-                              True] * (U.shape[1] - S.size)) if S.size < U.shape[1] else null_mask.copy()
-    nullspace = Vh[null_mask_ns].T[:, ::-1]
-    left_nullspace = U[:, null_mask_lns].T[::-1]
-    return column_space, row_space, nullspace, left_nullspace
 
 
 def remove_small_vals(A: np.ndarray, tol: float = 1e-9) -> np.ndarray:
@@ -266,6 +288,7 @@ def my_PQ_decomp(A: np.ndarray, tol: float = 1e-9) -> Tuple[np.ndarray, np.ndarr
     Arref = Arref * col_rescaling[np.newaxis, :]
     Arref = remove_small_vals(Arref, tol=tol)
     return Arref, P, col_rescaling, pivot_columns
+
 
 # Author: Franco N. Pinan Basualdo
 # Project: Curve Coupling

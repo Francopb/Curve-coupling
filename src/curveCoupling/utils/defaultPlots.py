@@ -44,7 +44,7 @@ def plotResults(fig: Figure,
 
     min_res = np.min([np.min(res, axis=0) for res in res_lst], axis=0)
     max_res = np.max([np.max(res, axis=0) for res in res_lst], axis=0)
-    range_res = np.round(np.stack((min_res, max_res), axis=1), decimals=1)
+    range_res = np.column_stack((np.floor(10*min_res)/10, np.ceil(10*max_res)/10))
 
     if numCurves == 2:
         for res in res_lst:
@@ -80,7 +80,7 @@ def plotResults(fig: Figure,
 
     min_out = np.min([np.min(out, axis=0) for out in out_lst], axis=0)
     max_out = np.max([np.max(out, axis=0) for out in out_lst], axis=0)
-    range_out = np.round(np.stack((min_out, max_out), axis=1), decimals=1)
+    range_out = np.column_stack((np.floor(10*min_out)/10, np.ceil(10*max_out)/10))
 
     axs[-2].set_title("Result curve")
     axs[-2].set_xlim(range_out[0])

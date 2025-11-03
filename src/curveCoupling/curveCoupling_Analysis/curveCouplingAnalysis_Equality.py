@@ -57,7 +57,7 @@ class criticalPoint:
 
 
 def findCriticalPoints(
-    curves: ndcurve,
+    curve: ndcurve,
     analyze_index: Optional[int] = None,
     do_filter: bool = True,
     add_init_end: bool = True,
@@ -66,7 +66,7 @@ def findCriticalPoints(
     Find critical points (local maxima and minima) of a given curve.
 
     Args:
-        curves (ndcurve): The input curve.
+        curve (ndcurve): The input curve.
         analyze_index (Optional[int]): Index to find critical points. If None, a scalar function is assumed.
         do_filter (bool): Whether to filter consecutive critical points of same sign.
         add_init_end (bool): Whether to add the initial and final points.
@@ -75,7 +75,7 @@ def findCriticalPoints(
         List[criticalPoint]: List of critical points, their values, and their second derivative.
     """
 
-    curve_analyse = curves.extractIndex(analyze_index)
+    curve_analyse = curve.extractIndex(analyze_index)
     fd_analyse = curve_analyse.function.derivative(nu=1)
     roots = fd_analyse.roots()
     roots = [r for r in roots if (0.0 < r < 1.0)]
@@ -89,13 +89,13 @@ def findCriticalPoints(
             value = curve_analyse(r, nu=order)
 
         critPoints.append(criticalPoint(
-            r, curves(r), order, value, analyze_index))
+            r, curve(r), order, value, analyze_index))
 
     if add_init_end:
         critPoints.insert(0, criticalPoint(
-            0.0, curves(0.0), 1, curve_analyse(0.0, 1), index=analyze_index))
+            0.0, curve(0.0), 1, curve_analyse(0.0, 1), index=analyze_index))
         critPoints.append(criticalPoint(
-            1.0, curves(1.0), 1, curve_analyse(1.0, 1), index=analyze_index))
+            1.0, curve(1.0), 1, curve_analyse(1.0, 1), index=analyze_index))
     if do_filter:
         filterCriticalPoints(critPoints)
     return critPoints
