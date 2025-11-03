@@ -1,5 +1,5 @@
 import numpy as np
-from typing import *
+from typing import Optional, Tuple, Union
 
 def is_maxrank(
         A: np.ndarray,
@@ -48,10 +48,10 @@ def my_matrix_spaces(A: np.ndarray, atol: float = 1e-9) -> Tuple[np.ndarray, np.
     rank = np.sum(S > atol)
 
     # Column space basis: the first r columns of U
-    col_space = U[:, :rank]  # shape: (m, r)
+    row_space = U[:, :rank]  # shape: (m, r)
 
     # Row space basis: the first r rows of Vh
-    row_space = Vh[:rank, :]  # shape: (r, n)
+    col_space = Vh[:rank, :]  # shape: (r, n)
 
     # Null space basis: rows of Vh with zero singular values, transpose for basis vectors as columns
     null_space = Vh[rank:, :].T  # shape: (n, n-r)
@@ -59,7 +59,7 @@ def my_matrix_spaces(A: np.ndarray, atol: float = 1e-9) -> Tuple[np.ndarray, np.
     # Left null space basis: columns of U with zero singular values, returned as rows
     left_null_space = U[:, rank:].T  # shape: (m-r, m)
 
-    return col_space, row_space, null_space, left_null_space
+    return col_space.T, row_space.T, null_space, left_null_space
 
 def my_null_space(A: np.ndarray, atol: float = 1e-9) -> np.ndarray:
     """
