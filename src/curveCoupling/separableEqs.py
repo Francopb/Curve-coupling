@@ -27,7 +27,7 @@ def split2joint_constr(constraintMatrices_lst: List[np.ndarray]) -> np.ndarray:
         raise ValueError(
             "All constraintMatrices need to have the same number of columns")
     if sum([c.shape[0] for c in constraintMatrices_lst]) != numCurves-1:
-        raise ValueError("Required N-1 constraints (N is number of curves)")
+        raise ValueError(f"Required {numCurves-1} constraints, got {[c.shape[0] for c in constraintMatrices_lst]}")
 
     ConstraintMatrices = np.zeros((numCurves - 1, numCurves, nDims))
     current_eq = 0

@@ -220,7 +220,7 @@ def find_independent_loops(edges: List[Tuple[Hashable, Hashable]]) -> List[np.nd
         loop[idx] = -1.0
         independent_loops.append(loop)
 
-    return independent_loops
+    return np.array(independent_loops)
 
 # Author: Franco N. Pinan Basualdo
 # Project: Curve Coupling

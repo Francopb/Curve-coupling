@@ -30,7 +30,10 @@ def generate_network_equations(edges: List[Tuple[Hashable, Hashable]],
     incidence_matrix = build_incidence_matrix(edges)
     force_out = incidence_matrix.pop('End')
     incidence_matrix.pop('Start')
-    force_constr = -np.row_stack(list(incidence_matrix.values()))
+    if incidence_matrix:
+        force_constr = -np.row_stack(list(incidence_matrix.values()))
+    else:
+        force_constr = np.array([])
 
     # Step 2: Kirchhoff's Voltage Law (for Displacements)
     disp_constr = find_independent_loops(edges)
