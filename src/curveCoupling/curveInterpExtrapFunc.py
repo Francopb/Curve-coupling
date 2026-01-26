@@ -47,8 +47,10 @@ class ndcurve:
         return newCurve
 
     @classmethod
-    def createList(cls, Ldata: List[np.ndarray], is_periodic: bool = False) -> List['ndcurve']:
-        return [ndcurve(d, is_periodic=is_periodic) for d in Ldata]
+    def createList(cls, Ldata: List[np.ndarray], are_periodic: Union[List[bool],bool] = False) -> List['ndcurve']:
+        if isinstance(are_periodic, bool):
+            are_periodic = [are_periodic] * len(Ldata)
+        return [ndcurve(d, is_periodic=p) for d, p in zip(Ldata, are_periodic)]
 
     def copy(self) -> 'ndcurve':
         new_function = interpolate.CubicSpline.construct_fast(self.function.c.copy(
@@ -91,13 +93,20 @@ class ndcurve_matrix:
         if any([c.getNDim() != aux_ndim for c in curves[1:]]):
             raise ValueError("All curves must have the same dimension")
         self.functions = [c.function for c in curves]
+        self.are_periodic = [c.is_periodic for c in curves]
 
     def __call__(self, x: np.ndarray, nu: int = 0) -> np.ndarray:
         if x.ndim != 1:
             raise ValueError("Can only be called with a vector")
         if x.size != self.getNCurves():
             raise ValueError("Need as many parameters as curves")
-        return np.array([f(x_i, nu=nu) for x_i, f in zip(x, self.functions)])
+        
+        vals = []
+        for x_i, f, p in zip(x, self.functions, self.are_periodic):
+            if p:
+                x_i = x_i % 1.0
+            vals.append(f(x_i, nu=nu))
+        return np.array(vals)
 
     def getNDim(self) -> int:
         coeffs_shape = self.functions[0].c.shape
@@ -108,11 +117,11 @@ class ndcurve_matrix:
 
     def derivative(self, nu: int = 1) -> 'ndcurve_matrix':
         new_functions = [f.derivative(nu=nu) for f in self.functions]
-        return ndcurve_matrix([ndcurve._from_function(f) for f in new_functions])
+        return ndcurve_matrix([ndcurve._from_function(f, is_periodic=p) for f,p in zip(new_functions, self.are_periodic)])
 
     def antiderivative(self, nu: int = 1) -> 'ndcurve_matrix':
         new_functions = [f.antiderivative(nu=nu) for f in self.functions]
-        return ndcurve_matrix([ndcurve._from_function(f) for f in new_functions])
+        return ndcurve_matrix([ndcurve._from_function(f, is_periodic=p) for f,p in zip(new_functions, self.are_periodic)])
 
     def extractIndex(self, index: int) -> 'ndcurve_matrix':
         if index is None:
@@ -122,11 +131,11 @@ class ndcurve_matrix:
                 "Only possible to extract index between zero and Ndim")
         new_functions = [_InterpExtrapFunc_extractIndex(
             f, index) for f in self.functions]
-        return ndcurve_matrix([ndcurve._from_function(f) for f in new_functions])
+        return ndcurve_matrix([ndcurve._from_function(f, is_periodic=p) for f,p in zip(new_functions, self.are_periodic)])
 
     @classmethod
-    def _from_data(cls, Ldata: List[np.ndarray]) -> 'ndcurve_matrix':
-        return cls(ndcurve.createList(Ldata))
+    def _from_data(cls, Ldata: List[np.ndarray], are_periodic: Union[List[bool], bool] = False) -> 'ndcurve_matrix':
+        return cls(ndcurve.createList(Ldata, are_periodic))
 
 
 def compute_t(curve: ndcurve, x: float, val: float, axis: int, tol: float = 1e-6) -> float:

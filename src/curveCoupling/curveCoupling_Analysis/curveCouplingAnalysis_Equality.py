@@ -401,7 +401,7 @@ def __findIslands_critPoints_pair(
 
         return None
 
-    def checkOtherCritPoints(intersection: Tuple[float, float], curr_index: int, critPoints: List[criticalPoint], is_island: bool) -> Tuple[bool, Tuple[int, int], float]:
+    def checkOtherCritPoints(intersection: Tuple[float, float], curr_index: int, critPoints: List[criticalPoint]) -> Tuple[bool, Tuple[int, int], float]:
         num_crit_points = len(critPoints)
         if critPoints[curr_index].getType() < 0:
             condition_pass = lambda x: x < intersection[0] + tol

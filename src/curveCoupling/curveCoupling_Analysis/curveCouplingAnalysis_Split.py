@@ -327,7 +327,7 @@ def __solve_pair_step(curves: List[ndcurve],
         curves2 = []
         res_curves2 = []
         for res, is_island in res2_lst:
-            curve_data = np.ones(len(res)) * constant
+            curve_data = -np.ones(len(res)) * constant
             for idx, val, r in zip(indexes2, vals2_lst, res.T):
                 curve_data -= curves[idx].extractIndex(dim_index)(r)*val
             curves2.append(ndcurve(curve_data, is_periodic=is_island))
@@ -365,7 +365,7 @@ def __solve_pair_step(curves: List[ndcurve],
                 for s, d in zip(islands_seeds, islands_dirs):
                     param_stop = s + np.array((1.0, 0.0))
                     _, new_res = solveCurveCoupling_Equality(
-                        prb, param_start=s, stop_circulation=True, param_stop=param_stop, initial_dir=None)
+                        prb, param_start=s, stop_circulation=True, param_stop=param_stop, initial_dir=d)
                     new_res = np.column_stack(
                         (r1(new_res[:, 0]), r2(new_res[:, 1])))
                     permuted_res = new_res[:, sort_order]
@@ -463,7 +463,7 @@ def solveCurveCoupling_Islands_Sequential(prb: curveCouplingProblem_Split):
 
     res_lst = intermediate_res_dict[tuple(range(len(prb.curves)))]
     out_lst = []
-    for res, is_island in res_lst:
+    for res, _ in res_lst:
         new_data = []
         for dim_index, (out_vec, out_const) in enumerate(zip(prb.outputVectors_lst, prb.outputConstant_lst)):
             curves_data = np.column_stack(
