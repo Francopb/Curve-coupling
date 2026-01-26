@@ -395,55 +395,40 @@ def __findIslands_critPoints_pair(
         # If crit points have same type (or zero), no intersection
         if not crit1.opositeType(crit2):
             return None
-
-        # If crit1 is a maximum and higher than crit2
-        # OR
-        # If crit1 is a minimum and lower than crit2
-        # return the intersection range
+        
         if crit1.getType() * (crit1.getVal_index() - crit2.getVal_index()) < tol:
             return tuple(sorted([crit1.getVal_index(), crit2.getVal_index()]))
 
         return None
 
-    def checkOtherCritPoints(intersection: Tuple[float, float], curr_index: int, critPoints: List[criticalPoint]) -> Tuple[bool, Tuple[int, int], float]:
-        def checkCritPoints(indices: List[int]) -> Tuple[int, float]:
-            res_index = None
-            new_lim = critPoints[curr_index].getVal_index()
-            for i in indices:
-                # If crit points has same curvature (or zero), consider new limit
-                if critPoints[i].order == 1:
-                    break
-                if critPoints[curr_index].sameType(critPoints[i]):
-                    res_index = i
-                    new_lim = comp_func(new_lim, critPoints[i].getVal_index())
-                    continue
+    def checkOtherCritPoints(intersection: Tuple[float, float], curr_index: int, critPoints: List[criticalPoint], is_island: bool) -> Tuple[bool, Tuple[int, int], float]:
+        num_crit_points = len(critPoints)
+        if critPoints[curr_index].getType() < 0:
+            condition_pass = lambda x: x < intersection[0] + tol
+            condition_fail = lambda x: x > intersection[1] - tol
+        else:
+            condition_pass = lambda x: x > intersection[1] - tol
+            condition_fail = lambda x: x < intersection[0] + tol
 
-                if intersection[0] + tol < critPoints[i].getVal_index() < intersection[1] - tol:
-                    res_index = i
-                else:
-                    break
+        prev_index = None
+        for i in list(reversed(range(curr_index))):
+            if critPoints[i].order == 1 and critPoints[i+1].sameType(critPoints[curr_index]):
+                prev_index = i
+                break
+            if condition_pass(critPoints[i].getVal_index()) and critPoints[curr_index].opositeType(critPoints[i]):
+                prev_index = i
+                break
 
-            return res_index, new_lim
-
-        flag_correct = True
-        comp_func = max if critPoints[curr_index].getType() < 0 else min
-        # Check prev points
-        prev_index, new_lim_prev = checkCritPoints(
-            list(reversed(range(curr_index + 1))))
-        # If last prev_crit is of different type than crit, it means no total intersection
-        if critPoints[curr_index].opositeType(critPoints[prev_index]):
-            flag_correct = False
-        # Check if previously considered
-        if len([i for i in range(prev_index, curr_index) if critPoints[curr_index].sameType(critPoints[i])]) > 0:
-            flag_correct = False
-        # Check next points
-        next_index, new_lim_next = checkCritPoints(
-            list(range(curr_index, len(critPoints))))
-        # If last new_crit is of different type than crit, it means no total intersection
-        if critPoints[curr_index].opositeType(critPoints[next_index]):
-            flag_correct = False
-
-        return flag_correct, (max(prev_index - 1, 0), min(next_index + 1, len(critPoints) - 1)), comp_func(new_lim_prev, new_lim_next)
+        next_index = None
+        for i in range(curr_index+1, num_crit_points):
+            if critPoints[i].order == 1 and critPoints[i-1].sameType(critPoints[curr_index]):
+                next_index = i
+                break
+            if condition_pass(critPoints[i].getVal_index()) and critPoints[curr_index].opositeType(critPoints[i]):
+                next_index = i
+                break
+        
+        return prev_index, next_index
 
     intersections_res = []
     intersections_indices = []
@@ -455,28 +440,17 @@ def __findIslands_critPoints_pair(
                 continue
             intersection = findIslands_critPoints_single(crit1, crit2)
             if intersection is not None:
-                # Check points to see total range
-                flag_correct = True
-                while flag_correct:
-                    flag_correct1, (prev_index1, next_index1), new_lim1 = checkOtherCritPoints(
+                prev_index1, next_index1 = checkOtherCritPoints(
                         intersection, i1, critPoints1)
-                    flag_correct2, (prev_index2, next_index2), new_lim2 = checkOtherCritPoints(
+                prev_index2, next_index2 = checkOtherCritPoints(
                         intersection, i2, critPoints2)
-                    flag_correct = flag_correct1 and flag_correct2
-
-                    new_intersection = tuple(sorted((new_lim1, new_lim2)))
-
-                    if new_intersection == intersection:
-                        break
-                    intersection = new_intersection
-
-                if not flag_correct:
-                    continue
-                intersections_res.append(intersection)
-                intersections_indices.append((
-                    (prev_index1, next_index1),
-                    (prev_index2, next_index2),
-                ))
+                
+                if prev_index1 is not None and next_index1 is not None and prev_index2 is not None and next_index2 is not None:
+                    intersections_res.append(intersection)
+                    intersections_indices.append((
+                        (prev_index1, next_index1),
+                        (prev_index2, next_index2),
+                    ))
 
     return intersections_res, intersections_indices
 

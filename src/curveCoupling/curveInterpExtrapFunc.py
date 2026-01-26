@@ -4,12 +4,15 @@ from typing import *
 
 
 class ndcurve:
-    def __init__(self, data: np.ndarray) -> None:
+    def __init__(self, data: np.ndarray, is_periodic: bool = False) -> None:
         if not (1 <= data.ndim <= 2):
             raise ValueError("Data dimensions should be 1 or 2")
         self.function = _InterpExtrapFunc_initialize(data)
+        self.is_periodic = is_periodic
 
     def __call__(self, x: float, nu: int = 0) -> np.ndarray:
+        if self.is_periodic:
+            x = x % 1.0
         return self.function(x, nu=nu)
 
     def getNDim(self) -> int:
@@ -34,22 +37,23 @@ class ndcurve:
             raise ValueError(
                 "Only possible to extract index between zero and Ndim")
         newFunction = _InterpExtrapFunc_extractIndex(self.function, index)
-        return self.__class__._from_function(newFunction)
+        return self.__class__._from_function(newFunction, is_periodic=self.is_periodic)
 
     @classmethod
-    def _from_function(cls, function: Callable[[float], np.ndarray]) -> 'ndcurve':
+    def _from_function(cls, function: Callable[[float], np.ndarray], is_periodic: bool = False) -> 'ndcurve':
         newCurve = cls.__new__(cls)
         newCurve.function = function
+        newCurve.is_periodic = is_periodic
         return newCurve
 
     @classmethod
-    def createList(cls, Ldata: List[np.ndarray]) -> List['ndcurve']:
-        return [ndcurve(d) for d in Ldata]
-    
+    def createList(cls, Ldata: List[np.ndarray], is_periodic: bool = False) -> List['ndcurve']:
+        return [ndcurve(d, is_periodic=is_periodic) for d in Ldata]
+
     def copy(self) -> 'ndcurve':
         new_function = interpolate.CubicSpline.construct_fast(self.function.c.copy(
         ), self.function.x.copy(), extrapolate=self.function.extrapolate)
-        return ndcurve._from_function(new_function)
+        return ndcurve._from_function(new_function, is_periodic=self.is_periodic)
 
     def scale(self, factor: float, dim: Optional[int] = None):
         if dim is None:

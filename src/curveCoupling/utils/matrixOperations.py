@@ -192,7 +192,7 @@ def ref(A: np.ndarray, tol: float = 1e-9,
     Args:
         A (np.ndarray): The input matrix.
         tol (float): Tolerance for considering values as zero.
-        get_pivot_columns (bool): Whether to get the pivto columns to the left.
+        get_pivot_columns (bool): Whether to get the pivot columns to the left.
 
     Returns:
         Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]: 
@@ -232,6 +232,12 @@ def rref(A: np.ndarray, tol: float = 1e-9,
         Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]: 
         The RREF of the matrix and the transformation matrix P. If get_pivot_columns is True, also returns the list of pvot columns
     """
+    if A.size == 0:
+        if get_pivot_columns:
+            return A, np.array([]), []
+        else:
+            return A, np.array([])
+    
     A = A.copy().astype(float)
     rows, cols = A.shape
     P = np.eye(rows)
