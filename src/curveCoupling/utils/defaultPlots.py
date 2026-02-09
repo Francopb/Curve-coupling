@@ -26,6 +26,9 @@ def plotResults(fig: Figure,
         axs.append(fig.add_subplot(gs[1, :numCurves]))
     elif numCurves == 3:
         axs.append(fig.add_subplot(gs[1, :numCurves], projection='3d'))
+    else:
+        axs.append(fig.add_subplot(gs[1, :numCurves], projection='3d'))
+
     fig.tight_layout(pad=2, h_pad=2, w_pad=2)
 
     for i, d in enumerate(data):
@@ -53,6 +56,16 @@ def plotResults(fig: Figure,
             axs[-1].scatter(res_brute[:, 0], res_brute[:, 1],
                             color='r', marker='.', alpha=0.1)
     elif numCurves == 3:
+        for res in res_lst:
+            axs[-1].plot(res[:, 0], res[:, 1], res[:, 2])
+        if res_brute is not None:
+            axs[-1].scatter(res_brute[:, 0], res_brute[:, 1],
+                            res_brute[:, 2], color='r', marker='.', alpha=0.1)
+
+        axs[-1].set_zlim(range_res[2])
+        axs[-1].zaxis.set_major_locator(ticker.LinearLocator(3))
+        axs[-1].set_zlabel(r"$t_2$")
+    else:
         for res in res_lst:
             axs[-1].plot(res[:, 0], res[:, 1], res[:, 2])
         if res_brute is not None:
@@ -109,6 +122,8 @@ def plotResults_stability(fig: Figure,
         axs.append(fig.add_subplot(gs[1, :numCurves]))
     elif numCurves == 3:
         axs.append(fig.add_subplot(gs[1, :numCurves], projection='3d'))
+    else:
+        axs.append(fig.add_subplot(gs[1, :numCurves], projection='3d'))
     fig.tight_layout(pad=2, h_pad=3, w_pad=2)
 
     for i, (d, s) in enumerate(zip(data, data_stability)):
@@ -133,6 +148,9 @@ def plotResults_stability(fig: Figure,
         for i, (res, s) in enumerate(zip(res_lst, out_stability_lst)):
             plot_stability(axs[-1], s, res[:, 0], res[:, 1], is_closed=i>0)
     elif numCurves == 3:
+        for i, (res, s) in enumerate(zip(res_lst, out_stability_lst)):
+            plot_stability(axs[-1], s, res[:, 0], res[:, 1], res[:, 2], is_closed=i>0)
+    else:
         for i, (res, s) in enumerate(zip(res_lst, out_stability_lst)):
             plot_stability(axs[-1], s, res[:, 0], res[:, 1], res[:, 2], is_closed=i>0)
 

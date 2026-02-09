@@ -3,7 +3,7 @@ from curveCoupling import ndcurve, curveCouplingProblem_Split, curveCouplingProb
 from curveCoupling.curveCoupling_Analysis import findCriticalPoints
 from curveCoupling.curveCoupling_Analysis.curveCouplingAnalysis_Equality import criticalPoint
 from curveCoupling.utils.matrixOperations import rref
-from typing import Tuple, List, Optional
+from typing import *
 from scipy import optimize
 
 
@@ -96,26 +96,33 @@ def __findIslands_critPoints_pair(
         else:
             prev_index = None
             for i in list(reversed(range(curr_index))):
-                if critPoints[i].order == 1 and critPoints[i+1].sameType(critPoints[curr_index]):
-                    prev_index = i
+                if critPoints[i].order == 1:
+                    if critPoints[i].higher_order_val > 0.0 and critPoints[curr_index].getType()<0:
+                        prev_index = i
                     break
                 if condition_pass(critPoints[i].getVal_index()) and critPoints[curr_index].opositeType(critPoints[i]):
                     prev_index = i
+                    break
+                if condition_fail(critPoints[i].getVal_index()):
                     break
 
             next_index = None
             for i in range(curr_index+1, num_crit_points):
                 if critPoints[i].order == 1 and critPoints[i-1].sameType(critPoints[curr_index]):
-                    next_index = i
+                    if critPoints[i].higher_order_val > 0.0 and critPoints[curr_index].getType()>0:
+                        next_index = i
                     break
                 if condition_pass(critPoints[i].getVal_index()) and critPoints[curr_index].opositeType(critPoints[i]):
                     next_index = i
+                    break
+                if condition_fail(critPoints[i].getVal_index()):
                     break
 
         return prev_index, next_index
 
     intersections_res = []
     intersections_indices = []
+
     for i1, crit1 in enumerate(critPoints1):
         if crit1.getType() is None:
             continue
@@ -164,6 +171,7 @@ def __findIslands_Equality_pair_internal(curve1: ndcurve,
 
     intersections_val, intersections_indices = __findIslands_critPoints_pair(
         criticalPoints[0], criticalPoints[1], is_island_lst[0], is_island_lst[1], tol=tol)
+    
 
     def getRangeCritPoints(tgt_value: float, critPoints: List[criticalPoint], indices: Tuple[int, int], is_island: bool) -> Optional[Tuple[float, float]]:
         if is_island:
@@ -212,7 +220,8 @@ def __findIslands_Equality_pair_internal(curve1: ndcurve,
 
 def __findIslands_Equality_pair_external(curve_island: ndcurve,
                                  curve_other: ndcurve,
-                                 is_island_other: bool):
+                                 is_island_other: bool,
+                                 tol: float = -1e-6):
 
     curves = [curve_island, curve_other]
     crit_points_island = findCriticalPoints(curve_island)
@@ -220,50 +229,103 @@ def __findIslands_Equality_pair_external(curve_island: ndcurve,
 
     range_island = (min([cp.getVal_index() for cp in crit_points_island]), max(
         [cp.getVal_index() for cp in crit_points_island]))
+        
     tgt_value = curve_island(0.0)
 
     param_res = []
     initial_dir = []
 
-    if is_island_other:
-        num_crit_points = len(crit_points_other)
-        for i in range(num_crit_points):
-            ip = (i + 1) % num_crit_points
-            cp1 = crit_points_other[i]
-            cp2 = crit_points_other[ip]
-            check_range = sorted([cp1.getVal_index(), cp2.getVal_index()])
-            if check_range[0] < range_island[0] and check_range[1] > range_island[1]:
-                search_range = (cp1.param, cp2.param)
-                if search_range[0] >= search_range[1]:
-                    search_range = (search_range[0], search_range[1] + 1.0)
 
-                def f_opt(x): return curve_other(x) - tgt_value
-                opt_res = optimize.root_scalar(
-                    f_opt, bracket=search_range, method='brentq')
-                params = (0.0, opt_res.root,)
-                param_res.append(params)
-                slopes = [f(p, nu=1) for f, p in zip(curves, params)]
-                new_dir = np.array([np.prod([sl for j, sl in enumerate(slopes) if j != i])
-                                    for i in range(len(slopes))])
-                new_dir /= np.linalg.norm(new_dir)
-                initial_dir.append(new_dir)
-    else:
-        for i in range(len(crit_points_other)-1):
-            cp1 = crit_points_other[i]
-            cp2 = crit_points_other[i+1]
-            check_range = sorted([cp1.getVal_index(), cp2.getVal_index()])
-            if check_range[0] < range_island[0] and check_range[1] > range_island[1]:
-                search_range = (cp1.param, cp2.param)
-                def f_opt(x): return curve_other(x) - tgt_value
-                opt_res = optimize.root_scalar(
-                    f_opt, bracket=search_range, method='brentq')
-                params = (0.0, opt_res.root,)
-                param_res.append(params)
-                slopes = [f(p, nu=1) for f, p in zip(curves, params)]
-                new_dir = np.array([np.prod([sl for j, sl in enumerate(slopes) if j != i])
-                                    for i in range(len(slopes))])
-                new_dir /= np.linalg.norm(new_dir)
-                initial_dir.append(new_dir)
+    def find_crit_point_range(idx: int):
+        def check_crit_point(idx: int):
+            if crit_points_other[idx].getVal_index() < range_island[0] - tol:
+                return -1
+            if crit_points_other[idx].getVal_index() > range_island[1] + tol:
+                return 1
+            return 0
+        
+        if crit_points_other[idx].order == 1:
+            init_type = -1 if crit_points_other[idx].higher_order_val > 0.0 else 1
+        else:
+            init_type = check_crit_point(idx) 
+
+        if init_type == 0:
+            return None
+               
+        if is_island_other:
+            num_crit_points = len(crit_points_other)
+            for k in range(1, len(crit_points_other)):
+                i = (k + idx) % num_crit_points
+                next_type = check_crit_point(i)
+                if next_type == 0:
+                    continue
+
+                if next_type * init_type > 0:
+                    return None
+                
+                if next_type * init_type < 0:
+                    return (idx, i)
+                
+        else:
+            for i in range(idx+1, len(crit_points_other)):
+                if crit_points_other[i].order == 1:
+                    next_type = 1 if crit_points_other[i].higher_order_val > 0.0 else -1
+                else:
+                    next_type = check_crit_point(i) 
+                if next_type == 0:
+                    continue
+                if next_type * init_type > 0:
+                    return None
+                if next_type * init_type < 0:
+                    return (idx, i)
+
+    def select_bracket(pts_range):
+        if is_island_other:
+            num_crit_points = len(crit_points_other)
+            num_range = (pts_range[1] - pts_range[0]) % num_crit_points
+            if num_range == 0:
+                num_range = num_crit_points
+
+            for k in range(num_range):
+                i = (pts_range[0] + k) % num_crit_points
+                ip = (i + 1) % num_crit_points
+                check_range = sorted([crit_points_other[i].getVal_index(), crit_points_other[ip].getVal_index()])
+                if check_range[0] <= tgt_value <= check_range[1]:
+                    params = (crit_points_other[i].param, crit_points_other[ip].param)
+                    if params[0] >= params[1]:
+                        params = (params[0], params[1] + 1.0)
+                    return params
+                
+        else:
+            for i in range(pts_range[0], pts_range[1]):
+                check_range = sorted([crit_points_other[i].getVal_index(), crit_points_other[i+1].getVal_index()])
+                if check_range[0] <= tgt_value <= check_range[1]:
+                    return (crit_points_other[i].param, crit_points_other[i + 1].param)
+                
+            # if crit_points_other[pts_range[0]].order == 1:
+
+            # if crit_points_other[pts_range[1]].order == 1:
+                               
+        raise ValueError("Cannot find a bracket that contains the target value")
+
+    pts_ranges = []
+    for i in range(len(crit_points_other)-1):
+        pts_range = find_crit_point_range(i)
+        if pts_range is not None:
+            pts_ranges.append(pts_range)
+
+    for pts_range in pts_ranges:
+        search_range = select_bracket(pts_range)
+        def f_opt(x): return curve_other(x) - tgt_value
+        opt_res = optimize.root_scalar(
+            f_opt, bracket=search_range, method='brentq')
+        params = (0.0, opt_res.root,)
+        param_res.append(params)
+        slopes = [f(p, nu=1) for f, p in zip(curves, params)]
+        new_dir = np.array([np.prod([sl for j, sl in enumerate(slopes) if j != i])
+                            for i in range(len(slopes))])
+        new_dir /= np.linalg.norm(new_dir)
+        initial_dir.append(new_dir)
 
     return np.array(param_res), np.array(initial_dir)
 
@@ -277,7 +339,7 @@ def __solve_pair_step(curves: List[ndcurve],
                     dim_index: Optional[int],
                     res1_lst: Optional[List[Tuple[np.ndarray, bool]]],
                     res2_lst: Optional[List[Tuple[np.ndarray, bool]]],
-                    num_points=200):
+                    ):
     """
     Solve a pair step constraint between two sets of curves.
     Args:
@@ -307,7 +369,8 @@ def __solve_pair_step(curves: List[ndcurve],
             "Intermediate result curves for curve2_lst must be provided when there are multiple curves.")
 
     if res1_lst is None:
-        curves1 = [curves[indexes1[0]].extractIndex(dim_index)]
+        curve1 = curves[indexes1[0]].copy().extractIndex(dim_index)
+        curves1 = [curve1.scale(vals1_lst[0])]
         res_curves1 = [(lambda x: x, False)]
     else:
         curves1 = []
@@ -321,7 +384,8 @@ def __solve_pair_step(curves: List[ndcurve],
                 (ndcurve(res, is_periodic=is_island), is_island))
 
     if res2_lst is None:
-        curves2 = [curves[indexes2[0]].extractIndex(dim_index)]
+        curve2 = curves[indexes2[0]].copy().extractIndex(dim_index)
+        curves2 = [curve2.scale(-vals2_lst[0]).add_cte(-constant)]
         res_curves2 = [(lambda x: x, False)]
     else:
         curves2 = []
@@ -339,11 +403,14 @@ def __solve_pair_step(curves: List[ndcurve],
 
     # Now only need to solve for equality in this new curves
     new_res_lst = []
-    for c1, (r1, is_island1) in zip(curves1, res_curves1):
-        for c2, (r2, is_island2) in zip(curves2, res_curves2):
+    pairs_res_dict = {}
+    for i1, (c1, (r1, is_island1)) in enumerate(zip(curves1, res_curves1)):
+        for i2, (c2, (r2, is_island2)) in enumerate(zip(curves2, res_curves2)):
             prb = curveCouplingProblem_Equality([c1, c2])
+            pair_res = []
             if not is_island1 and not is_island2:
                 _, new_res = solveCurveCoupling_Equality(prb)
+                pair_res.append(new_res.copy())
                 new_res = np.column_stack(
                     (r1(new_res[:, 0]), r2(new_res[:, 1])))
                 permuted_res = new_res[:, sort_order]
@@ -354,6 +421,7 @@ def __solve_pair_step(curves: List[ndcurve],
             for s, d in zip(islands_seeds, islands_dirs):
                 _, new_res = solveCurveCoupling_Equality(
                     prb, param_start=s, stop_circulation=True, initial_dir=d)
+                pair_res.append(new_res.copy())
                 new_res = np.column_stack(
                     (r1(new_res[:, 0]), r2(new_res[:, 1])))
                 permuted_res = new_res[:, sort_order]
@@ -366,6 +434,7 @@ def __solve_pair_step(curves: List[ndcurve],
                     param_stop = s + np.array((1.0, 0.0))
                     _, new_res = solveCurveCoupling_Equality(
                         prb, param_start=s, stop_circulation=True, param_stop=param_stop, initial_dir=d)
+                    pair_res.append(new_res.copy())
                     new_res = np.column_stack(
                         (r1(new_res[:, 0]), r2(new_res[:, 1])))
                     permuted_res = new_res[:, sort_order]
@@ -380,15 +449,33 @@ def __solve_pair_step(curves: List[ndcurve],
                     param_stop = s + np.array((0.0, 1.0))
                     _, new_res = solveCurveCoupling_Equality(
                         prb, param_start=s, param_stop=param_stop, initial_dir=None)
+                    pair_res.append(new_res.copy())
                     new_res = np.column_stack(
                         (r1(new_res[:, 0]), r2(new_res[:, 1])))
                     permuted_res = new_res[:, sort_order]
                     new_res_lst.append((permuted_res, True))
+            pairs_res_dict[(i1,i2)]=pair_res
 
-    return new_res_lst
+    return new_res_lst, pairs_res_dict
 
 
-def solveCurveCoupling_Islands_Sequential(prb: curveCouplingProblem_Split):
+def solveCurveCoupling_Islands_Sequential(prb: curveCouplingProblem_Split,
+                                          return_intermediate_res: bool = False
+                                          ) -> Union[Tuple[List[np.ndarray], List[np.ndarray]], 
+           Tuple[List[np.ndarray], List[np.ndarray], Dict[Tuple[int, ...], Tuple[np.ndarray, np.ndarray]]]]:
+    """
+    Sequentially solve a split curveCoupling problem.
+    Args:
+        prb (curveCouplingProblem_Split): Problem to solve.
+        return_intermediate_res (bool): Whether to return intermediate results or not.
+    Returns:
+        A tuple containing:
+        - curves (List[np.ndarray]): The final output curves.
+        - parametric_res (List[np.ndarray]): Results mapped in parametric space.
+        - intermediate_res (Dict[Tuple[int, ...], Tuple[np.ndarray, np.ndarray]], optional): A mapping of 
+          curves indices to their intermediate state arrays. 
+          Only returned if `return_intermediate_res` is True.
+    """
 
     if not is_SolvableSequentially(prb):
         raise ValueError(
@@ -429,11 +516,13 @@ def solveCurveCoupling_Islands_Sequential(prb: curveCouplingProblem_Split):
 
     coupled = set()
     intermediate_res_dict = {}
+    intermediate_pair_res_dict = {}
     while sum([mat.size for mat in constraintMatrices_lst]) > 0:
         constraintMatrices_lst, constraintConstant_lst = to_RREF(
             constraintMatrices_lst, constraintConstant_lst)
         step = identify_step(constraintMatrices_lst,
                              constraintConstant_lst, coupled)
+        
         if step is None:
             raise ValueError(
                 "No more pair steps can be identified; the system may not be fully solvable via sequential pair elimination.")
@@ -454,26 +543,30 @@ def solveCurveCoupling_Islands_Sequential(prb: curveCouplingProblem_Split):
         else:
             res2 = None
 
-        new_res_lst = __solve_pair_step(
+        new_res_lst, pair_res_dict = __solve_pair_step(
             prb.curves, pair[0], pair[1], vals[0], vals[1], constant, dim, res1, res2)
 
         non_zero_indices_total = [i for sublist in pair for i in sublist]
         intermediate_res_dict[tuple(
             sorted(non_zero_indices_total))] = new_res_lst
+        
+        intermediate_pair_res_dict[tuple(
+            sorted(non_zero_indices_total))] = pair_res_dict
+        
+    # Compute the output
+
+    intermediate_res_dict = {k: [r[0] for r in v] for k,v in intermediate_res_dict.items()}
 
     res_lst = intermediate_res_dict[tuple(range(len(prb.curves)))]
     out_lst = []
-    for res, _ in res_lst:
-        new_data = []
-        for dim_index, (out_vec, out_const) in enumerate(zip(prb.outputVectors_lst, prb.outputConstant_lst)):
-            curves_data = np.column_stack(
-                [c.extractIndex(dim_index)(r) for r, c in zip(res.T, prb.curves)])
-            dim_data = np.dot(curves_data, out_vec) + out_const
-            new_data.append(dim_data)
+    for res in res_lst:
+        out = np.array([prb.computeOutput(r) for r in res])
+        out_lst.append(out)
 
-        out_lst.append(np.column_stack(new_data))
-
-    return out_lst, [r[0] for r in res_lst]
+    if return_intermediate_res:
+        return out_lst, res_lst, intermediate_res_dict, intermediate_pair_res_dict
+    else:
+        return out_lst, res_lst
 
 
 def is_SolvableSequentially(prb: curveCouplingProblem_Split):

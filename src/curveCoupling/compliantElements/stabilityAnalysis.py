@@ -2,7 +2,7 @@ import numpy as np
 from typing import *
 from curveCoupling.curveInterpExtrapFunc import ndcurve
 from curveCoupling.curveCoupling_Analysis.curveCouplingAnalysis_Equality import findCriticalPoints
-from curveCoupling.curveCoupling import curveCouplingProblem, curveCouplingProblem_Equality
+from curveCoupling.curveCoupling import curveCouplingProblem, curveCouplingProblem_Split, curveCouplingProblem_Equality
 from curveCoupling.separableEqs import joint2split_constr
 
 
@@ -224,10 +224,22 @@ def getEigen_coupling_analytic(
     """
     input_eigen = getEigenFuncs(prb.curves)
 
-    constr_lst = joint2split_constr(prb.ConstraintMatrices)
-
+    if isinstance(prb, curveCouplingProblem):
+        constr_lst = joint2split_constr(prb.ConstraintMatrices)
+    elif isinstance(prb, curveCouplingProblem_Split):
+        constr_lst = prb.constraintMatrices_lst
+        
+    if len(constr_lst) != 2:
+        raise ValueError("Only defined for displacement-force system (two variables)")
+    
     Disp_constr = constr_lst[0]
     Force_constr = constr_lst[1]
+
+    if Disp_constr.size == 0:
+        Disp_constr = np.zeros((0, prb.numCurves))
+
+    if Force_constr.size == 0:
+        Disp_constr = np.zeros((0, prb.numCurves))
 
     Possible_Disp = Force_constr.T
     Possible_Forc = Disp_constr.T

@@ -404,28 +404,34 @@ def __findIslands_critPoints_pair(
     def checkOtherCritPoints(intersection: Tuple[float, float], curr_index: int, critPoints: List[criticalPoint]) -> Tuple[bool, Tuple[int, int], float]:
         num_crit_points = len(critPoints)
         if critPoints[curr_index].getType() < 0:
-            condition_pass = lambda x: x < intersection[0] + tol
-            condition_fail = lambda x: x > intersection[1] - tol
+            def condition_pass(x): return x < intersection[0] + tol
+            def condition_fail(x): return x > intersection[1] - tol
         else:
-            condition_pass = lambda x: x > intersection[1] - tol
-            condition_fail = lambda x: x < intersection[0] + tol
+            def condition_pass(x): return x > intersection[1] - tol
+            def condition_fail(x): return x < intersection[0] + tol
 
         prev_index = None
         for i in list(reversed(range(curr_index))):
-            if critPoints[i].order == 1 and critPoints[i+1].sameType(critPoints[curr_index]):
-                prev_index = i
+            if critPoints[i].order == 1:
+                if critPoints[i].higher_order_val > 0.0 and critPoints[curr_index].getType()<0:
+                    prev_index = i
                 break
             if condition_pass(critPoints[i].getVal_index()) and critPoints[curr_index].opositeType(critPoints[i]):
                 prev_index = i
+                break
+            if condition_fail(critPoints[i].getVal_index()):
                 break
 
         next_index = None
         for i in range(curr_index+1, num_crit_points):
             if critPoints[i].order == 1 and critPoints[i-1].sameType(critPoints[curr_index]):
-                next_index = i
+                if critPoints[i].higher_order_val > 0.0 and critPoints[curr_index].getType()>0:
+                    next_index = i
                 break
             if condition_pass(critPoints[i].getVal_index()) and critPoints[curr_index].opositeType(critPoints[i]):
                 next_index = i
+                break
+            if condition_fail(critPoints[i].getVal_index()):
                 break
         
         return prev_index, next_index
