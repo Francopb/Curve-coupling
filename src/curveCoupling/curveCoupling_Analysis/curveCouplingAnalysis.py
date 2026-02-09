@@ -185,7 +185,7 @@ def _find_constant(M_exp: np.ndarray, Jn: np.ndarray, exponents: np.ndarray) -> 
         constants_mat += new_mat
 
     def evaluate_constant(u):
-        
+
         u_mat = np.where(M_exp_leading_order >= 0,
                          u[np.newaxis, :] ** safe_exponents, 0.0)
         return np.sum(constants_mat * u_mat, axis=1)
@@ -224,8 +224,6 @@ def solveSingularity(prb: curveCouplingProblem,
     return exp, cte
 
 
-
-
 def findSingularities(prb: curveCouplingProblem,
                       iter_points: int = 10,
                       tol: float = 1e-2) -> Tuple[np.ndarray, np.ndarray]:
@@ -244,10 +242,11 @@ def findSingularities(prb: curveCouplingProblem,
     combinations = itertools.product(range(iter_points), repeat=prb.numCurves)
     N = prb.numCurves
 
-    def f_opt(x, return_jac = True):
+    def f_opt(x, return_jac=True):
         if len(x) != 3*N:
-            raise ValueError(f"The input should have length {3*N}, but got {len(x)}")
-        
+            raise ValueError(
+                f"The input should have length {3*N}, but got {len(x)}")
+
         t = x[:N]
         v1 = x[N:2*N]
         v2 = x[2*N:]
@@ -255,29 +254,37 @@ def findSingularities(prb: curveCouplingProblem,
         err = prb.computeConstraint(t)
         jac = prb.computeConstraintJac(t)
 
-        y = np.concatenate([err, np.dot(jac, v1), np.dot(jac, v2), [np.sum(v1**2)-1, np.sum(v2**2)-1, np.dot(v1,v2)]])
+        y = np.concatenate([err, np.dot(jac, v1), np.dot(jac, v2), [
+                           np.sum(v1**2)-1, np.sum(v2**2)-1, np.dot(v1, v2)]])
         if not return_jac:
             return y
-        
+
         jac2 = prb.computeConstraintJac(t, nu=2)
         jacTot = np.block([[jac, np.zeros_like(jac), np.zeros_like(jac)],
-                           [jac2 * v1[np.newaxis,:], jac, np.zeros_like(jac)],
-                           [jac2 * v2[np.newaxis,:], np.zeros_like(jac), jac],
-                           [np.zeros((1,N)), 2*np.reshape(v1,(1,-1)), np.zeros((1,N))],
-                           [np.zeros((1,N)), np.zeros((1,N)), 2*np.reshape(v2,(1,-1))],
-                           [np.zeros((1,N)), np.reshape(v2,(1,-1)), np.reshape(v1,(1,-1))]])
-        
+                           [jac2 * v1[np.newaxis, :], jac, np.zeros_like(jac)],
+                           [jac2 * v2[np.newaxis, :], np.zeros_like(jac), jac],
+                           [np.zeros((1, N)), 2*np.reshape(v1,
+                                                           (1, -1)), np.zeros((1, N))],
+                           [np.zeros((1, N)), np.zeros((1, N)),
+                            2*np.reshape(v2, (1, -1))],
+                           [np.zeros((1, N)), np.reshape(v2, (1, -1)), np.reshape(v1, (1, -1))]])
+
         return y, jacTot
-    
+
     singularities = []
     for comb in combinations:
         param0 = np.array([array_params[i] for i in reversed(comb)])
         J = prb.computeConstraintJac(param0)
-        nullspace = my_null_space(J)
-        v10 = nullspace[:, 0]
-        v20 = np.random.randn(N)
-        v20 = v20 - v10 * np.dot(v10,v20)
-        v20 /= np.linalg.norm(v20)
+
+        _, _, Vt = np.linalg.svd(J, full_matrices=True)
+        v10 = Vt[-1]      # null direction (σ = 0)
+        v20 = Vt[-2]      # second smallest singular value direction
+
+        # nullspace = my_null_space(J)
+        # v10 = nullspace[:, 0]
+        # v20 = np.random.randn(N)
+        # v20 = v20 - v10 * np.dot(v10, v20)
+        # v20 /= np.linalg.norm(v20)
 
         x0 = np.concatenate([param0, v10, v20])
 
@@ -295,8 +302,8 @@ def findSingularities(prb: curveCouplingProblem,
 
 
 def findSingularities_old(prb: curveCouplingProblem,
-                      iter_points: int = 100,
-                      tol: float = 1e-2) -> Tuple[np.ndarray, np.ndarray]:
+                          iter_points: int = 100,
+                          tol: float = 1e-2) -> Tuple[np.ndarray, np.ndarray]:
     """
     Find singularities.
 
@@ -390,6 +397,7 @@ def solveCurveCoupling_Singularities(prb: curveCouplingProblem,
         out_lst.pop(idx)
     return out_lst, res_lst
 
+
 def findCritAlongDir(prb: curveCouplingProblem,
                      c_dir: np.ndarray,
                      iter_points: int = 10,
@@ -410,28 +418,30 @@ def findCritAlongDir(prb: curveCouplingProblem,
     combinations = itertools.product(range(iter_points), repeat=prb.numCurves)
     N = prb.numCurves
 
-    def f_opt(x, return_jac = True):
+    def f_opt(x, return_jac=True):
         if len(x) != 2*N:
-            raise ValueError(f"The input should have length {2*N}, but got {len(x)}")
-        
+            raise ValueError(
+                f"The input should have length {2*N}, but got {len(x)}")
+
         t = x[:N]
         v = x[N:]
 
         err = prb.computeConstraint(t)
         jac = prb.computeConstraintJac(t)
 
-        y = np.concatenate([err, np.dot(jac, v), [np.dot(c_dir,v), np.sum(v**2)-1]])
+        y = np.concatenate(
+            [err, np.dot(jac, v), [np.dot(c_dir, v), np.sum(v**2)-1]])
         if not return_jac:
             return y
-        
+
         jac2 = prb.computeConstraintJac(t, nu=2)
         jacTot = np.block([[jac, np.zeros_like(jac)],
-                           [jac2 * v[np.newaxis,:], jac],
-                           [np.zeros((1,N)), np.reshape(c_dir,(1,-1))],
-                           [np.zeros((1,N)), 2*np.reshape(v,(1,-1))]])
-        
+                           [jac2 * v[np.newaxis, :], jac],
+                           [np.zeros((1, N)), np.reshape(c_dir, (1, -1))],
+                           [np.zeros((1, N)), 2*np.reshape(v, (1, -1))]])
+
         return y, jacTot
-        
+
     critPoints = []
     for comb in combinations:
         param0 = np.array([array_params[i] for i in reversed(comb)])
@@ -472,12 +482,11 @@ def solveCurveCoupling_Islands(prb: curveCouplingProblem,
     res_lst = [res]
 
     N = prb.numCurves
-    
 
     def minDist(x):
         dists = [min_dist_point_to_set(x, r) for r in res_lst]
         return min(dists)
-    
+
     points_tot = []
     for _ in range(iter_dirs):
         c = np.random.randn(N)
@@ -515,5 +524,3 @@ def solveCurveCoupling_Islands(prb: curveCouplingProblem,
 # Project: Curve Coupling
 # URL: https://github.com/Francopb/Curve-coupling
 # Description: This script is part of the Curve Coupling project. Unauthorized use or distribution is prohibited.
-
-   
