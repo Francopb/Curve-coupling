@@ -1,7 +1,7 @@
 import numpy as np
 from curveCoupling.curveGenerators import *
 from curveCoupling import ndcurve, curveCouplingProblem, solveCurveCoupling_bruteForce_localSolve
-from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Islands
+from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Islands, findCritAlongDir
 from curveCoupling.utils.defaultPlots import plotResults
 from matplotlib import pyplot as plt
 
@@ -28,11 +28,24 @@ def run():
 
     prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
     out_lst, res_lst = solveCurveCoupling_Islands(prob)
-    out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(
-        prob, iter_points=10)
+    # out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(
+    #     prob, iter_points=10)
 
     fig = plt.figure()
-    plotResults(fig, data, out_lst, res_lst)
+    axs = plotResults(fig, data, out_lst, res_lst)
+
+    points_tot = []
+    for _ in range(5):
+        c = np.random.randn(prob.numCurves)
+        c /= np.linalg.norm(c)
+
+        points = findCritAlongDir(prob, c)
+        points_tot.append(points)
+
+    points_tot = np.concatenate(points_tot)
+
+    axs[-1].scatter(points_tot[:,0],points_tot[:,1],points_tot[:,2], color='k')
+
 
 
 if __name__ == "__main__":
