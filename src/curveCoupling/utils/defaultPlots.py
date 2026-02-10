@@ -2,6 +2,7 @@ import numpy as np
 from matplotlib import (gridspec, ticker, colors as mcolors)
 from matplotlib.figure import Figure
 from typing import List, Optional
+from itertools import combinations
 from curveCoupling.utils.coloredLines import *
 
 
@@ -300,6 +301,51 @@ def plot_unstable_eigen(ax, unstable_eigen, x, y, z=None, is_closed=False, max_e
         colored_line_merged(ax, unstable_eigen, x, y, is_closed=is_closed, norm=norm, cmap=custom_cmap, **lc_kwargs)
     else:
         colored_line_merged(ax, unstable_eigen, x, y, z, is_closed=is_closed, norm=norm, cmap=custom_cmap, **lc_kwargs)
+
+def plotResults_matrix(fig: Figure, res_lst: np.ndarray):
+    N = res_lst[0].shape[1]
+    idx_pairs = combinations(range(N), 2)
+
+    gs = gridspec.GridSpec(N-1, N-1)
+    axs_dict = {}
+
+    min_res = np.min([np.min(res, axis=0) for res in res_lst], axis=0)
+    max_res = np.max([np.max(res, axis=0) for res in res_lst], axis=0)
+    range_res = np.column_stack((np.floor(10*min_res)/10, np.ceil(10*max_res)/10))
+
+    print(range_res)
+
+    for pair in idx_pairs:
+        pair = tuple(sorted(pair))
+        ax = fig.add_subplot(gs[pair[1]-1, pair[0]])
+
+        for res in res_lst:
+            ax.plot(res[:,pair[0]], res[:,pair[1]])
+
+        ax.set_xlim(range_res[pair[0]])
+        ax.set_ylim(range_res[pair[1]])
+
+        ax.xaxis.set_major_locator(ticker.LinearLocator(3))
+        ax.yaxis.set_major_locator(ticker.LinearLocator(3))
+        if pair[0]==0:
+            ax.set_ylabel(f"$t_{pair[1]}$")
+        else:
+            ax.set_yticklabels([])
+
+        if pair[1]==N-1:
+            ax.set_xlabel(f"$t_{pair[0]}$")
+        else:
+            ax.set_xticklabels([])
+
+
+
+        ax.set_aspect('equal')
+
+        axs_dict[pair] = ax
+
+    fig.tight_layout(pad=2, h_pad=2, w_pad=2)
+    return axs_dict
+
 
 # Author: Franco N. Pinan Basualdo
 # Project: Curve Coupling

@@ -239,7 +239,7 @@ def getEigen_coupling_analytic(
         Disp_constr = np.zeros((0, prb.numCurves))
 
     if Force_constr.size == 0:
-        Disp_constr = np.zeros((0, prb.numCurves))
+        Force_constr = np.zeros((0, prb.numCurves))
 
     Possible_Disp = Force_constr.T
     Possible_Forc = Disp_constr.T
