@@ -5,7 +5,8 @@ from typing import *
 def estimate_jacobian(
     func: Callable[[np.ndarray], np.ndarray],
     x: np.ndarray,
-    h: float = 1e-7
+    h: float = 1e-7,
+    **kwargs
 ) -> np.ndarray:
     """
     Estimate the Jacobian matrix of a vector-valued function using central finite differences.
@@ -19,7 +20,7 @@ def estimate_jacobian(
         A NumPy ndarray of shape (m, n) representing the approximated Jacobian.
     """
     n = x.size
-    m = func(x).size
+    m = func(x, **kwargs).size
     jacobian = np.zeros((m, n))
 
     for i in range(n):
@@ -28,8 +29,8 @@ def estimate_jacobian(
         x_plus[i] += h
         x_minus[i] -= h
 
-        f_plus = func(x_plus)
-        f_minus = func(x_minus)
+        f_plus = func(x_plus, **kwargs)
+        f_minus = func(x_minus, **kwargs)
 
         jacobian[:, i] = (f_plus - f_minus) / (2 * h)
 

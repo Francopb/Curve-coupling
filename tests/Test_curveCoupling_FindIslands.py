@@ -1,7 +1,7 @@
 import numpy as np
 from curveCoupling.curveGenerators import *
 from curveCoupling import ndcurve, curveCouplingProblem_Split
-from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Islands, findCritAlongDir
+from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Islands, findCritAlongDir, findCritFromPoint
 from curveCoupling.utils.defaultPlots import plotResults
 from matplotlib import pyplot as plt
 import itertools
@@ -25,18 +25,23 @@ def run():
 
     prob = curveCouplingProblem_Split(curves,constraintConstant_lst, outputVectors_lst)
 
-    # seek_dirs = np.random.randn(2,prob.numCurves)
     seek_dirs = np.array([(1.0,0.0,0.0),(0.0,0.0,1.0)])
-
-    seeds = []
     seek_dirs /= np.linalg.norm(seek_dirs, axis=1)[:,np.newaxis]
+
+    seeds_dirs = []
     for c in seek_dirs:
-        points = findCritAlongDir(prob, c, iter_points=10)
-        seeds.append(points)
+        seeds_dirs.append(findCritAlongDir(prob, c))
+    seeds_dirs = np.concatenate(seeds_dirs)
 
-    seeds = np.concatenate(seeds)
+    # seek_centers = np.array([(0.0, 0.0, 0.0), (0.5, 0.5, 0.5)])
+    seek_centers = np.array([(0.5, 0.5, 0.5),])
+    seeds_centers = []
+    for c in seek_centers:
+        seeds_centers.append(findCritFromPoint(prob, c))
+    seeds_centers = np.concatenate(seeds_centers)
 
-    out_lst, res_lst = solveCurveCoupling_Islands(prob)
+
+    out_lst, res_lst = solveCurveCoupling_Islands(prob, iter_points=5)
     # out, res = solveCurveCoupling(prob)
     # out_lst = [out]
     # res_lst = [res]
@@ -49,11 +54,16 @@ def run():
         ax.plot(res[:,0], res[:,1], res[:,2])
 
 
-    axs[-1].scatter(seeds[:,0],seeds[:,1],seeds[:,2], color='k')
-    ax.scatter(seeds[:,0],seeds[:,1],seeds[:,2], color='k')
+    axs[-1].scatter(seeds_dirs[:,0],seeds_dirs[:,1],seeds_dirs[:,2], color='k')
+    axs[-1].scatter(seeds_centers[:,0],seeds_centers[:,1],seeds_centers[:,2], color='m')
+    ax.scatter(seeds_dirs[:,0],seeds_dirs[:,1],seeds_dirs[:,2], color='k')
+    ax.scatter(seeds_centers[:,0],seeds_centers[:,1],seeds_centers[:,2], color='m')
 
     for c in seek_dirs:
-        ax.plot((0, c[0]), (0, c[1]),(0, c[2]))
+        ax.plot((0, c[0]), (0, c[1]),(0, c[2]), color='k')
+
+    ax.scatter(seek_centers[:,0],seek_centers[:,1],seek_centers[:,2], marker='d', color='m')
+
 
     ax.set_xlim([0,1])
     ax.set_ylim([0,1])

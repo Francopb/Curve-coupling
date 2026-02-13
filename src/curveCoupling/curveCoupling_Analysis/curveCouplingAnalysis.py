@@ -514,6 +514,88 @@ def findCritAlongDir(prb: curveCouplingProblem,
 
     return critPoints
 
+def findCritFromPoint(prb: curveCouplingProblem,
+                     t0: np.ndarray,
+                     iter_points: int = 10,
+                     tol: float = 1e-2) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Find criticial points along a given direction.
+
+    Args:
+        prb (curveCouplingProblem): The curve coupling problem instance.
+        iter_points (int): Number of iteration points.
+        tol (float): Tolerance.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Found singularities and their outputs.
+    """
+
+    array_params = np.linspace(0.0, 1.0, iter_points)
+    combinations = itertools.product(range(iter_points), repeat=prb.numCurves)
+    N = prb.numCurves
+
+    def f_opt(x, return_jac=True):
+        if len(x) != 2*N:
+            raise ValueError(
+                f"The input should have length {2*N}, but got {len(x)}")
+
+        t = x[:N]
+        v = x[N:]
+
+        err = prb.computeConstraint(t)
+        jac = prb.computeConstraintJac(t)
+
+        y = np.concatenate(
+            [err, np.dot(jac, v), [np.dot(t-t0, v), np.sum(v**2)-1]])
+        if not return_jac:
+            return y
+
+        jac2 = prb.computeConstraintJac(t, nu=2)
+        jacTot = np.block([[jac, np.zeros_like(jac)],
+                           [jac2 * v[np.newaxis, :], jac],
+                           [np.reshape(v, (1, -1)), np.reshape(t-t0, (1, -1))],
+                           [np.zeros((1, N)), 2*np.reshape(v, (1, -1))]])
+
+        return y, jacTot
+    
+    def solve(comb):
+        param0 = np.array([array_params[i] for i in reversed(comb)])
+        J = prb.computeConstraintJac(param0)
+        nullspace = my_null_space(J)
+        v0 = nullspace[:, 0]
+        x0 = np.concatenate([param0, v0])
+
+        res = optimize.root(f_opt, x0, method='hybr', tol=1e-3, jac=True)
+
+        if res.success and np.linalg.norm(res.fun) < tol:
+            return res.x[:N]
+        return None
+        
+    results = Parallel(n_jobs=-1)(
+        delayed(solve)(comb) 
+        for comb in combinations
+    )
+
+    critPoints = [r for r in results if r is not None]        
+
+    # critPoints = []
+    # for comb in combinations:
+    #     param0 = np.array([array_params[i] for i in reversed(comb)])
+    #     J = prb.computeConstraintJac(param0)
+    #     nullspace = my_null_space(J)
+    #     v0 = nullspace[:, 0]
+
+    #     x0 = np.concatenate([param0, v0])
+
+    #     res = optimize.root(f_opt, x0, method='hybr', tol=1e-3, jac=True)
+
+    #     if res.success and np.linalg.norm(res.fun) < tol:
+    #         critPoints.append(res.x[:N])
+
+    critPoints = removeRepeats(np.array(critPoints))
+
+    return critPoints
+
 # def findIslands(prb: curveCouplingProblem,
 #                                ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
 #     """
@@ -581,8 +663,9 @@ def findCritAlongDir(prb: curveCouplingProblem,
 #     return np.array(seeds)
 
 def solveCurveCoupling_Islands(prb: curveCouplingProblem,
-                               iter_points=10,
-                               iter_dirs=5,
+                               iter_points: int = 10,
+                               iter_dirs: int = 3,
+                               iter_centers: int = 3,
                                **kwargs
                                ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """
@@ -592,12 +675,16 @@ def solveCurveCoupling_Islands(prb: curveCouplingProblem,
         prb (curveCouplingProblem): The curve coupling problem instance.
         iter_points (int): Number of iteration points.
         iter_dirs (int): Number of random directions to look for maxima.
+        iter_centers (int): Number of random centers to look for maxima.
 
     Returns:
         Tuple[List[np.ndarray], List[np.ndarray]]: Output curves and results in parametric space.
     """
 
     out, res = solveCurveCoupling(prb, **kwargs)
+    out_inv, res_inv = solveCurveCoupling(prb, initial_dir=-np.ones(prb.numCurves), **kwargs)
+    out = np.vstack((out_inv[::-1], out[1:]))
+    res = np.vstack((res_inv[::-1], res[1:]))
     out_lst = [out]
     res_lst = [res]
 
@@ -606,13 +693,19 @@ def solveCurveCoupling_Islands(prb: curveCouplingProblem,
         dists = [min_dist_point_to_set(x, r) for r in res_lst]
         return min(dists)
 
-    seek_dirs = np.random.randn(iter_dirs,prb.numCurves)
+    seek_dirs = np.random.randn(iter_dirs, prb.numCurves)
     seek_dirs /= np.linalg.norm(seek_dirs, axis=1)[:,np.newaxis]
     
     seeds = []
     for c in seek_dirs:
         points = findCritAlongDir(prb, c, iter_points=iter_points)
         seeds.append(points)
+
+    seek_centers = np.random.uniform(0.0, 1.0, (iter_centers, prb.numCurves))
+    for c in seek_centers:
+        points = findCritFromPoint(prb, c, iter_points=iter_points)
+        seeds.append(points)
+
 
     seeds = np.concatenate(seeds)
 
