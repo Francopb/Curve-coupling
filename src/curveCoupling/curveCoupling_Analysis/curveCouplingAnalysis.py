@@ -699,15 +699,19 @@ def solveCurveCoupling_Islands(prb: curveCouplingProblem,
     seeds = []
     for c in seek_dirs:
         points = findCritAlongDir(prb, c, iter_points=iter_points)
-        seeds.append(points)
+        if points is not None and np.asanyarray(points).size > 0:
+            seeds.append(points)
 
     seek_centers = np.random.uniform(0.0, 1.0, (iter_centers, prb.numCurves))
     for c in seek_centers:
         points = findCritFromPoint(prb, c, iter_points=iter_points)
-        seeds.append(points)
+        if points is not None and np.asanyarray(points).size > 0:
+            seeds.append(points)
 
-
-    seeds = np.concatenate(seeds)
+    if seeds:
+        seeds = np.concatenate(seeds)
+    else:
+        seeds = np.zeros((0, prb.numCurves))
 
     # seeds = findIslands(prb)
 

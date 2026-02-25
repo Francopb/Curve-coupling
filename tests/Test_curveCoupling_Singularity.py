@@ -35,6 +35,11 @@ def run():
     fig = plt.figure()
     axs = plotResults(fig, data, out_lst, res_lst)
 
+    _, ax = plt.subplots(1,1,subplot_kw={'projection':'3d'})
+
+    for res in res_lst:
+        ax.plot(res[:,0],res[:,1],res[:,2])
+
     t = np.linspace(0.0, 0.1, 10)
     for seed, order, dirs in zip(sing_seeds, sing_orders, sing_dirs):
         for d in dirs:
@@ -42,6 +47,18 @@ def run():
                         ) ** order[np.newaxis, :] + seed[np.newaxis, :]
             axs[-1].plot(sing_res[:, 0], sing_res[:, 1],
                          sing_res[:, 2], color='k')
+            ax.plot(sing_res[:, 0], sing_res[:, 1],
+                         sing_res[:, 2], color='k')
+            
+    ax.set_xlim([0,1])
+    ax.set_ylim([0,1])
+    ax.set_zlim([0,1])
+
+    ax.set_xticks([0,0.5,1])
+    ax.set_yticks([0,0.5,1])
+    ax.set_zticks([0,0.5,1])
+    ax.set_aspect('equal')
+            
 
 
 if __name__ == "__main__":

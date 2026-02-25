@@ -34,11 +34,16 @@ def run():
     seeds_dirs = np.concatenate(seeds_dirs)
 
     # seek_centers = np.array([(0.0, 0.0, 0.0), (0.5, 0.5, 0.5)])
-    seek_centers = np.array([(0.5, 0.5, 0.5),])
+    seek_centers = np.array([])
     seeds_centers = []
     for c in seek_centers:
         seeds_centers.append(findCritFromPoint(prob, c))
-    seeds_centers = np.concatenate(seeds_centers)
+
+    if seeds_centers:
+        seeds_centers = np.concatenate(seeds_centers)
+    else:
+        seeds_centers = np.zeros((0, 3))
+
 
 
     out_lst, res_lst = solveCurveCoupling_Islands(prob, iter_points=5)
@@ -59,10 +64,10 @@ def run():
     ax.scatter(seeds_dirs[:,0],seeds_dirs[:,1],seeds_dirs[:,2], color='k')
     ax.scatter(seeds_centers[:,0],seeds_centers[:,1],seeds_centers[:,2], color='m')
 
-    for c in seek_dirs:
-        ax.plot((0, c[0]), (0, c[1]),(0, c[2]), color='k')
+    # for c in seek_dirs:
+    #     ax.plot((0, c[0]), (0, c[1]),(0, c[2]), color='k')
 
-    ax.scatter(seek_centers[:,0],seek_centers[:,1],seek_centers[:,2], marker='d', color='m')
+    # ax.scatter(seek_centers[:,0],seek_centers[:,1],seek_centers[:,2], marker='d', color='m')
 
 
     ax.set_xlim([0,1])

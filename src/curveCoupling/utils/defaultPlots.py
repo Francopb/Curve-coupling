@@ -313,8 +313,6 @@ def plotResults_matrix(fig: Figure, res_lst: np.ndarray):
     max_res = np.max([np.max(res, axis=0) for res in res_lst], axis=0)
     range_res = np.column_stack((np.floor(10*min_res)/10, np.ceil(10*max_res)/10))
 
-    print(range_res)
-
     for pair in idx_pairs:
         pair = tuple(sorted(pair))
         ax = fig.add_subplot(gs[pair[1]-1, pair[0]])
