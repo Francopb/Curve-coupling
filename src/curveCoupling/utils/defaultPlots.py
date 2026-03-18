@@ -217,7 +217,7 @@ def plotResults_unstable_eigen(fig: Figure,
     fig.tight_layout(pad=2, h_pad=3, w_pad=2)
 
     for i, (d, e) in enumerate(zip(data, data_unstable_eigen)):
-        plot_unstable_eigen(axs[i], e, d[:, 0], d[:, 1], max_eigen=max_eigen)
+        plot_unstable_eigen(axs[i], e, d[:, 0], d[:, 1], max_eigen_user=max_eigen)
         axs[i].set_title("Curve "+str(i))
 
         range_d = np.round(
@@ -236,10 +236,10 @@ def plotResults_unstable_eigen(fig: Figure,
 
     if numCurves == 2:
         for i, (res, e) in enumerate(zip(res_lst, out_unstable_eigen_lst)):
-            plot_unstable_eigen(axs[-1], e, res[:, 0], res[:, 1], is_closed=i>0, max_eigen=max_eigen)
+            plot_unstable_eigen(axs[-1], e, res[:, 0], res[:, 1], is_closed=i>0, max_eigen_user=max_eigen)
     elif numCurves == 3:
         for i, (res, e) in enumerate(zip(res_lst, out_unstable_eigen_lst)):
-            plot_unstable_eigen(axs[-1], e, res[:, 0], res[:, 1], res[:, 2], is_closed=i>0, max_eigen=max_eigen)
+            plot_unstable_eigen(axs[-1], e, res[:, 0], res[:, 1], res[:, 2], is_closed=i>0, max_eigen_user=max_eigen)
 
     if numCurves == 3:
         axs[-1].set_zlim(range_res[2])
@@ -256,7 +256,7 @@ def plotResults_unstable_eigen(fig: Figure,
     axs[-1].set_aspect('equal')
 
     for i, (out, e) in enumerate(zip(out_lst, out_unstable_eigen_lst)):
-        plot_unstable_eigen(axs[-2], e, out[:, 0], out[:, 1], is_closed=i>0, max_eigen=max_eigen)
+        plot_unstable_eigen(axs[-2], e, out[:, 0], out[:, 1], is_closed=i>0, max_eigen_user=max_eigen)
 
     min_out = np.min([np.min(out, axis=0) for out in out_lst], axis=0)
     max_out = np.max([np.max(out, axis=0) for out in out_lst], axis=0)
@@ -273,34 +273,35 @@ def plotResults_unstable_eigen(fig: Figure,
 
 
 def plot_stability(ax, stability, x, y, z=None, is_closed=False, **lc_kwargs):
-    custom_cmap = mcolors.LinearSegmentedColormap.from_list(
-        "custom_cmap", ["tab:red", "tab:olive", "tab:green"])
-    # You can adjust vmin and vmax as needed
-    norm = mcolors.Normalize(vmin=-1, vmax=1)
-    if z is None == 2:
-        colored_line_merged(ax, stability, x, y, is_closed=is_closed, norm=norm, cmap=custom_cmap, **lc_kwargs)
-    else:
-        colored_line_merged(ax, stability, x, y, z, is_closed=is_closed, norm=norm, cmap=custom_cmap, **lc_kwargs)
+    colors = ["tab:red", "tab:olive", "tab:green"]
+    typed_line_merged(ax, np.asarray(stability)+1, x, y, z, is_closed=is_closed, colors=colors, **lc_kwargs)
 
-def plot_unstable_eigen(ax, unstable_eigen, x, y, z=None, is_closed=False, max_eigen=None, **lc_kwargs):
-    # You can adjust vmin and vmax as needed
-    if max_eigen is None:
-        max_eigen = np.max(unstable_eigen)
-
-    values = [0, 1, 2, max_eigen]
-    colors = ["tab:green", "tab:olive", "tab:orange", "tab:red"]
-
-    # Create a custom colormap and normalization
-    norm = mcolors.Normalize(vmin=0, vmax=max_eigen)
-    positions = [(v - values[0]) / (values[-1] - values[0]) for v in values]
-
-    # Now use the positions in the colormap
-    custom_cmap = mcolors.LinearSegmentedColormap.from_list("custom_cmap", list(zip(positions, colors)))
+def plot_unstable_eigen(ax, unstable_eigen, x, y, z=None, is_closed=False, max_eigen_user=None, **lc_kwargs):    
+    max_eigen = np.max(unstable_eigen)
+    if max_eigen_user is None:
+        max_eigen_user = max_eigen
     
-    if z is None == 2:
-        colored_line_merged(ax, unstable_eigen, x, y, is_closed=is_closed, norm=norm, cmap=custom_cmap, **lc_kwargs)
-    else:
-        colored_line_merged(ax, unstable_eigen, x, y, z, is_closed=is_closed, norm=norm, cmap=custom_cmap, **lc_kwargs)
+    colors = []
+
+    green  = mcolors.to_rgb("tab:green")
+    olive  = mcolors.to_rgb("tab:olive")
+    orange = mcolors.to_rgb("tab:orange")
+    red    = mcolors.to_rgb("tab:red")
+
+    for i in range(max_eigen + 1):
+        if i == 0:
+            colors.append(green)
+        elif i == 1:
+            colors.append(olive)
+        elif i == 2:
+            colors.append(orange)
+        elif i >= max_eigen_user:
+            colors.append(red)
+        else:
+            t = (i - 2) / (max_eigen_user - 2)
+            col = (1 - t) * np.array(orange) + t * np.array(red)
+            colors.append(col)
+    typed_line_merged(ax, unstable_eigen, x, y, z, is_closed=is_closed, colors=colors, **lc_kwargs)
 
 def plotResults_matrix(fig: Figure, res_lst: np.ndarray):
     N = res_lst[0].shape[1]
