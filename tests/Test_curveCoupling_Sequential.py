@@ -1,6 +1,6 @@
 import numpy as np
 from curveCoupling import ndcurve, curveCouplingProblem_Split
-from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Sequential
+from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Sequential, get_sequence_steps
 from curveCoupling.curveGenerators import *
 from curveCoupling.utils.defaultPlots import plotResults
 from matplotlib import pyplot as plt
@@ -22,7 +22,8 @@ def run():
     constraintMatrices_lst = [np.array([[1.0, -1.0, -1.0]]), np.array([[0.0, 1.0, -1.0]])]
     outVector_lst = [np.array([0.5, 0.5, 0.5]), np.array([1.0, 0.5, 0.5])]
 
-    prb = curveCouplingProblem_Split(curves, constraintMatrices_lst, outVector_lst)
+    prb = curveCouplingProblem_Split(curves, constraintMatrices_lst, outVector_lst).to_General()
+
     out_lst, res_lst = solveCurveCoupling_Sequential(prb)
     print("Number of curves:", len(res_lst))
 

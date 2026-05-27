@@ -6,7 +6,7 @@ from curveCoupling.curveCoupling_Analysis.curveCouplingAnalysis_Equality import 
 from curveCoupling.curveCoupling_Analysis.curveCouplingAnalysis import (solveCurveCoupling_Islands,
                                                                         solveCurveCoupling_Singularities,
                                                                         findSingularities, findCritAlongDir, findCritFromPoint)
-from curveCoupling.curveCoupling_Analysis.curveCouplingAnalysis_Split import (get_sequence_steps, solveCurveCoupling_Sequential)
+from curveCoupling.curveCoupling_Analysis.curveCouplingAnalysis_Sequential import (get_sequence_steps, solveCurveCoupling_Sequential)
 
 # Author: Franco N. Pinan Basualdo
 # Project: Curve Coupling
