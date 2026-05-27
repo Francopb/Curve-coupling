@@ -1,10 +1,11 @@
 import numpy as np
-from curveCoupling import ndcurve, curveCouplingProblem_Split, curveCouplingProblem_Equality, solveCurveCoupling_Equality
+from curveCoupling import ndcurve, curveCouplingProblem_Split, solveCurveCoupling
 from curveCoupling.curveCoupling_Analysis import findCriticalPoints
 from curveCoupling.curveCoupling_Analysis.curveCouplingAnalysis_Equality import criticalPoint
 from curveCoupling.utils.matrixOperations import rref
 from typing import *
 from scipy import optimize
+import itertools
 
 
 def to_RREF(constraintMatrices_lst: List[np.ndarray],
@@ -97,7 +98,7 @@ def __findIslands_critPoints_pair(
             prev_index = None
             for i in list(reversed(range(curr_index))):
                 if critPoints[i].order == 1:
-                    if critPoints[i].higher_order_val > 0.0 and critPoints[curr_index].getType()<0:
+                    if critPoints[i].higher_order_val * critPoints[curr_index].getType()<0:
                         prev_index = i
                     break
                 if condition_pass(critPoints[i].getVal_index()) and critPoints[curr_index].opositeType(critPoints[i]):
@@ -109,7 +110,7 @@ def __findIslands_critPoints_pair(
             next_index = None
             for i in range(curr_index+1, num_crit_points):
                 if critPoints[i].order == 1 and critPoints[i-1].sameType(critPoints[curr_index]):
-                    if critPoints[i].higher_order_val > 0.0 and critPoints[curr_index].getType()>0:
+                    if critPoints[i].higher_order_val * critPoints[curr_index].getType()>0:
                         next_index = i
                     break
                 if condition_pass(critPoints[i].getVal_index()) and critPoints[curr_index].opositeType(critPoints[i]):
@@ -136,7 +137,7 @@ def __findIslands_critPoints_pair(
                     intersection, i1, critPoints1, is_island1)
                 prev_index2, next_index2 = checkOtherCritPoints(
                     intersection, i2, critPoints2, is_island2)
-
+                
                 if prev_index1 is not None and next_index1 is not None and prev_index2 is not None and next_index2 is not None:
                     intersections_res.append(intersection)
                     intersections_indices.append((
@@ -329,279 +330,230 @@ def __findIslands_Equality_pair_external(curve_island: ndcurve,
 
     return np.array(param_res), np.array(initial_dir)
 
+def get_sequence_steps(prb: curveCouplingProblem_Split):
+    constr_mat_lst = prb.constraintMatrices_lst
+    constr_val_lst = prb.constraintConstant_lst
+    coupled_groups = set((n,) for n in range(len(prb.curves)))
+    steps = []
+    analyzed_equations = set()
 
-def __solve_pair_step(curves: List[ndcurve],
-                    indexes1: List[int],
-                    indexes2: List[int],
-                    vals1_lst: np.ndarray,
-                    vals2_lst: np.ndarray,
-                    constant: float,
-                    dim_index: Optional[int],
-                    res1_lst: Optional[List[Tuple[np.ndarray, bool]]],
-                    res2_lst: Optional[List[Tuple[np.ndarray, bool]]],
-                    ):
-    """
-    Solve a pair step constraint between two sets of curves.
-    Args:
-        curves (List[ndcurve]): List of curves in the first group.
-        indexes1 (List[int]): Indexes for the first group of curves.
-        indexes2 (List[int]): Indexes for the second group of curves.
-        vals1_lst (np.ndarray): Coefficients for the first group of curves.
-        vals2_lst (np.ndarray): Coefficients for the second group of curves.
-        constant (float): The constant term in the constraint equation.
-        res1 (Optional[List[np.ndarray]]): Intermediate result curves for the first group, if any.
-        res2 (Optional[List[np.ndarray]]): Intermediate result curves for the second group, if any.
-        num_points (int): Number of points to sample on the curves.
-    Returns:
-        List[ndcurve]: New curves resulting from solving the pair step.
-    """
-
-    if len(indexes1) != len(vals1_lst) or len(indexes2) != len(vals2_lst):
-        raise ValueError(
-            "Length of curve lists must match length of value lists.")
-
-    if len(indexes1) > 1 and res1_lst is None:
-        raise ValueError(
-            "Intermediate result curves for curve1_lst must be provided when there are multiple curves.")
-
-    if len(indexes2) > 1 and res2_lst is None:
-        raise ValueError(
-            "Intermediate result curves for curve2_lst must be provided when there are multiple curves.")
-
-    if res1_lst is None:
-        curve1 = curves[indexes1[0]].copy().extractIndex(dim_index)
-        curves1 = [curve1.scale(vals1_lst[0])]
-        res_curves1 = [(lambda x: x, False)]
-    else:
-        curves1 = []
-        res_curves1 = []
-        for res, is_island in res1_lst:
-            curve_data = np.zeros(len(res))
-            for idx, val, r in zip(indexes1, vals1_lst, res.T):
-                curve_data += curves[idx].extractIndex(dim_index)(r)*val
-            curves1.append(ndcurve(curve_data, is_periodic=is_island))
-            res_curves1.append(
-                (ndcurve(res, is_periodic=is_island), is_island))
-
-    if res2_lst is None:
-        curve2 = curves[indexes2[0]].copy().extractIndex(dim_index)
-        curves2 = [curve2.scale(-vals2_lst[0]).add_cte(-constant)]
-        res_curves2 = [(lambda x: x, False)]
-    else:
-        curves2 = []
-        res_curves2 = []
-        for res, is_island in res2_lst:
-            curve_data = -np.ones(len(res)) * constant
-            for idx, val, r in zip(indexes2, vals2_lst, res.T):
-                curve_data -= curves[idx].extractIndex(dim_index)(r)*val
-            curves2.append(ndcurve(curve_data, is_periodic=is_island))
-            res_curves2.append(
-                (ndcurve(res, is_periodic=is_island), is_island))
-
-    indices_total = [i for sublist in (indexes1, indexes2) for i in sublist]
-    sort_order = np.argsort(indices_total)
-
-    # Now only need to solve for equality in this new curves
-    new_res_lst = []
-    pairs_res_dict = {}
-    for i1, (c1, (r1, is_island1)) in enumerate(zip(curves1, res_curves1)):
-        for i2, (c2, (r2, is_island2)) in enumerate(zip(curves2, res_curves2)):
-            prb = curveCouplingProblem_Equality([c1, c2])
-            pair_res = []
-            if not is_island1 and not is_island2:
-                _, new_res = solveCurveCoupling_Equality(prb)
-                pair_res.append(new_res.copy())
-                new_res = np.column_stack(
-                    (r1(new_res[:, 0]), r2(new_res[:, 1])))
-                permuted_res = new_res[:, sort_order]
-                new_res_lst.append((permuted_res, False))
-
-            islands_seeds, islands_dirs = __findIslands_Equality_pair_internal(
-                c1, c2, is_island1, is_island2)
-            for s, d in zip(islands_seeds, islands_dirs):
-                _, new_res = solveCurveCoupling_Equality(
-                    prb, param_start=s, stop_circulation=True, initial_dir=d)
-                pair_res.append(new_res.copy())
-                new_res = np.column_stack(
-                    (r1(new_res[:, 0]), r2(new_res[:, 1])))
-                permuted_res = new_res[:, sort_order]
-                new_res_lst.append((permuted_res, True))
-
-            if is_island1:
-                islands_seeds, islands_dirs = __findIslands_Equality_pair_external(
-                    c1, c2, is_island2)
-                for s, d in zip(islands_seeds, islands_dirs):
-                    param_stop = s + np.array((1.0, 0.0))
-                    _, new_res = solveCurveCoupling_Equality(
-                        prb, param_start=s, stop_circulation=True, param_stop=param_stop, initial_dir=d)
-                    pair_res.append(new_res.copy())
-                    new_res = np.column_stack(
-                        (r1(new_res[:, 0]), r2(new_res[:, 1])))
-                    permuted_res = new_res[:, sort_order]
-                    new_res_lst.append((permuted_res, True))
-
-            if is_island2:
-                islands_seeds, islands_dirs = __findIslands_Equality_pair_external(
-                    c2, c1, is_island1)
-                islands_seeds = [(s[1], s[0]) for s in islands_seeds]
-                islands_dirs = [(d[1], d[0]) for d in islands_dirs]
-                for s, d in zip(islands_seeds, islands_dirs):
-                    param_stop = s + np.array((0.0, 1.0))
-                    _, new_res = solveCurveCoupling_Equality(
-                        prb, param_start=s, param_stop=param_stop, initial_dir=None)
-                    pair_res.append(new_res.copy())
-                    new_res = np.column_stack(
-                        (r1(new_res[:, 0]), r2(new_res[:, 1])))
-                    permuted_res = new_res[:, sort_order]
-                    new_res_lst.append((permuted_res, True))
-            pairs_res_dict[(i1,i2)]=pair_res
-
-    return new_res_lst, pairs_res_dict
-
-
-def solveCurveCoupling_Islands_Sequential(prb: curveCouplingProblem_Split,
-                                          return_intermediate_res: bool = False
-                                          ) -> Union[Tuple[List[np.ndarray], List[np.ndarray]], 
-           Tuple[List[np.ndarray], List[np.ndarray], Dict[Tuple[int, ...], Tuple[np.ndarray, np.ndarray]]]]:
-    """
-    Sequentially solve a split curveCoupling problem.
-    Args:
-        prb (curveCouplingProblem_Split): Problem to solve.
-        return_intermediate_res (bool): Whether to return intermediate results or not.
-    Returns:
-        A tuple containing:
-        - curves (List[np.ndarray]): The final output curves.
-        - parametric_res (List[np.ndarray]): Results mapped in parametric space.
-        - intermediate_res (Dict[Tuple[int, ...], Tuple[np.ndarray, np.ndarray]], optional): A mapping of 
-          curves indices to their intermediate state arrays. 
-          Only returned if `return_intermediate_res` is True.
-    """
-
-    if not is_SolvableSequentially(prb):
-        raise ValueError(
-            "The system is not sequentially solvable via pair elimination.")
-
-    constraintMatrices_lst = prb.constraintMatrices_lst
-    constraintConstant_lst = prb.constraintConstant_lst
-
-    def identify_step(constraintMatrices_lst, constraintConstant_lst, coupled: List = []):
-        for dim, (constr_mat, constr_const) in enumerate(zip(constraintMatrices_lst, constraintConstant_lst)):
-            for n_row, (row, constant) in enumerate(zip(constr_mat, constr_const)):
+    def find_pair(constr_mat_lst, coupled_groups):
+        for dim, constr_mat in enumerate(constr_mat_lst):
+            for i, row in enumerate(constr_mat):
+                if (dim, i) in analyzed_equations:
+                    continue
                 non_zero_indices = np.where(np.abs(row) > 1e-9)[0]
-                found_coupled_groups = set()
-                remove_indices = []
-                for c in coupled:
-                    for k, idx in enumerate(non_zero_indices):
-                        if idx in c:
-                            found_coupled_groups.add(c)
-                            remove_indices.append(k)
+                involved_groups = set()
+                for idx in non_zero_indices:
+                    for group in coupled_groups:
+                        if idx in group:
+                            involved_groups.add(group)
+                            break
 
-                for index in sorted(remove_indices, reverse=True):
-                    non_zero_indices = np.delete(non_zero_indices, index)
+                if len(involved_groups) < 2:
+                    raise ValueError(f"Over-constrained system in dimension {dim}: constraint {row} involves only group {involved_groups} with coupled groups {coupled_groups}.")
+                
+                if len(involved_groups) == 2:
+                    involved_groups = sorted(involved_groups)
+                    analyzed_equations.add((dim, i))
+                    return dim, i, involved_groups
 
-                if len(non_zero_indices) + len(found_coupled_groups) == 2:
-                    indices = [(i,) for i in non_zero_indices.tolist()]
-                    if len(found_coupled_groups) > 0:
-                        indices += [group for group in found_coupled_groups]
-                        for group in found_coupled_groups:
-                            coupled.remove(group)
-                    indices = tuple(indices)
+        return None, None, None
+    
+    steps = []
+    # seq_mat_contraints = [np.zeros((0, len(prb.curves))) for _ in prb.constraintMatrices_lst]
+    # seq_val_contraints = [np.zeros((0,)) for _ in prb.constraintConstant_lst]
 
-                    indices_total = [i for sublist in indices for i in sublist]
-                    coupled.add(tuple(sorted(indices_total)))
-                    vals = tuple([row[list(sublist)] for sublist in indices])
-                    return dim, n_row, indices, vals, constant, coupled
+    coupling_equations_mats = {(i,): [np.zeros((0, len(prb.curves))) for _ in prb.constraintMatrices_lst] for i in range(len(prb.curves))}
+    coupling_equations_vals = {(i,): [np.zeros((0,)) for _ in prb.constraintConstant_lst] for i in range(len(prb.curves))}
 
-        return None
+    while len(coupled_groups) > 1:
+        dim, i, involved_groups = find_pair(constr_mat_lst, coupled_groups)
+        if dim is None:
+            raise ValueError("No pair found; the system may not be fully solvable via sequential pair elimination.")
 
-    coupled = set()
-    intermediate_res_dict = {}
-    intermediate_pair_res_dict = {}
-    while sum([mat.size for mat in constraintMatrices_lst]) > 0:
-        constraintMatrices_lst, constraintConstant_lst = to_RREF(
-            constraintMatrices_lst, constraintConstant_lst)
-        step = identify_step(constraintMatrices_lst,
-                             constraintConstant_lst, coupled)
-        
-        if step is None:
-            raise ValueError(
-                "No more pair steps can be identified; the system may not be fully solvable via sequential pair elimination.")
-        dim, row, pair, vals, constant, coupled = step
+        all_involved_indices = tuple(sorted(set().union(*involved_groups)))
 
-        constraintMatrices_lst[dim] = np.delete(
-            constraintMatrices_lst[dim], row, axis=0)
-        constraintConstant_lst[dim] = np.delete(
-            constraintConstant_lst[dim], row, axis=0)
+        prev_coupling_mats = [coupling_equations_mats[group] for group in involved_groups]
+        prev_coupling_vals = [coupling_equations_vals[group] for group in involved_groups]
 
-        if len(pair[0]) > 1:
-            res1 = intermediate_res_dict[pair[0]]
+        new_coupling_mats = [np.row_stack([prev_mats[dim] for prev_mats in prev_coupling_mats]) for dim in range(len(constr_mat_lst))]
+        new_coupling_vals = [np.concatenate([prev_vals[dim] for prev_vals in prev_coupling_vals]) for dim in range(len(constr_val_lst))]
+
+        new_coupling_mats[dim] = np.row_stack((new_coupling_mats[dim], constr_mat_lst[dim][i]))
+        new_coupling_vals[dim] = np.concatenate((new_coupling_vals[dim], [constr_val_lst[dim][i]]))
+
+        coupling_equations_mats[all_involved_indices] = new_coupling_mats.copy()
+        coupling_equations_vals[all_involved_indices] = new_coupling_vals
+
+        for group in involved_groups:
+            coupled_groups.remove(group)
+        coupled_groups.add(all_involved_indices)
+        steps.append((dim, new_coupling_mats, new_coupling_vals, involved_groups.copy()))
+
+    return steps
+
+def solveCurveCoupling_Sequential(prb: curveCouplingProblem_Split,
+                                          return_intermediate_res: bool = False,
+                                          find_islands_flag: bool = True,
+                                          **solver_kwargs,
+                                          ):
+    
+    try:
+        sequence_steps = get_sequence_steps(prb)
+    except ValueError as e:
+        raise ValueError("The system is not sequentially solvable via pair elimination.")
+    
+    intermediate_results = {}
+
+    def find_seeds(dim, step_contraints_mat, step_contraints_val, involved_groups):
+        last_step_contraints_mat = step_contraints_mat[dim][-1]
+        last_step_contraints_val = step_contraints_val[dim][-1]
+        group1, group2 = involved_groups
+
+        if len(group1) == 1:
+            idx = group1[0]
+            curves1 = [prb.curves[idx].copy().extractIndex(dim).scale(last_step_contraints_mat[idx])]
+            is_island1 = [False]
         else:
-            res1 = None
+            res_lst = intermediate_results[group1]
+            res_curves_1 = [ndcurve(res, is_periodic=(i>1)) for i, res in enumerate(res_lst)]
+            data_lst = [np.array([prb.curves[idx](r)[:, dim] * last_step_contraints_mat[idx] for idx, r in zip(group1, res.T)]) for res in res_lst]
+            data_lst = [np.sum(d, axis=0) for d in data_lst]
+            curves1 = ndcurve.createList(data_lst)
+            is_island1 = [i>0 for i in range(len(res_lst))]
 
-        if len(pair[1]) > 1:
-            res2 = intermediate_res_dict[pair[1]]
+        if len(group2) == 1:
+            idx = group2[0]
+            curves2 = [prb.curves[idx].copy().extractIndex(dim).scale(-last_step_contraints_mat[idx]).add_cte(-last_step_contraints_val)]
+            is_island2 = [False]
         else:
-            res2 = None
+            res_lst = intermediate_results[group2]
+            res_curves_2 = [ndcurve(res, is_periodic=(i>1)) for i, res in enumerate(res_lst)]
+            data_lst = [np.array([prb.curves[idx](r)[:, dim] * last_step_contraints_mat[idx] for idx, r in zip(group2, res.T)]) for res in res_lst]
+            data_lst = [-np.sum(d, axis=0)-last_step_contraints_val for d in data_lst]
+            curves2 = ndcurve.createList(data_lst)
+            is_island2 = [i>0 for i in range(len(res_lst))]
 
-        new_res_lst, pair_res_dict = __solve_pair_step(
-            prb.curves, pair[0], pair[1], vals[0], vals[1], constant, dim, res1, res2)
 
-        non_zero_indices_total = [i for sublist in pair for i in sublist]
-        intermediate_res_dict[tuple(
-            sorted(non_zero_indices_total))] = new_res_lst
+        pairs = itertools.product(range(len(curves1)), range(len(curves2)))
+
+        seeds = []
+        for i1, i2 in pairs:
+            c1 = curves1[i1]
+            c2 = curves2[i2]
+
+            pair_seeds = []
+
+            islands_seeds, _ = __findIslands_Equality_pair_internal(
+                    c1, c2, is_island1[i1], is_island2[i2])
+                        
+            pair_seeds.extend(islands_seeds)
+            
+            if is_island1[i1]:
+                islands_seeds, _ = __findIslands_Equality_pair_external(
+                    c1, c2, is_island2[i2])
+                                
+                pair_seeds.extend(islands_seeds)
+
+            if is_island2[i2]:
+                islands_seeds, _ = __findIslands_Equality_pair_external(
+                    c2, c1, is_island1[i1])
+                islands_seeds = [(s[1], s[0]) for s in islands_seeds]
+
+                pair_seeds.extend(islands_seeds)
+
+            for sp1, sp2 in pair_seeds:
+                if len(group1) == 1:
+                    s1 = np.array([sp1])
+                else:
+                    s1 = res_curves_1[i1](sp1)
+
+                if len(group2) == 1:
+                    s2 = np.array([sp2])
+                else:
+                    s2 = res_curves_2[i2](sp2)
+
+                seeds.append((s1, s2))
+
+        return seeds
+
+    for dim, constraints_mat_lst, constraints_val_lst, involved_groups in sequence_steps:
+        if len(involved_groups) != 2:
+            raise ValueError("Each step must involve exactly two groups of curves.")
         
-        intermediate_pair_res_dict[tuple(
-            sorted(non_zero_indices_total))] = pair_res_dict
+        merged_indices = np.concatenate(involved_groups, axis=0)
+        sort_idxs = np.argsort(merged_indices)
+        sorted_indices = merged_indices[sort_idxs]
+        step_mat_contraints = [m[:, sorted_indices] for m in constraints_mat_lst]
+        step_curves = [prb.curves[i] for i in sorted_indices]
+
+        reduced_prb = curveCouplingProblem_Split(step_curves,
+                                                 step_mat_contraints,
+                                                 [np.ones(len(step_curves)) for _ in step_mat_contraints],
+                                                 constraints_val_lst)
         
-    # Compute the output
+        print(f"Step involving groups {involved_groups} in dim {dim} with constraints {constraints_mat_lst}; {constraints_val_lst}")
 
-    intermediate_res_dict = {k: [r[0] for r in v] for k,v in intermediate_res_dict.items()}
+        _, res_main = solveCurveCoupling(reduced_prb, **solver_kwargs)
+        res_lst = [res_main]
 
-    res_lst = intermediate_res_dict[tuple(range(len(prb.curves)))]
+
+        if find_islands_flag:
+            seeds = find_seeds(dim, constraints_mat_lst, constraints_val_lst, involved_groups)
+            merged_seeds = [np.concatenate(s) for s in seeds]
+            sorted_seeds = [s[sort_idxs] for s in merged_seeds]
+
+            print(f"Found {len(sorted_seeds)} seeds.")
+
+            for s in sorted_seeds:
+                _, res = solveCurveCoupling(reduced_prb, param_start=s, **solver_kwargs)
+                res_lst.append(res)
+
+        intermediate_results[tuple(sorted_indices)] = res_lst
+
+    final_res_lst = intermediate_results[tuple(range(len(prb.curves)))]
     out_lst = []
-    for res in res_lst:
+    for res in final_res_lst:
         out = np.array([prb.computeOutput(r) for r in res])
         out_lst.append(out)
 
     if return_intermediate_res:
-        return out_lst, res_lst, intermediate_res_dict, intermediate_pair_res_dict
+        return out_lst, final_res_lst, intermediate_results
     else:
-        return out_lst, res_lst
+        return out_lst, res_lst   
 
 
-def is_SolvableSequentially(prb: curveCouplingProblem_Split):
-    constr_mat_lst = prb.constraintMatrices_lst
+if __name__ == "__main__":
+    from curveCoupling.curveGenerators import *
+    from curveCoupling.utils.defaultPlots import plotResults
+    from matplotlib import pyplot as plt
 
-    def find_pair(constr_mat_lst):
-        for dim, constr_mat in enumerate(constr_mat_lst):
-            for i, row in enumerate(constr_mat):
-                non_zero_indices = np.where(np.abs(row) > 1e-9)[0]
-                if len(non_zero_indices) == 2:
-                    return dim, i, non_zero_indices
+    p0 = np.array([[0.0, 0.0], [0.55, 0.6], [1.1, 0.88],
+                  [1.27, 0.72], [1.1, 0.55]])
+    p0 = np.concatenate([p0, [2.0, 1.0] - np.flip(p0, axis=0)])
+    p1 = np.array([[0.0, 0.0], [0.1, 0.4], [0.25, 0.64], [0.4, 0.6]])
+    p1 = np.concatenate([p1, [1.0, 1.0] - np.flip(p1, axis=0)])
+    p2 = np.array([[0.0, 0.0], [0.2, 0.62], [0.35, 0.8], [0.45, 0.78], [0.45, 0.67], [
+                  0.4, 0.52], [0.4, 0.41], [0.6, 0.44], [0.8, 0.55], [1.0, 1.0]])
+    points = [p0, p1, p2]
+    data = [generate_curve_CubicSpline(pts, 200) for pts in points]
 
-        return None
+    curves = ndcurve.createList(data)
 
-    while sum([mat.size for mat in constr_mat_lst]) > 0:
-        constr_mat_lst = [rref(mat)[0] for mat in constr_mat_lst]
-        res = find_pair(constr_mat_lst)
-        if res is None:
-            return False
+    constraintMatrices_lst = [np.array([[1.0, -1.0, -1.0]]), np.array([[0.0, 1.0, -1.0]])]
+    outVector_lst = [np.array([0.5, 0.5, 0.5]), np.array([1.0, 0.5, 0.5])]
 
-        dim, row_idx, pair = res
-        constr_mat_lst[dim] = np.delete(constr_mat_lst[dim], row_idx, axis=0)
+    prb = curveCouplingProblem_Split(curves, constraintMatrices_lst, outVector_lst)
 
-        new_constr_mat_lst = []
-        for constr_mat in constr_mat_lst:
-            if constr_mat.size == 0:
-                continue
-            new_col = np.any(constr_mat[:, pair] != 0, axis=1).astype(float)
-            new_mat = np.column_stack(
-                (np.delete(constr_mat, pair, axis=1), new_col))
-            new_constr_mat_lst.append(new_mat)
+    out_lst, res_lst = solveCurveCoupling_Sequential(prb)    
 
-        constr_mat_lst = new_constr_mat_lst
+    fig = plt.figure()
+    plotResults(fig, data, out_lst, res_lst)
 
-    return True
+
+    plt.show(block=False)
+    input("Press Enter")
 
 # Author: Franco N. Pinan Basualdo
 # Project: Curve Coupling

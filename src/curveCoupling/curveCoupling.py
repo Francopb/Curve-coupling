@@ -751,6 +751,9 @@ def solveCurveCoupling(
             print(f"Stopped by error: {e}")
             break
 
+    if it >= it_max:
+        print("Warning: stopped by max iterations")
+
     if not stopped_by_circulation and check_backward_dir:
         rev_output, rev_res = solveCurveCoupling(prb, param_start, param_range, param_stop, stop_circulation,
                                                  False, -initial_dir, solve_init, step_0, step_min, step_max, guess_factor, tolerance, it_max)

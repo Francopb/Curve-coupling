@@ -413,7 +413,7 @@ def __findIslands_critPoints_pair(
         prev_index = None
         for i in list(reversed(range(curr_index))):
             if critPoints[i].order == 1:
-                if critPoints[i].higher_order_val > 0.0 and critPoints[curr_index].getType()<0:
+                if critPoints[i].higher_order_val * critPoints[curr_index].getType()<0:
                     prev_index = i
                 break
             if condition_pass(critPoints[i].getVal_index()) and critPoints[curr_index].opositeType(critPoints[i]):
@@ -425,7 +425,7 @@ def __findIslands_critPoints_pair(
         next_index = None
         for i in range(curr_index+1, num_crit_points):
             if critPoints[i].order == 1 and critPoints[i-1].sameType(critPoints[curr_index]):
-                if critPoints[i].higher_order_val > 0.0 and critPoints[curr_index].getType()>0:
+                if critPoints[i].higher_order_val * critPoints[curr_index].getType()>0:
                     next_index = i
                 break
             if condition_pass(critPoints[i].getVal_index()) and critPoints[curr_index].opositeType(critPoints[i]):
