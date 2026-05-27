@@ -36,8 +36,8 @@ def plotResults(fig: Figure,
         axs[i].plot(d[:, 0], d[:, 1])
         axs[i].set_title("Curve "+str(i))
 
-        min_d = np.min(d, axis=0)
-        max_d = np.max(d, axis=0)
+        min_d = np.nanmin(d, axis=0)
+        max_d = np.nanmax(d, axis=0)
         range_d = np.column_stack((np.floor(10*min_d)/10, np.ceil(10*max_d)/10))
 
         axs[i].set_xlim(range_d[0])
@@ -46,8 +46,8 @@ def plotResults(fig: Figure,
         axs[i].xaxis.set_major_locator(ticker.LinearLocator(3))
         axs[i].yaxis.set_major_locator(ticker.LinearLocator(3))
 
-    min_res = np.min([np.min(res, axis=0) for res in res_lst], axis=0)
-    max_res = np.max([np.max(res, axis=0) for res in res_lst], axis=0)
+    min_res = np.nanmin([np.nanmin(res, axis=0) for res in res_lst], axis=0)
+    max_res = np.nanmax([np.nanmax(res, axis=0) for res in res_lst], axis=0)
     range_res = np.column_stack((np.floor(10*min_res)/10, np.ceil(10*max_res)/10))
 
     if numCurves == 2:

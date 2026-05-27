@@ -493,7 +493,7 @@ def solveCurveCoupling_Sequential(prb: curveCouplingProblem_Split,
                                                  [np.ones(len(step_curves)) for _ in step_mat_contraints],
                                                  constraints_val_lst)
         
-        print(f"Step involving groups {involved_groups} in dim {dim} with constraints {constraints_mat_lst}; {constraints_val_lst}")
+        # print(f"Step involving groups {involved_groups} in dim {dim} with constraints {constraints_mat_lst}; {constraints_val_lst}")
 
         _, res_main = solveCurveCoupling(reduced_prb, **solver_kwargs)
         res_lst = [res_main]
@@ -504,7 +504,7 @@ def solveCurveCoupling_Sequential(prb: curveCouplingProblem_Split,
             merged_seeds = [np.concatenate(s) for s in seeds]
             sorted_seeds = [s[sort_idxs] for s in merged_seeds]
 
-            print(f"Found {len(sorted_seeds)} seeds.")
+            # print(f"Found {len(sorted_seeds)} seeds.")
 
             for s in sorted_seeds:
                 _, res = solveCurveCoupling(reduced_prb, param_start=s, **solver_kwargs)
