@@ -1,6 +1,6 @@
 import numpy as np
 from curveCoupling.curveGenerators import *
-from curveCoupling import ndcurve, curveCouplingProblem, solveCurveCoupling_bruteForce_localSolve
+from curveCoupling import ndcurve, curveCouplingProblem
 from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Singularities, findSingularities
 from curveCoupling.utils.defaultPlots import plotResults
 from matplotlib import pyplot as plt
@@ -29,8 +29,6 @@ def run():
     out_lst, res_lst = solveCurveCoupling_Singularities(prob, tol=1e-3)
     _, sing_seeds, sing_orders, sing_dirs = findSingularities(
         prob, 10, tol=1e-3)
-    out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(
-        prob, iter_points=10)
 
     fig = plt.figure()
     axs = plotResults(fig, data, out_lst, res_lst)

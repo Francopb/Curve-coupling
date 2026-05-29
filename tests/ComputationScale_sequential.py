@@ -23,7 +23,7 @@ def compute(curves, find_islands_flag, plot_flag=False):
 
     outVector_lst = [disp_out, force_out]
 
-    prb = curveCouplingProblem_Split(curves, constraintMatrices_lst, outVector_lst)
+    prb = curveCouplingProblem_Split(curves, constraintMatrices_lst, outVector_lst).to_General()
 
     start_cpu = time.process_time()
     out_lst, res_lst = solveCurveCoupling_Sequential(prb, find_islands_flag=find_islands_flag, it_max=np.inf)
@@ -76,7 +76,7 @@ def set_stacked(N: int):
 
 if __name__ == "__main__":
 
-    N_vals = np.arange(2, 9)
+    N_vals = np.arange(2, 11)
     lengths = []
     elapsed_times = []
     for N in N_vals:

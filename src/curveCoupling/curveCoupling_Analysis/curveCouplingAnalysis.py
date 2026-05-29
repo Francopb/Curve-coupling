@@ -2,7 +2,7 @@ import numpy as np
 from scipy import optimize, linalg
 from curveCoupling import curveCouplingProblem, solveCurveCoupling
 from curveCoupling.utils.filterSetsOfPoints import removeRepeats, min_dist_point_to_set, remove_repeat_sets
-from curveCoupling.utils.matrixOperations import rref, my_null_space
+from curveCoupling.utils.matrixOperations import rref
 from fractions import Fraction
 from joblib import Parallel, delayed
 import itertools
@@ -224,7 +224,6 @@ def solveSingularity(prb: curveCouplingProblem,
 
     return exp, cte
 
-
 def findSingularities(prb: curveCouplingProblem,
                       iter_points: int = 10,
                       tol: float = 1e-2) -> Tuple[np.ndarray, np.ndarray]:
@@ -244,31 +243,29 @@ def findSingularities(prb: curveCouplingProblem,
     N = prb.numCurves
 
     def f_opt(x, return_jac=True):
-        if len(x) != 3*N:
+        if len(x) != 2*N-1:
             raise ValueError(
-                f"The input should have length {3*N}, but got {len(x)}")
+                f"The input should have length {2*N-1}, but got {len(x)}")
 
         t = x[:N]
-        v1 = x[N:2*N]
-        v2 = x[2*N:]
+        v = x[N:]
 
         err = prb.computeConstraint(t)
         jac = prb.computeConstraintJac(t)
 
-        y = np.concatenate([err, np.dot(jac, v1), np.dot(jac, v2), [
-                           np.sum(v1**2)-1, np.sum(v2**2)-1, np.dot(v1, v2)]])
+        y = np.concatenate([err, np.dot(jac.T, v), [np.sum(v**2)-1]])
+
         if not return_jac:
             return y
 
         jac2 = prb.computeConstraintJac(t, nu=2)
-        jacTot = np.block([[jac, np.zeros_like(jac), np.zeros_like(jac)],
-                           [jac2 * v1[np.newaxis, :], jac, np.zeros_like(jac)],
-                           [jac2 * v2[np.newaxis, :], np.zeros_like(jac), jac],
-                           [np.zeros((1, N)), 2*np.reshape(v1,
-                                                           (1, -1)), np.zeros((1, N))],
-                           [np.zeros((1, N)), np.zeros((1, N)),
-                            2*np.reshape(v2, (1, -1))],
-                           [np.zeros((1, N)), np.reshape(v2, (1, -1)), np.reshape(v1, (1, -1))]])
+
+        diag_entries = np.dot(v, jac2)
+        Hv = np.diag(diag_entries)
+
+        jacTot = np.block([[jac, np.zeros((N-1, N-1))],
+                           [Hv, jac.T],
+                           [np.zeros((1, N)), 2*np.reshape(v, (1, -1))]])
 
         return y, jacTot
 
@@ -277,33 +274,19 @@ def findSingularities(prb: curveCouplingProblem,
     def solve(comb):
         param0 = np.array([array_params[i] for i in reversed(comb)])
         J = prb.computeConstraintJac(param0)
+        v0 = np.zeros(J.shape[0])
 
-        _, _, Vt = np.linalg.svd(J, full_matrices=True)
-        v10 = Vt[-1]      # null direction (σ = 0)
-        v20 = Vt[-2]      # second smallest singular value direction
-
-        x0 = np.concatenate([param0, v10, v20])
-
-        res = optimize.root(f_opt, x0, method='hybr', tol=1e-3, jac=True)
+        x0 = np.concatenate([param0, v0])
+        res = optimize.least_squares(
+            fun=lambda x: f_opt(x, return_jac=False),
+            jac=lambda x: f_opt(x, return_jac=True)[1],
+            x0=x0,
+            method='lm'
+        )
 
         if res.success and np.linalg.norm(res.fun) < tol:
             return res.x[:N]
         return None
-
-    # for comb in combinations:
-    #     param0 = np.array([array_params[i] for i in reversed(comb)])
-    #     J = prb.computeConstraintJac(param0)
-
-    #     _, _, Vt = np.linalg.svd(J, full_matrices=True)
-    #     v10 = Vt[-1]      # null direction (σ = 0)
-    #     v20 = Vt[-2]      # second smallest singular value direction
-
-    #     x0 = np.concatenate([param0, v10, v20])
-
-    #     res = optimize.root(f_opt, x0, method='hybr', tol=1e-3, jac=True)
-
-    #     if res.success and np.linalg.norm(res.fun) < tol:
-    #         singularities.append(res.x[:N])
 
     results = Parallel(n_jobs=-1)(
         delayed(solve)(comb) 
@@ -318,62 +301,6 @@ def findSingularities(prb: curveCouplingProblem,
     sing_solutions = [solveSingularity(prb, s, tol=tol) for s in singularities]
     sing_orders, sing_dirs = zip(*sing_solutions)
     return out_singularities, singularities, sing_orders, sing_dirs
-
-
-# def findSingularities_old(prb: curveCouplingProblem,
-#                           iter_points: int = 100,
-#                           tol: float = 1e-2) -> Tuple[np.ndarray, np.ndarray]:
-#     """
-#     Find singularities.
-
-#     Args:
-#         prb (curveCouplingProblem): The curve coupling problem instance.
-#         iter_points (int): Number of iteration points.
-#         tol (float): Tolerance.
-
-#     Returns:
-#         Tuple[np.ndarray, np.ndarray]: Found singularities and their outputs.
-#     """
-#     def computeMinSingVal(param):
-#         J = prb.computeConstraintJac(param)
-#         return np.min(np.linalg.svd(J, compute_uv=False))
-
-#     array_params = np.linspace(0.0, 1.0, iter_points)
-#     combinations = itertools.product(range(iter_points), repeat=prb.numCurves)
-
-#     singularities = []
-
-#     def f_opt(x):
-#         y = np.concatenate([prb.computeConstraint(x), [computeMinSingVal(x)]])
-#         return y
-    
-#     def solve(comb):
-#         param0 = np.array([array_params[i] for i in reversed(comb)])
-#         res = optimize.root(f_opt, param0, method='hybr', tol=1e-6, jac=False)
-#         if res.success and np.all(res.x >= 0.0) and np.all(res.x <= 1.0) and np.linalg.norm(prb.computeConstraint(res.x)) < tol:
-#            return res.x
-#         return None
-
-
-#     # for comb in combinations:
-#     #     param0 = np.array([array_params[i] for i in reversed(comb)])
-#     #     res = optimize.root(f_opt, param0, method='hybr', tol=1e-6, jac=False)
-#     #     if res.success and np.all(res.x >= 0.0) and np.all(res.x <= 1.0) and np.linalg.norm(prb.computeConstraint(res.x)) < tol:
-#     #         singularities.append(res.x)
-
-#     results = Parallel(n_jobs=-1)(
-#         delayed(solve)(comb) 
-#         for comb in combinations
-#     )
-
-#     singularities = [r for r in results if r is not None]       
-
-
-#     singularities = removeRepeats(np.array(singularities))
-#     out_singularities = np.array([prb.computeOutput(s) for s in singularities])
-#     sing_solutions = [solveSingularity(prb, s, tol=tol) for s in singularities]
-#     sing_orders, sing_dirs = zip(*sing_solutions)
-#     return out_singularities, singularities, sing_orders, sing_dirs
 
 
 def solveCurveCoupling_Singularities(prb: curveCouplingProblem,
@@ -454,9 +381,9 @@ def findCritAlongDir(prb: curveCouplingProblem,
     N = prb.numCurves
 
     def f_opt(x, return_jac=True):
-        if len(x) != 2*N:
+        if len(x) != 2*N-1:
             raise ValueError(
-                f"The input should have length {2*N}, but got {len(x)}")
+                f"The input should have length {2*N-1}, but got {len(x)}")
 
         t = x[:N]
         v = x[N:]
@@ -465,24 +392,27 @@ def findCritAlongDir(prb: curveCouplingProblem,
         jac = prb.computeConstraintJac(t)
 
         y = np.concatenate(
-            [err, np.dot(jac, v), [np.dot(c_dir, v), np.sum(v**2)-1]])
+            [err, np.dot(jac.T, v)-c_dir])
         if not return_jac:
             return y
 
         jac2 = prb.computeConstraintJac(t, nu=2)
-        jacTot = np.block([[jac, np.zeros_like(jac)],
-                           [jac2 * v[np.newaxis, :], jac],
-                           [np.zeros((1, N)), np.reshape(c_dir, (1, -1))],
-                           [np.zeros((1, N)), 2*np.reshape(v, (1, -1))]])
+
+        diag_entries = np.dot(v, jac2)
+        Hv = np.diag(diag_entries)
+
+        jacTot = np.block([[jac, np.zeros((N-1, N-1))],
+                           [Hv, jac.T]])
 
         return y, jacTot
 
     def solve(comb):
         param0 = np.array([array_params[i] for i in reversed(comb)])
         J = prb.computeConstraintJac(param0)
-        nullspace = my_null_space(J)
-        v0 = nullspace[:, 0]
+        v0 = np.linalg.lstsq(J.T, c_dir, rcond=None)[0]
+
         x0 = np.concatenate([param0, v0])
+
         res = optimize.root(f_opt, x0, method='hybr', tol=1e-3, jac=True)
 
         if res.success and np.linalg.norm(res.fun) < tol:
@@ -495,20 +425,6 @@ def findCritAlongDir(prb: curveCouplingProblem,
     )
 
     critPoints = [r for r in results if r is not None]        
-
-    # critPoints = []
-    # for comb in combinations:
-    #     param0 = np.array([array_params[i] for i in reversed(comb)])
-    #     J = prb.computeConstraintJac(param0)
-    #     nullspace = my_null_space(J)
-    #     v0 = nullspace[:, 0]
-
-    #     x0 = np.concatenate([param0, v0])
-
-    #     res = optimize.root(f_opt, x0, method='hybr', tol=1e-3, jac=True)
-
-    #     if res.success and np.linalg.norm(res.fun) < tol:
-    #         critPoints.append(res.x[:N])
 
     critPoints = removeRepeats(np.array(critPoints))
 
@@ -535,9 +451,9 @@ def findCritFromPoint(prb: curveCouplingProblem,
     N = prb.numCurves
 
     def f_opt(x, return_jac=True):
-        if len(x) != 2*N:
+        if len(x) != 2*N-1:
             raise ValueError(
-                f"The input should have length {2*N}, but got {len(x)}")
+                f"The input should have length {2*N-1}, but got {len(x)}")
 
         t = x[:N]
         v = x[N:]
@@ -546,23 +462,25 @@ def findCritFromPoint(prb: curveCouplingProblem,
         jac = prb.computeConstraintJac(t)
 
         y = np.concatenate(
-            [err, np.dot(jac, v), [np.dot(t-t0, v), np.sum(v**2)-1]])
+            [err, np.dot(jac.T, v) - (t-t0)])
+        
         if not return_jac:
             return y
 
         jac2 = prb.computeConstraintJac(t, nu=2)
-        jacTot = np.block([[jac, np.zeros_like(jac)],
-                           [jac2 * v[np.newaxis, :], jac],
-                           [np.reshape(v, (1, -1)), np.reshape(t-t0, (1, -1))],
-                           [np.zeros((1, N)), 2*np.reshape(v, (1, -1))]])
+
+        diag_entries = np.dot(v, jac2)
+        Hv = np.diag(diag_entries) - np.eye(N)
+
+        jacTot = np.block([[jac, np.zeros((N-1, N-1))],
+                           [Hv, jac.T]])
 
         return y, jacTot
     
     def solve(comb):
         param0 = np.array([array_params[i] for i in reversed(comb)])
         J = prb.computeConstraintJac(param0)
-        nullspace = my_null_space(J)
-        v0 = nullspace[:, 0]
+        v0 = np.linalg.lstsq(J.T, param0-t0, rcond=None)[0]
         x0 = np.concatenate([param0, v0])
 
         res = optimize.root(f_opt, x0, method='hybr', tol=1e-3, jac=True)
@@ -578,89 +496,9 @@ def findCritFromPoint(prb: curveCouplingProblem,
 
     critPoints = [r for r in results if r is not None]        
 
-    # critPoints = []
-    # for comb in combinations:
-    #     param0 = np.array([array_params[i] for i in reversed(comb)])
-    #     J = prb.computeConstraintJac(param0)
-    #     nullspace = my_null_space(J)
-    #     v0 = nullspace[:, 0]
-
-    #     x0 = np.concatenate([param0, v0])
-
-    #     res = optimize.root(f_opt, x0, method='hybr', tol=1e-3, jac=True)
-
-    #     if res.success and np.linalg.norm(res.fun) < tol:
-    #         critPoints.append(res.x[:N])
-
     critPoints = removeRepeats(np.array(critPoints))
 
     return critPoints
-
-# def findIslands(prb: curveCouplingProblem,
-#                                ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
-#     """
-#     Finds the curve coupling considering islands.
-
-#     Args:
-#         prb (curveCouplingProblem): The curve coupling problem instance.
-
-#     Returns:
-#         Tuple[List[np.ndarray], List[np.ndarray]]: Output curves and results in parametric space.
-#     """
-
-#     crit_points = []
-#     for c in prb.curves:
-#         pts = []
-#         for dim in range(prb.Ndims):
-#             crt = findCriticalPoints(c,dim, add_init_end = dim==0)
-#             pts += [p.param for p in crt]
-#         crit_points.append(sorted(pts))
-
-#     num_ranges = [len(crt)-1 for crt in crit_points]
-#     seeds = []
-#     for fix_dim in range(prb.numCurves):
-#         var_num_ranges = [val for i, val in enumerate(num_ranges) if i != fix_dim]
-#         var_crit_points = [val for i, val in enumerate(crit_points) if i != fix_dim]
-
-
-#         for combo in itertools.product(*[range(i) for i in var_num_ranges]):
-#             params_down = np.array([crt[idx] for idx, crt in zip(combo, var_crit_points)])
-#             params_up = np.array([crt[idx+1] for idx, crt in zip(combo, var_crit_points)])
-#             for fix_param  in crit_points[fix_dim][1:-1]:
-#                 values=[]
-#                 for corner in itertools.product(*zip(params_down, params_up)):
-#                     t = np.insert(np.array(corner), fix_dim, fix_param)
-#                     v = prb.computeConstraint(t)
-#                     values.append(v)
-
-#                 values_ranges = np.vstack([np.min(values,axis=0), np.max(values,axis=0)])
-#                 valid_face = np.all(np.product(values_ranges, axis=0) < 0)
-#                 if not valid_face:
-#                     continue                    
-
-#                 center = (params_down+params_up)/2
-#                 def f_opt(x):
-#                     t = np.insert(x, fix_dim, fix_param)
-#                     y = prb.computeConstraint(t)
-#                     J = np.delete(prb.computeConstraintJac(t), fix_dim, axis=1)
-#                     return y, J
-                
-#                 res = optimize.root(f_opt, center, method='hybr', jac=True)
-#                 if not res.success:
-#                     continue
-#                 found_sol = np.insert(res.x, fix_dim, fix_param)
-                
-#                 # if np.linalg.norm(prb.computeConstraint(found_sol)) > 1e-6:
-#                 #     raise RuntimeError(f"Something went wrong, found solution {found_sol} does not satisfy constraints {prb.computeConstraint(found_sol)}")
-                
-#                 if np.any(res.x<params_down) or np.any(res.x>params_up):
-#                     # print(f"Something went wrong, found solution {res.x} not in face {params_down}, {params_up}")
-#                     continue
-#                     # raise RuntimeError(f"Something went wrong, found solution {res.x} not in face {params_down}, {params_up}")
-                
-#                 seeds.append(found_sol)
-
-#     return np.array(seeds)
 
 def solveCurveCoupling_Islands(prb: curveCouplingProblem,
                                iter_points: int = 10,
@@ -713,16 +551,6 @@ def solveCurveCoupling_Islands(prb: curveCouplingProblem,
     else:
         seeds = np.zeros((0, prb.numCurves))
 
-    # seeds = findIslands(prb)
-
-    # _, res_brute = solveCurveCoupling_bruteForce_localSolve(
-    #     prb, iter_points=iter_points)
-    # for r in res_brute:
-    #     if minDist(r) > 0.01:
-    #         out, res = solveCurveCoupling(
-    #             prb, param_start=r, stop_circulation=True, **kwargs)
-    #         out_lst.append(out)
-    #         res_lst.append(res)
 
     for r in seeds:
         if minDist(r) > 0.01:

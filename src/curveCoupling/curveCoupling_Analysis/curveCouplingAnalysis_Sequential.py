@@ -2,7 +2,6 @@ import numpy as np
 from curveCoupling import ndcurve, curveCouplingProblem, solveCurveCoupling
 from curveCoupling.curveCoupling_Analysis import findCriticalPoints
 from curveCoupling.curveCoupling_Analysis.curveCouplingAnalysis_Equality import criticalPoint
-from curveCoupling.utils.matrixOperations import rref
 from typing import *
 from scipy import optimize
 import itertools
@@ -406,44 +405,61 @@ def solveCurveCoupling_Sequential(prb: curveCouplingProblem,
         pairs = itertools.product(range(len(curves1)), range(len(curves2)))
 
         seeds = []
+        dirs = []
         for i1, i2 in pairs:
             c1 = curves1[i1]
             c2 = curves2[i2]
 
             pair_seeds = []
+            pair_dirs = []
 
-            islands_seeds, _ = __findIslands_Equality_pair_internal(
+            islands_seeds, seeds_dir = __findIslands_Equality_pair_internal(
                     c1, c2, is_island1[i1], is_island2[i2])
                         
             pair_seeds.extend(islands_seeds)
+            pair_dirs.extend(seeds_dir)
+            
             
             if is_island1[i1]:
-                islands_seeds, _ = __findIslands_Equality_pair_external(
+                islands_seeds, seeds_dir = __findIslands_Equality_pair_external(
                     c1, c2, is_island2[i2])
                                 
                 pair_seeds.extend(islands_seeds)
+                pair_dirs.extend(seeds_dir)
 
             if is_island2[i2]:
-                islands_seeds, _ = __findIslands_Equality_pair_external(
+                islands_seeds, seeds_dir = __findIslands_Equality_pair_external(
                     c2, c1, is_island1[i1])
                 islands_seeds = [(s[1], s[0]) for s in islands_seeds]
 
                 pair_seeds.extend(islands_seeds)
+                pair_dirs.extend(seeds_dir)
 
-            for sp1, sp2 in pair_seeds:
+            for (sp1, sp2), (dp1, dp2) in zip(pair_seeds, pair_dirs):
                 if len(group1) == 1:
                     s1 = np.array([sp1])
+                    d1 = np.array([dp1])
                 else:
                     s1 = res_curves_1[i1](sp1)
+                    der_1 = res_curves_1[i1](sp1, nu=1)
+                    d1 = der_1 * dp1
 
                 if len(group2) == 1:
                     s2 = np.array([sp2])
+                    d2 = np.array([dp2])
                 else:
                     s2 = res_curves_2[i2](sp2)
+                    der_2 = res_curves_2[i2](sp2, nu=1)
+                    d2 = der_2 * dp2
+
+                tot_dir_norm = np.linalg.norm(np.concatenate([d1, d2]))
+                d1 /= tot_dir_norm
+                d2 /= tot_dir_norm
 
                 seeds.append((s1, s2))
+                dirs.append((d1, d2))
 
-        return seeds
+        return seeds, dirs
 
     for constraints_mats, constraints_vals, involved_groups in sequence_steps:
         if len(involved_groups) != 2:
@@ -465,12 +481,15 @@ def solveCurveCoupling_Sequential(prb: curveCouplingProblem,
 
 
         if find_islands_flag:
-            seeds = find_seeds(constraints_mats, constraints_vals, involved_groups)
+            seeds, dirs = find_seeds(constraints_mats, constraints_vals, involved_groups)
             merged_seeds = [np.concatenate(s) for s in seeds]
             sorted_seeds = [s[sort_idxs] for s in merged_seeds]
 
-            for s in sorted_seeds:
-                _, res = solveCurveCoupling(reduced_prb, param_start=s, **solver_kwargs)
+            merged_dirs = [np.concatenate(d) for d in dirs]
+            sorted_dirs = [d[sort_idxs] for d in merged_dirs]
+
+            for s, d in zip(sorted_seeds, sorted_dirs):
+                _, res = solveCurveCoupling(reduced_prb, param_start=s, initial_dir=d, **solver_kwargs)
                 res_lst.append(res)
 
         intermediate_results[tuple(sorted_indices)] = res_lst

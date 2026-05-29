@@ -1,7 +1,6 @@
 import numpy as np
 from curveCoupling.curveGenerators import *
-from curveCoupling import ndcurve, curveCouplingProblem, solveCurveCoupling_bruteForce_localSolve
-from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Islands, findCritAlongDir
+from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Islands, findCritAlongDir 
 from curveCoupling.utils.defaultPlots import plotResults
 from matplotlib import pyplot as plt
 
