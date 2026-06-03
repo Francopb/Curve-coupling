@@ -5,7 +5,12 @@ from curveCoupling.curveCoupling_Analysis.curveCouplingAnalysis_Equality import 
                                                                                  findCriticalPoints)
 from curveCoupling.curveCoupling_Analysis.curveCouplingAnalysis import (solveCurveCoupling_Islands,
                                                                         solveCurveCoupling_Singularities,
-                                                                        findSingularities, findCritAlongDir, findCritFromPoint)
+                                                                        findSingularities,
+                                                                        findCritFunction,
+                                                                        findCritQuadratic,
+                                                                        findCritAlongDir,
+                                                                        findCritFromPoint,
+                                                                        findCritOutput)
 from curveCoupling.curveCoupling_Analysis.curveCouplingAnalysis_Sequential import (get_sequence_steps, solveCurveCoupling_Sequential)
 
 # Author: Franco N. Pinan Basualdo

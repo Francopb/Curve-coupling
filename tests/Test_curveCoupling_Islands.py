@@ -1,6 +1,7 @@
 import numpy as np
 from curveCoupling.curveGenerators import *
-from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Islands, findCritAlongDir 
+from curveCoupling import ndcurve, curveCouplingProblem
+from curveCoupling.curveCoupling_Analysis import solveCurveCoupling_Islands, findCritAlongDir, findCritQuadratic, findCritOutput
 from curveCoupling.utils.defaultPlots import plotResults
 from matplotlib import pyplot as plt
 
@@ -26,7 +27,9 @@ def run():
     output_matrices[1, :, 1] = np.array([1.0, 1.0, 0.0])
 
     prob = curveCouplingProblem(curves, constraint_matrices, output_matrices)
-    out_lst, res_lst = solveCurveCoupling_Islands(prob)
+    N=prob.numCurves
+    out_lst, res_lst = solveCurveCoupling_Islands(prob, quadratic_weight=1.0)
+    print(f"Found {len(res_lst)} curves.")
     # out_brute, res_brute = solveCurveCoupling_bruteForce_localSolve(
     #     prob, iter_points=10)
 
@@ -34,7 +37,7 @@ def run():
     axs = plotResults(fig, data, out_lst, res_lst)
 
     points_tot = []
-    for _ in range(5):
+    for _ in range(1):
         c = np.random.randn(prob.numCurves)
         c /= np.linalg.norm(c)
 
@@ -44,6 +47,57 @@ def run():
     points_tot = np.concatenate(points_tot)
 
     axs[-1].scatter(points_tot[:,0],points_tot[:,1],points_tot[:,2], color='k')
+
+
+
+
+
+    # fig = plt.figure()
+    # axs = plotResults(fig, data, out_lst, res_lst)
+
+    # points_tot = []
+    # quadratic_weight = 1.0
+    # regularization_eps = 1e-6
+    # N=prob.numCurves
+    # points_tot = []
+    # for _ in range(1):
+    #     b = np.random.randn(N)
+    #     b /= np.linalg.norm(b)
+
+    #     M = np.random.randn(N, N)
+    #     A = quadratic_weight * (M.T @ M) / N + regularization_eps * np.eye(N)
+
+    #     points = findCritQuadratic(prob, A, b,)
+    #     if points is not None and np.asanyarray(points).size > 0:
+    #         points_tot.append(points)
+
+    # points_tot = np.concatenate(points_tot)
+
+    # axs[-1].scatter(points_tot[:,0],points_tot[:,1],points_tot[:,2], color='k')
+
+    fig = plt.figure()
+    axs = plotResults(fig, data, out_lst, res_lst)    
+
+    A = np.zeros((N, prob.Ndims))
+    A[0,0] = 1.0
+    points = findCritOutput(prob, A)
+    res_points = np.array([prob.computeOutput(p) for p in points])
+
+    axs[-1].scatter(points[:,0],points[:,1],points[:,2], color='k')
+    axs[-2].scatter(res_points[:,0],res_points[:,1], color='k')
+
+    fig = plt.figure()
+    axs = plotResults(fig, data, out_lst, res_lst)
+
+    A = np.zeros((N, prob.Ndims))
+    A[:,1] = np.array([1.0, 1.0, 0.0])
+    points = findCritOutput(prob, A)
+    res_points = np.array([prob.computeOutput(p) for p in points])
+
+    axs[-1].scatter(points[:,0],points[:,1],points[:,2], color='k')
+    axs[-2].scatter(res_points[:,0],res_points[:,1], color='k')
+
+
 
 
 

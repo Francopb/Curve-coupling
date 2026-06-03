@@ -359,16 +359,18 @@ def solveCurveCoupling_Singularities(prb: curveCouplingProblem,
         out_lst.pop(idx)
     return out_lst, res_lst
 
-
-def findCritAlongDir(prb: curveCouplingProblem,
-                     c_dir: np.ndarray,
+def findCritFunction(prb: curveCouplingProblem,
+                     grad_h: Callable[[np.ndarray], np.ndarray],
+                     hessian_h: Callable[[np.ndarray], np.ndarray],
                      iter_points: int = 10,
                      tol: float = 1e-2) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Find criticial points along a given direction.
+    Find criticial for a generic function
 
     Args:
         prb (curveCouplingProblem): The curve coupling problem instance.
+        grad_h: Gradient of h
+        hessian_h: Hessiand of h
         iter_points (int): Number of iteration points.
         tol (float): Tolerance.
 
@@ -392,14 +394,14 @@ def findCritAlongDir(prb: curveCouplingProblem,
         jac = prb.computeConstraintJac(t)
 
         y = np.concatenate(
-            [err, np.dot(jac.T, v)-c_dir])
+            [err, np.dot(jac.T, v)-grad_h(t)])
         if not return_jac:
             return y
 
         jac2 = prb.computeConstraintJac(t, nu=2)
 
         diag_entries = np.dot(v, jac2)
-        Hv = np.diag(diag_entries)
+        Hv = np.diag(diag_entries) - hessian_h(t)
 
         jacTot = np.block([[jac, np.zeros((N-1, N-1))],
                            [Hv, jac.T]])
@@ -409,8 +411,7 @@ def findCritAlongDir(prb: curveCouplingProblem,
     def solve(comb):
         param0 = np.array([array_params[i] for i in reversed(comb)])
         J = prb.computeConstraintJac(param0)
-        v0 = np.linalg.lstsq(J.T, c_dir, rcond=None)[0]
-
+        v0 = np.linalg.lstsq(J.T, grad_h(param0), rcond=None)[0]
         x0 = np.concatenate([param0, v0])
 
         res = optimize.root(f_opt, x0, method='hybr', tol=1e-3, jac=True)
@@ -429,6 +430,58 @@ def findCritAlongDir(prb: curveCouplingProblem,
     critPoints = removeRepeats(np.array(critPoints))
 
     return critPoints
+
+
+def findCritQuadratic(prb: curveCouplingProblem,
+                     A: np.ndarray,
+                     b: np.ndarray,
+                     iter_points: int = 10,
+                     tol: float = 1e-2) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Find criticial for a generic quadratic form h=t.T A t + b t
+
+    Args:
+        prb (curveCouplingProblem): The curve coupling problem instance.
+        A: Quadratic term
+        b: linear term
+        iter_points (int): Number of iteration points.
+        tol (float): Tolerance.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Found singularities and their outputs.
+    """
+
+    def grad_h(t):
+        return b + np.dot(A,t)
+    
+    def hessian_h(t):
+        return A
+    
+    return findCritFunction(prb, grad_h, hessian_h, iter_points=iter_points, tol=tol)
+
+
+def findCritAlongDir(prb: curveCouplingProblem,
+                     c_dir: np.ndarray,
+                     iter_points: int = 10,
+                     tol: float = 1e-2) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Find criticial points along a given direction.
+
+    Args:
+        prb (curveCouplingProblem): The curve coupling problem instance.
+        c_dir: probe direction
+        iter_points (int): Number of iteration points.
+        tol (float): Tolerance.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Found singularities and their outputs.
+    """
+    
+    N = prb.numCurves
+    A = np.zeros((N,N))
+    b = c_dir
+
+    return findCritQuadratic(prb, A, b, iter_points=iter_points, tol=tol)
 
 def findCritFromPoint(prb: curveCouplingProblem,
                      t0: np.ndarray,
@@ -446,64 +499,38 @@ def findCritFromPoint(prb: curveCouplingProblem,
         Tuple[np.ndarray, np.ndarray]: Found singularities and their outputs.
     """
 
-    array_params = np.linspace(0.0, 1.0, iter_points)
-    combinations = itertools.product(range(iter_points), repeat=prb.numCurves)
     N = prb.numCurves
+    A = np.eye(N)
+    b = -t0
 
-    def f_opt(x, return_jac=True):
-        if len(x) != 2*N-1:
-            raise ValueError(
-                f"The input should have length {2*N-1}, but got {len(x)}")
+    return findCritQuadratic(prb, A, b, iter_points=iter_points, tol=tol)
 
-        t = x[:N]
-        v = x[N:]
-
-        err = prb.computeConstraint(t)
-        jac = prb.computeConstraintJac(t)
-
-        y = np.concatenate(
-            [err, np.dot(jac.T, v) - (t-t0)])
-        
-        if not return_jac:
-            return y
-
-        jac2 = prb.computeConstraintJac(t, nu=2)
-
-        diag_entries = np.dot(v, jac2)
-        Hv = np.diag(diag_entries) - np.eye(N)
-
-        jacTot = np.block([[jac, np.zeros((N-1, N-1))],
-                           [Hv, jac.T]])
-
-        return y, jacTot
+def findCritOutput(prb: curveCouplingProblem,
+                     A: np.ndarray,
+                     iter_points: int = 10,
+                     tol: float = 1e-2) -> Tuple[np.ndarray, np.ndarray]:
     
-    def solve(comb):
-        param0 = np.array([array_params[i] for i in reversed(comb)])
-        J = prb.computeConstraintJac(param0)
-        v0 = np.linalg.lstsq(J.T, param0-t0, rcond=None)[0]
-        x0 = np.concatenate([param0, v0])
+    N = prb.numCurves
+    m = prb.Ndims
 
-        res = optimize.root(f_opt, x0, method='hybr', tol=1e-3, jac=True)
-
-        if res.success and np.linalg.norm(res.fun) < tol:
-            return res.x[:N]
-        return None
-        
-    results = Parallel(n_jobs=-1)(
-        delayed(solve)(comb) 
-        for comb in combinations
-    )
-
-    critPoints = [r for r in results if r is not None]        
-
-    critPoints = removeRepeats(np.array(critPoints))
-
-    return critPoints
+    if A.shape != (N,m):
+        raise ValueError(f"The matrix dimension must be equal to {(N,m)}")
+    
+    def grad_h(t):
+        vals_der = prb.curves_all(t, nu=1)
+        return np.einsum('ij,ij->i', A, vals_der)
+    
+    def hessian_h(t):
+        vals_der = prb.curves_all(t, nu=2)
+        return np.diag(np.einsum('ij,ij->i', A, vals_der))
+    
+    return findCritFunction(prb, grad_h, hessian_h, iter_points=iter_points, tol=tol)
 
 def solveCurveCoupling_Islands(prb: curveCouplingProblem,
-                               iter_points: int = 10,
-                               iter_dirs: int = 3,
-                               iter_centers: int = 3,
+                               iter_points: int = 6,
+                               iter_quadratic: int = 3,
+                               quadratic_weight: float = 1.0,
+                               regularization_eps: float = 1e-6,
                                **kwargs
                                ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """
@@ -531,20 +558,21 @@ def solveCurveCoupling_Islands(prb: curveCouplingProblem,
         dists = [min_dist_point_to_set(x, r) for r in res_lst]
         return min(dists)
 
-    seek_dirs = np.random.randn(iter_dirs, prb.numCurves)
-    seek_dirs /= np.linalg.norm(seek_dirs, axis=1)[:,np.newaxis]
-    
+
     seeds = []
-    for c in seek_dirs:
-        points = findCritAlongDir(prb, c, iter_points=iter_points)
+    N = prb.numCurves
+    
+    for _ in range(iter_quadratic):
+        b = np.random.randn(N)
+        b /= np.linalg.norm(b)
+
+        M = np.random.randn(N, N)
+        A = quadratic_weight * ((M.T @ M) / N + regularization_eps * np.eye(N))
+
+        points = findCritQuadratic(prb, A, b, iter_points=iter_points)
         if points is not None and np.asanyarray(points).size > 0:
             seeds.append(points)
 
-    seek_centers = np.random.uniform(0.0, 1.0, (iter_centers, prb.numCurves))
-    for c in seek_centers:
-        points = findCritFromPoint(prb, c, iter_points=iter_points)
-        if points is not None and np.asanyarray(points).size > 0:
-            seeds.append(points)
 
     if seeds:
         seeds = np.concatenate(seeds)
@@ -556,8 +584,10 @@ def solveCurveCoupling_Islands(prb: curveCouplingProblem,
         if minDist(r) > 0.01:
             out, res = solveCurveCoupling(
                 prb, param_start=r, stop_circulation=True, **kwargs)
-            out_lst.append(out)
-            res_lst.append(res)
+            
+            if len(res)>1:
+                out_lst.append(out)
+                res_lst.append(res)
 
     removed_idx = remove_repeat_sets(res_lst, tol=0.1)
     for idx in removed_idx:
