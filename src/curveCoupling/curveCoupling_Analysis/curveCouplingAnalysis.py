@@ -7,6 +7,7 @@ from fractions import Fraction
 from joblib import Parallel, delayed
 import itertools
 from typing import *
+from scipy import spatial
 
 
 def _reorder_equations(prb: curveCouplingProblem,
@@ -579,15 +580,22 @@ def solveCurveCoupling_Islands(prb: curveCouplingProblem,
     else:
         seeds = np.zeros((0, prb.numCurves))
 
+    def filter_points(seed_points, explored_points, threshold=0.01):
+        tree = spatial.KDTree(explored_points)
+        indices = tree.query_ball_point(seed_points, r=threshold)
+        valid_mask = np.array([len(idx) == 0 for idx in indices])
+        return seed_points[valid_mask]
 
-    for r in seeds:
-        if minDist(r) > 0.01:
-            out, res = solveCurveCoupling(
-                prb, param_start=r, stop_circulation=True, **kwargs)
+    while len(seeds) > 0:
+        seeds = filter_points(seeds, res_lst[-1], threshold=0.01)
+        if len(seeds) == 0:
+            break
+        out, res = solveCurveCoupling(
+            prb, param_start=seeds[0], stop_circulation=True, **kwargs)
             
-            if len(res)>1:
-                out_lst.append(out)
-                res_lst.append(res)
+        if len(res)>1:
+            out_lst.append(out)
+            res_lst.append(res)
 
     removed_idx = remove_repeat_sets(res_lst, tol=0.1)
     for idx in removed_idx:

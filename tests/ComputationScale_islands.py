@@ -4,6 +4,7 @@ from curveCoupling.curveGenerators import *
 from curveCoupling import ndcurve, curveCouplingProblem_Split, solveCurveCoupling
 from curveCoupling.utils.defaultPlots import plotResults
 from matplotlib import pyplot as plt
+from scipy import spatial
 import time
 
 from curveCoupling.utils.filterSetsOfPoints import min_dist_point_to_set
@@ -46,28 +47,35 @@ def compute(curves, num_seek_dirs=2):
     end_cpu = time.process_time()
 
     searching_time = end_cpu - start_cpu
+    n_seeds = len(seeds)
+
+    def filter_points(seed_points, explored_points, threshold=0.01):
+            tree = spatial.KDTree(explored_points)
+            indices = tree.query_ball_point(seed_points, r=threshold)
+            valid_mask = np.array([len(idx) == 0 for idx in indices])
+            return seed_points[valid_mask]
 
     start_cpu = time.process_time()
     out, res = solveCurveCoupling(prb, it_max=np.inf)
     out_lst = [out]
     res_lst = [res]
 
-    def minDist(x):
-        dists = [min_dist_point_to_set(x, r) for r in res_lst]
-        return min(dists)
-    
-    for s in seeds:
-        if minDist(s) > 0.01:
-            out, res = solveCurveCoupling(
-                prb, param_start=s, stop_circulation=True, it_max=np.inf)
-            out_lst.append(out)
-            res_lst.append(res)
+    while len(seeds) > 0:
+        seeds = filter_points(seeds, res_lst[-1], threshold=0.01)
+        if len(seeds) == 0:
+            break
+
+        out, res = solveCurveCoupling(
+                prb, param_start=seeds[0], stop_circulation=True, it_max=np.inf)
+        out_lst.append(out)
+        res_lst.append(res)
+
     end_cpu = time.process_time()
 
     total_length = np.sum([compute_len(res) for res in res_lst])
     solving_time = end_cpu - start_cpu
 
-    return len(seeds), searching_time, len(res_lst), total_length, solving_time
+    return n_seeds, searching_time, len(res_lst), total_length, solving_time
 
 def set_linear(N: int):
     pts = []
