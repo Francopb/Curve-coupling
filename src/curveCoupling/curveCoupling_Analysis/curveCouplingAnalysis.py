@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import optimize, linalg
 from curveCoupling import curveCouplingProblem, solveCurveCoupling
-from curveCoupling.utils.filterSetsOfPoints import removeRepeats, min_dist_point_to_set, remove_repeat_sets
+from curveCoupling.utils.filterSetsOfPoints import removeRepeats, remove_repeat_sets
 from curveCoupling.utils.matrixOperations import rref
 from fractions import Fraction
 from joblib import Parallel, delayed
@@ -432,35 +432,6 @@ def findCritFunction(prb: curveCouplingProblem,
 
     return critPoints
 
-
-def findCritQuadratic(prb: curveCouplingProblem,
-                     A: np.ndarray,
-                     b: np.ndarray,
-                     iter_points: int = 10,
-                     tol: float = 1e-2) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Find criticial for a generic quadratic form h=t.T A t + b t
-
-    Args:
-        prb (curveCouplingProblem): The curve coupling problem instance.
-        A: Quadratic term
-        b: linear term
-        iter_points (int): Number of iteration points.
-        tol (float): Tolerance.
-
-    Returns:
-        Tuple[np.ndarray, np.ndarray]: Found singularities and their outputs.
-    """
-
-    def grad_h(t):
-        return b + np.dot(A,t)
-    
-    def hessian_h(t):
-        return A
-    
-    return findCritFunction(prb, grad_h, hessian_h, iter_points=iter_points, tol=tol)
-
-
 def findCritAlongDir(prb: curveCouplingProblem,
                      c_dir: np.ndarray,
                      iter_points: int = 10,
@@ -478,33 +449,13 @@ def findCritAlongDir(prb: curveCouplingProblem,
         Tuple[np.ndarray, np.ndarray]: Found singularities and their outputs.
     """
     
-    N = prb.numCurves
-    A = np.zeros((N,N))
-    b = c_dir
+    def grad_h(t):
+        return c_dir
+    
+    def hessian_h(t):
+        return np.zeros((prb.numCurves, prb.numCurves))
 
-    return findCritQuadratic(prb, A, b, iter_points=iter_points, tol=tol)
-
-def findCritFromPoint(prb: curveCouplingProblem,
-                     t0: np.ndarray,
-                     iter_points: int = 10,
-                     tol: float = 1e-2) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Find criticial points along a given direction.
-
-    Args:
-        prb (curveCouplingProblem): The curve coupling problem instance.
-        iter_points (int): Number of iteration points.
-        tol (float): Tolerance.
-
-    Returns:
-        Tuple[np.ndarray, np.ndarray]: Found singularities and their outputs.
-    """
-
-    N = prb.numCurves
-    A = np.eye(N)
-    b = -t0
-
-    return findCritQuadratic(prb, A, b, iter_points=iter_points, tol=tol)
+    return findCritFunction(prb, grad_h, hessian_h, iter_points=iter_points, tol=tol)
 
 def findCritOutput(prb: curveCouplingProblem,
                      A: np.ndarray,
@@ -554,12 +505,6 @@ def solveCurveCoupling_Islands(prb: curveCouplingProblem,
     out_lst = [out]
     res_lst = [res]
 
-
-    def minDist(x):
-        dists = [min_dist_point_to_set(x, r) for r in res_lst]
-        return min(dists)
-
-
     seeds = []
     N = prb.numCurves
     
@@ -567,10 +512,7 @@ def solveCurveCoupling_Islands(prb: curveCouplingProblem,
         b = np.random.randn(N)
         b /= np.linalg.norm(b)
 
-        M = np.random.randn(N, N)
-        A = quadratic_weight * ((M.T @ M) / N + regularization_eps * np.eye(N))
-
-        points = findCritQuadratic(prb, A, b, iter_points=iter_points)
+        points = findCritAlongDir(prb, b, iter_points=iter_points)
         if points is not None and np.asanyarray(points).size > 0:
             seeds.append(points)
 
